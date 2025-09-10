@@ -1,0 +1,46 @@
+<div class="p-8 max-w-2xl mx-auto">
+  <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-8">
+    Detalles del Vendedor
+  </h1>
+
+  <div class="bg-white p-8 rounded-xl shadow-md">
+    <div class="space-y-6">
+      
+      <div>
+        <h2 class="font-poppins text-sm font-semibold text-gray-500 uppercase tracking-wider">
+          Nombre
+        </h2>
+        <p class="font-montserrat text-lg text-negro-onix mt-1">
+          <%= @seller.name %>
+        </p>
+      </div>
+
+      <div>
+        <h2 class="font-poppins text-sm font-semibold text-gray-500 uppercase tracking-wider">
+          Email
+        </h2>
+        <p class="font-montserrat text-lg text-negro-onix mt-1">
+          <%= @seller.email %>
+        </p>
+      </div>
+      
+      <div>
+        <h2 class="font-poppins text-sm font-semibold text-gray-500 uppercase tracking-wider">
+          Teléfono
+        </h2>
+        <p class="font-montserrat text-lg text-negro-onix mt-1">
+          <%= @seller.phone %>
+        </p>
+      </div>
+
+    </div>
+
+    <%# --- Separador y Acciones --- %>
+    <hr class="my-8">
+
+    <div class="flex items-center justify-end space-x-6">
+      <%= link_to "Volver a la lista", settings_sellers_path, class: "font-poppins text-negro-onix hover:underline" %>
+      <%= link_to "Editar Vendedor", edit_settings_seller_path(@seller), class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+    </div>
+  </div>
+</div>
