@@ -1,0 +1,34 @@
+<div class="p-8">
+  <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-8">
+    Configuración del Sistema
+  </h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <%= link_to admin_users_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
+        Gestionar Usuarios
+      </h2>
+      <p class="font-montserrat text-negro-onix mt-2">
+        Crea, edita y administra las cuentas de los usuarios que acceden a la aplicación.
+      </p>
+    <% end %>
+
+    <%= link_to settings_sellers_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
+        Gestionar Vendedores
+      </h2>
+      <p class="font-montserrat text-negro-onix mt-2">
+        Añade nuevos vendedores o visualiza la lista de los existentes en el sistema.
+      </p>
+    <% end %>
+
+    <%= link_to settings_installers_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
+        Gestionar Instaladores
+      </h2>
+      <p class="font-montserrat text-negro-onix mt-2">
+        Añade nuevos instaladores o visualiza la lista de los existentes en el sistema.
+      </p>
+    <% end %>
+  </div>
+</div>
