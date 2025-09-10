@@ -25,8 +25,8 @@
     <aside class="fixed left-0 top-0 h-full w-20 bg-white shadow-lg z-50 flex flex-col items-center py-6">
       <!-- Logo/Brand -->
       <div class="mb-8">
-        <div class="w-12 h-12 bg-rojo-carmesi rounded-lg flex items-center justify-center">
-          <span class="text-white font-montserrat font-bold text-xl">R</span>
+        <div class="w-12 h-12 flex items-center justify-center">
+          <%= image_tag "renova_rojo_carmesi.svg", alt: "Renova Logo", class: "w-12 h-12 object-contain" %>
         </div>
       </div>
 
@@ -34,37 +34,46 @@
       <nav class="flex-1 flex flex-col space-y-4">
         <!-- Dashboard -->
         <div class="group relative">
-          <%= link_to root_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md" do %>
+          <%= link_to root_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
             <!-- Dashboard Icon -->
             <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
             </svg>
-            <!-- Label -->
-            <span class="text-xs font-poppins text-negro-onix group-hover:text-rojo-carmesi mt-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">Dashboard</span>
+            <!-- Tooltip -->
+            <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+              Dashboard
+              <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+            </div>
           <% end %>
         </div>
 
         <!-- Clientes -->
         <div class="group relative">
-          <%= link_to "#", class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md" do %>
+          <%= link_to "#", class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
             <!-- Clientes Icon -->
             <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
-            <!-- Label -->
-            <span class="text-xs font-poppins text-negro-onix group-hover:text-rojo-carmesi mt-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">Clientes</span>
+            <!-- Tooltip -->
+            <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+              Clientes
+              <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+            </div>
           <% end %>
         </div>
 
         <!-- Flujo de ventas -->
         <div class="group relative">
-          <%= link_to "#", class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md" do %>
+          <%= link_to "#", class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
             <!-- Funnel Icon -->
             <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707L15 13v4a1 1 0 01-.553.894l-4 2A1 1 0 019 19v-6L3.293 7.293A1 1 0 013 6.586V4z"></path>
             </svg>
-            <!-- Label -->
-            <span class="text-xs font-poppins text-negro-onix group-hover:text-rojo-carmesi mt-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">Ventas</span>
+            <!-- Tooltip -->
+            <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+              Flujo de Ventas
+              <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+            </div>
           <% end %>
         </div>
       </nav>
@@ -79,7 +88,7 @@
 
     <!-- Main Content -->
     <main class="ml-20 min-h-screen p-6">
-      <div class="max-w-7xl mx-auto">
+      <div class="mx-auto">
         <%= yield %>
       </div>
     </main>
