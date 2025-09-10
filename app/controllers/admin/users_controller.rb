@@ -1,7 +1,11 @@
 class Admin::UsersController < ApplicationController
   before_action :require_admin
+  before_action :set_user, only: [ :show, :edit, :update, :destroy ]
   def index
     @users = User.all
+  end
+
+  def show
   end
 
   def new
@@ -30,10 +34,20 @@ class Admin::UsersController < ApplicationController
     end
   end
 
+  def destroy
+    @user = User.find(params[:id])
+    @user.destroy
+    redirect_to admin_users_path, notice: "Usuario eliminado exitosamente."
+  end
+
   private
 
   def user_params
     params.require(:user).permit(:nombre, :email, :rol, :password, :password_confirmation)
+  end
+
+  def set_user
+    @user = User.find(params[:id])
   end
 
   def require_admin

@@ -1,0 +1,37 @@
+<%= form_with(model: [:admin, user], class: "space-y-6") do |form| %>
+  <div>
+    <%= form.label :nombre, class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.text_field :nombre, required: true, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div>
+    <%= form.label :email, class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.email_field :email, required: true, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div>
+    <%= form.label :rol, class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%# Usamos el helper `roles` que nos da el enum para crear el selector %>
+    <%= form.select :rol, User.rols.keys.map { |r| [r.humanize, r] }, {}, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+  
+  <hr>
+
+  <div>
+    <%= form.label :password, class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.password_field :password, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    <% if user.persisted? %>
+      <p class="mt-2 text-xs text-gray-500 font-montserrat">Dejar en blanco para no cambiar la contraseña.</p>
+    <% end %>
+  </div>
+
+  <div>
+    <%= form.label :password_confirmation, "Confirmar Contraseña", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.password_field :password_confirmation, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="flex items-center justify-end space-x-4">
+    <%= link_to "Cancelar", admin_users_path, class: "font-poppins text-negro-onix" %>
+    <%= form.submit button_text, class: "cursor-pointer bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+<% end %>
