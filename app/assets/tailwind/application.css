@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme {
+    /* Colors */
+
+    --color-humo: #e8e7e7;
+    --color-rojo-carmesi: #9b0328;
+    --color-rojo-carmesi-oscuro: #7a0222;
+    --color-negro-onix: #1a1919;
+
+    /* Typography */
+
+    --font-poppins: "Poppins", sans-serif;
+    --font-montserrat: "Montserrat", sans-serif;
+}

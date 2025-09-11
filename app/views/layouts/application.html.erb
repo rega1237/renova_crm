@@ -7,24 +7,106 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-
     <%= yield :head %>
-
     <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
+  <body class="bg-humo min-h-screen">
+    <!-- Sidebar Menu -->
+    <% unless @hide_sidebar %>
+      <aside class="fixed left-0 top-0 h-full w-20 bg-white shadow-lg z-50 flex flex-col items-center py-6">
+        <!-- Logo/Brand -->
+        <div class="mb-8">
+          <div class="w-12 h-12 flex items-center justify-center">
+            <%= image_tag "renova_rojo_carmesi.svg", alt: "Renova Logo", class: "w-12 h-12 object-contain" %>
+          </div>
+        </div>
 
-  <body>
-    <main class="container mx-auto mt-28 px-5 flex">
-      <%= yield %>
+        <!-- Navigation Items -->
+        <nav class="flex-1 flex flex-col space-y-4">
+          <!-- Dashboard -->
+          <div class="group relative">
+            <%= link_to root_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
+              <!-- Dashboard Icon -->
+              <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+              </svg>
+              <!-- Tooltip -->
+              <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                Dashboard
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Clientes -->
+          <div class="group relative">
+            <%= link_to "#", class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
+              <!-- Clientes Icon -->
+              <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              <!-- Tooltip -->
+              <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                Clientes
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Flujo de ventas -->
+          <div class="group relative">
+            <%= link_to "#", class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
+              <!-- Funnel Icon -->
+              <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707L15 13v4a1 1 0 01-.553.894l-4 2A1 1 0 019 19v-6L3.293 7.293A1 1 0 013 6.586V4z"></path>
+              </svg>
+              <!-- Tooltip -->
+              <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                Flujo de Ventas
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Configuración -->
+          <div class="group relative">
+            <%= link_to settings_root_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
+              <svg class="w-6 h-6 <%= settings_section_active? ? 'text-rojo-carmesi' : 'text-negro-onix' %> group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                Configuración
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+              </div>
+            <% end %>
+          </div>
+        </nav>
+
+        <!-- User Profile (optional) -->
+        <div class="mt-auto">
+          <div class="w-10 h-10 bg-rojo-carmesi rounded-full flex items-center justify-center">
+            <span class="text-white font-poppins font-medium text-sm">U</span>
+          </div>
+        </div>
+      </aside>
+    <% end %>
+
+    <!-- Main Content -->
+    <main class="ml-20 min-h-screen p-6">
+      <div class="mx-auto">
+        <%= yield %>
+      </div>
     </main>
   </body>
 </html>
