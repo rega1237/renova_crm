@@ -1,0 +1,67 @@
+<%= form_with(model: client, class: "space-y-6") do |form| %>
+  <% if client.errors.any? %>
+    <div id="error_explanation" class="bg-red-50 text-red-700 px-4 py-3 rounded-lg" role="alert">
+      <strong class="font-bold font-poppins"><%= pluralize(client.errors.count, "Error") %> impidió guardar el cliente:</strong>
+      <ul class="list-disc list-inside mt-2 font-montserrat">
+        <% client.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :name, "Nombre Completo", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.text_field :name, required: true, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <%= form.label :phone, "Teléfono", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.text_field :phone, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+    <div>
+      <%= form.label :email, "Correo Electrónico", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.email_field :email, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.label :address, "Dirección", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.text_area :address, rows: 3, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <%= form.label :state, "Estado", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.text_field :state, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+    <div>
+      <%= form.label :zip_code, "Código Postal", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.text_field :zip_code, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <%= form.label :status, class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.select :status, Client.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+    <div>
+      <%= form.label :source, "Fuente", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.select :source, Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, {}, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.label :seller_id, "Vendedor (si es Referencia/Prospectación)", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.select :seller_id, options_from_collection_for_select(@sellers, 'id', 'name', client.seller_id), { include_blank: 'Ninguno' }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="flex items-center justify-end space-x-4 pt-4">
+    <%= link_to "Cancelar", clients_path, class: "font-poppins text-negro-onix" %>
+    <%= form.submit button_text, class: "cursor-pointer bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+<% end %>
