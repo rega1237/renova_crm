@@ -1,0 +1,60 @@
+<div class="p-4 sm:p-8">
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+    <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi">
+      Clientes
+    </h1>
+    <%= link_to "Nuevo Cliente", new_client_path, class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+  <%# --- Tu barra de búsqueda y filtros se queda igual --- %>
+  <div class="mb-8">
+    <%= form_with url: clients_path, method: :get, class: "bg-white p-4 rounded-xl shadow-md flex flex-col sm:flex-row items-center gap-4" do |form| %>
+      <div class="flex-grow w-full">
+        <%= text_field_tag :query, params[:query], class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", placeholder: "Buscar por nombre..." %>
+      </div>
+      <div class="w-full sm:w-auto">
+        <%= select_tag :status, options_for_select(Client.statuses.keys.map { |s| [s.humanize, s] }, params[:status]), include_blank: 'Todos los Estados', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+      </div>
+      <div class="w-full sm:w-auto">
+        <%= select_tag :source, options_for_select(Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, params[:source]), include_blank: 'Todas las Fuentes', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+      </div>
+      <div class="flex items-center gap-2">
+        <%= form.submit "Filtrar", class: "bg-negro-onix text-white font-poppins font-semibold py-2 px-4 rounded-lg cursor-pointer" %>
+        <%= link_to "Limpiar", clients_path, class: "text-gray-500 font-poppins font-medium py-2 px-4" %>
+      </div>
+    <% end %>
+  </div>
+  <div class="bg-white rounded-xl shadow-md">
+    <ul class="divide-y divide-gray-200">
+      <% if @clients.any? %>
+        <% @clients.each do |client| %>
+          <li class="p-4 hover:bg-humo transition-colors duration-200">
+            <%# CAMBIO AQUÍ: El enlace ahora apunta al cliente y a un turbo_frame %>
+            <%= link_to client_path(client), data: { turbo_frame: "slideover" }, class: "flex items-center space-x-4" do %>
+              <div class="flex-shrink-0 w-12 h-12 bg-rojo-carmesi rounded-full flex items-center justify-center">
+                <span class="text-xl font-poppins font-bold text-white">
+                  <%= client.name.first.upcase %>
+                </span>
+              </div>
+              <div class="flex-grow">
+                <p class="font-poppins font-semibold text-negro-onix"><%= client.name %></p>
+                <p class="font-montserrat text-sm text-gray-500"><%= client.phone %></p>
+              </div>
+              <div class="flex-shrink-0 text-right">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 font-montserrat">
+                  <%= client.status.humanize %>
+                </span>
+                <p class="font-montserrat text-sm text-gray-400 mt-1"><%= client.source.humanize.gsub('_', ' ') %></p>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      <% else %>
+        <li class="p-8 text-center font-montserrat text-gray-500">
+          No se encontraron clientes con los filtros seleccionados.
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>
+<%# AÑADE ESTO: El contenedor vacío para el panel lateral %>
+<%= turbo_frame_tag "slideover" %>
