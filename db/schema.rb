@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_12_014633) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_12_210625) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,14 +19,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_12_014633) do
     t.string "phone"
     t.text "address"
     t.string "zip_code"
-    t.string "state"
     t.integer "status", default: 0
     t.integer "source"
     t.bigint "seller_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "email"
+    t.bigint "state_id"
     t.index ["seller_id"], name: "index_clients_on_seller_id"
+    t.index ["state_id"], name: "index_clients_on_state_id"
   end
 
   create_table "installers", force: :cascade do |t|
@@ -35,6 +36,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_12_014633) do
     t.string "email"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "notes", force: :cascade do |t|
+    t.text "text", null: false
+    t.bigint "client_id", null: false
+    t.bigint "created_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["client_id", "created_at"], name: "index_notes_on_client_id_and_created_at"
+    t.index ["client_id"], name: "index_notes_on_client_id"
+    t.index ["created_at"], name: "index_notes_on_created_at"
+    t.index ["created_by_id"], name: "index_notes_on_created_by_id"
   end
 
   create_table "sellers", force: :cascade do |t|
@@ -54,10 +67,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_12_014633) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "states", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "abbreviation", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["abbreviation"], name: "index_states_on_abbreviation"
+    t.index ["name"], name: "index_states_on_name"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
     t.string "password_digest", null: false
-    t.string "nombre"
+    t.string "name"
     t.integer "rol", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -65,5 +87,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_12_014633) do
   end
 
   add_foreign_key "clients", "sellers"
+  add_foreign_key "clients", "states"
+  add_foreign_key "notes", "clients"
+  add_foreign_key "notes", "users", column: "created_by_id"
   add_foreign_key "sessions", "users"
 end
