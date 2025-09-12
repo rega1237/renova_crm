@@ -9,11 +9,12 @@
 #   end
 
 # User.find_or_create_by!(email: 'admin@renova.com') do |user|
-#   user.nombre = 'Admin'
+#   user.name = 'Admin'
 #   user.password = 'renova1234' # Cambia esto por una contraseña segura
 #   user.password_confirmation = 'renova1234' # Y esto también
 #   user.rol = :admin
 # end
+
 
 puts "Limpiando la base de datos..."
 Client.destroy_all
@@ -52,7 +53,7 @@ puts "Creando Clientes..."
     phone: Faker::PhoneNumber.cell_phone,
     address: Faker::Address.street_address,
     zip_code: Faker::Address.zip_code,
-    state: Faker::Address.state_abbr,
+    state_id: State.ordered.sample.id,
     status: Client.statuses.keys.sample, # Elige un estado aleatorio del enum
     source: Client.sources.keys.sample, # Elige una fuente aleatoria del enum
     seller: client_seller # Asigna el vendedor (o nil)
