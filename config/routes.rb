@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "clients/index"
   # --- Rutas de Autenticación ---
   resource :session
   resources :passwords, param: :token
@@ -15,6 +16,9 @@ Rails.application.routes.draw do
     # La página principal del menú de configuración
     root to: "dashboard#index"
   end
+
+  # --- Rutas de Clientes ---
+  resources :clients, only: [:index, :show, :new, :create, :edit, :update, :destroy]
 
   # --- Rutas Principales y de Sistema ---
   get "up" => "rails/health#show", as: :rails_health_check
