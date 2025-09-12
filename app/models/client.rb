@@ -1,5 +1,9 @@
 class Client < ApplicationRecord
   belongs_to :seller, optional: true
+  belongs_to :state, optional: true
+  has_many :notes, dependent: :destroy
+
+  scope :with_recent_notes, -> { includes(:notes).order("notes.created_at DESC") }
 
   enum :status, {
     lead: 0,
@@ -23,4 +27,16 @@ class Client < ApplicationRecord
   validates :name, presence: true
   validates :status, presence: true
   validates :source, presence: true
+
+  def recent_notes(limit = 5)
+    notes.recent.limit(limit)
+  end
+
+  def notes_count
+    notes.count
+  end
+
+  def last_note
+    notes.recent.first
+  end
 end

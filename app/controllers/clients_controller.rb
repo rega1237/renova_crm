@@ -3,24 +3,29 @@ class ClientsController < ApplicationController
   before_action :set_client, only: %i[ show edit update destroy ]
 
   def index
-    # Empezamos con todos los clientes
-    @clients = Client.all
+    @clients = Client.includes(:state, :seller)
 
-    # Filtramos por el texto de búsqueda (query) si está presente
+    # Filtro por búsqueda de nombre
     if params[:query].present?
-      # Usamos ILIKE para una búsqueda insensible a mayúsculas/minúsculas (funciona en PostgreSQL)
       @clients = @clients.where("name ILIKE ?", "%#{params[:query]}%")
     end
 
-    # Filtramos por status si está presente
+    # Filtro por status del cliente
     if params[:status].present?
       @clients = @clients.where(status: params[:status])
     end
 
-    # Filtramos por source si está presente
+    # Filtro por fuente
     if params[:source].present?
       @clients = @clients.where(source: params[:source])
     end
+
+    # Filtro por estado (nuevo)
+    if params[:state_id].present?
+      @clients = @clients.where(state_id: params[:state_id])
+    end
+
+    @clients = @clients.order(created_at: :desc)
   end
 
   def show
@@ -39,8 +44,6 @@ class ClientsController < ApplicationController
   # POST /clients
   def create
     @client = Client.new(client_params)
-    print "============================"
-    print @client
     if @client.save
       redirect_to clients_path, notice: "Cliente creado exitosamente."
     else
@@ -74,6 +77,6 @@ class ClientsController < ApplicationController
     end
 
     def client_params
-      params.require(:client).permit(:name, :phone, :email, :address, :zip_code, :state, :status, :source, :seller_id)
+      params.require(:client).permit(:name, :phone, :email, :address, :zip_code, :state_id, :status, :source, :seller_id)
     end
 end
