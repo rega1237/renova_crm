@@ -4,7 +4,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:one)
     # Inicia sesión como el usuario "one" (que es admin)
-    post session_url, params: { email: @user.email, password: 'password' }
+    post session_url, params: { email: @user.email, password: "password" }
   end
 
   test "should get index" do

@@ -3,7 +3,7 @@ require "test_helper"
 class Settings::InstallersControllerTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:one)
-    post session_url, params: { email: @user.email, password: 'password' }
+    post session_url, params: { email: @user.email, password: "password" }
   end
 
   test "should get index" do
