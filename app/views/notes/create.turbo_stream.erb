@@ -1,0 +1,18 @@
+<%= turbo_stream.prepend "notes-list" do %>
+  <%= render 'notes/note', note: @note %>
+<% end %>
+
+<%= turbo_stream.update "note-form" do %>
+  <%= form_with model: [@client, Note.new], local: false, class: "space-y-3" do |form| %>
+    <div>
+      <%= form.text_area :text, 
+          placeholder: "Agregar una nota...", 
+          class: "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm resize-none",
+          rows: 3 %>
+    </div>
+    <div class="flex justify-end">
+      <%= form.submit "Agregar Nota", 
+          class: "bg-rojo-carmesi text-white font-poppins font-medium py-2 px-4 rounded-md hover:opacity-90 transition-opacity text-sm" %>
+    </div>
+  <% end %>
+<% end %>

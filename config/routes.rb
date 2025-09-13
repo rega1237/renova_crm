@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "clients/index"
   # --- Rutas de Autenticación ---
   resource :session
   resources :passwords, param: :token
@@ -12,8 +13,14 @@ Rails.application.routes.draw do
   namespace :settings do
     resources :sellers
     resources :installers
+    resources :states
     # La página principal del menú de configuración
     root to: "dashboard#index"
+  end
+
+  # --- Rutas de Clientes ---
+  resources :clients, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+    resources :notes, only: [ :index, :new, :create, :destroy ]
   end
 
   # --- Rutas Principales y de Sistema ---

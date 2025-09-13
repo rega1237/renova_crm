@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: Annika Klein
+  phone: "899-149-7651"
+  email: "annika@example.com"
+  address: "123 Main St"
+  zip_code: "77001"
+  status: :lead
+  source: :meta
+  seller: one
+  state: texas  # <--- Usa la etiqueta del fixture de states
+
+two:
+  name: Les Robel
+  phone: "692-050-2021"
+  email: "les@example.com"
+  address: "456 Oak Ave"
+  zip_code: "33101"
+  status: :vendido
+  source: :referencia
+  seller: two
+  state: florida
