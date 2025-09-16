@@ -3,7 +3,7 @@ class ClientsController < ApplicationController
   before_action :set_client, only: %i[ show edit update destroy ]
 
   def index
-    @clients = Client.includes(:state, :seller)
+    @clients = Client.includes(:state, :seller).order(:name)
 
     # Filtro por búsqueda de nombre
     if params[:query].present?
@@ -57,6 +57,34 @@ class ClientsController < ApplicationController
       redirect_to clients_path, notice: "Cliente actualizado exitosamente."
     else
       render :edit, status: :unprocessable_content
+    end
+  end
+
+  def update_status
+    @client = Client.find(params[:id])
+    old_status = @client.status
+    new_status = params[:status]
+
+    if @client.update(status: new_status)
+      # Broadcast del cambio via ActionCable
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "client_moved",
+          client_id: @client.id,
+          old_status: old_status,
+          new_status: new_status,
+          client_html: render_to_string(
+            partial: "sales_flow/client_card",
+            locals: { client: @client },
+            formats: [ :html ]
+          )
+        }
+      )
+
+      render json: { status: "success", message: "Cliente actualizado correctamente" }
+    else
+      render json: { status: "error", errors: @client.errors.full_messages }
     end
   end
 
