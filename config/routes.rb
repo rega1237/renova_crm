@@ -23,6 +23,12 @@ Rails.application.routes.draw do
     resources :notes, only: [ :index, :new, :create, :destroy ]
   end
 
+  # --- Ruta para Flujo de Ventas ---
+  get "sales_flow", to: "sales_flow#index"
+
+  # --- Ruta para Actualizar Status via Drag & Drop ---
+  patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"
+
   # --- Rutas Principales y de Sistema ---
   get "up" => "rails/health#show", as: :rails_health_check
   root "dashboard#index"
