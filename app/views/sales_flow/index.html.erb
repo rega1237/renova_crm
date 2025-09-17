@@ -139,4 +139,21 @@
   .drag-handle:active {
     cursor: grabbing;
   }
+
+  .remote-update {
+    animation: remoteUpdatePulse 2s ease-in-out;
+    border: 2px solid #3b82f6;
+  }
+
+  @keyframes remoteUpdatePulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
 </style>

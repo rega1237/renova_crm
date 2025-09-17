@@ -1,10 +1,12 @@
 import { Controller } from "@hotwired/stimulus";
+import { createConsumer } from "@rails/actioncable";
 
 export default class extends Controller {
   static targets = ["board", "column", "clientList"];
   static values = { userId: Number };
 
   connect() {
+    console.log("SalesFlow controller connected");
     this.loadSortableJS().then(() => {
       this.initializeDragAndDrop();
     });
@@ -84,6 +86,10 @@ export default class extends Controller {
     // Si no cambió de columna, no hacer nada
     if (newStatus === oldStatus) return;
 
+    // Marcar este movimiento como local para evitar procesarlo como remoto
+    this.localMoves = this.localMoves || new Set();
+    this.localMoves.add(clientId);
+
     // Actualizar el status en el servidor
     this.updateClientStatus(clientId, newStatus, oldStatus);
 
@@ -110,9 +116,14 @@ export default class extends Controller {
       const result = await response.json();
 
       if (result.status === "success") {
-        // Mostrar notificación de éxito (opcional)
         console.log("Cliente actualizado correctamente");
         this.updateColumnCounts();
+        // Limpiar el movimiento local después de un tiempo para permitir que el broadcast se procese
+        setTimeout(() => {
+          if (this.localMoves) {
+            this.localMoves.delete(clientId);
+          }
+        }, 1000);
       } else {
         // Revertir el movimiento si hubo error
         console.error("Error al actualizar cliente:", result.errors);
@@ -179,13 +190,126 @@ export default class extends Controller {
 
   // Conectar WebSocket para actualizaciones en tiempo real
   connectWebSocket() {
-    // Implementaremos esto en la siguiente fase
-    console.log("WebSocket connection - to be implemented");
+    if (this.subscription) return;
+
+    this.subscription = this.createConsumer().subscriptions.create(
+      "SalesFlowChannel",
+      {
+        connected: () => {
+          console.log("Connected to SalesFlowChannel");
+        },
+
+        disconnected: () => {
+          console.log("Disconnected from SalesFlowChannel");
+        },
+
+        received: (data) => {
+          this.handleBroadcastMessage(data);
+        },
+      }
+    );
   }
 
   disconnectWebSocket() {
-    // Implementaremos esto en la siguiente fase
-    console.log("WebSocket disconnection - to be implemented");
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      this.subscription = null;
+    }
+  }
+
+  // Crear consumer de ActionCable
+  createConsumer() {
+    if (!this.consumer) {
+      this.consumer = createConsumer();
+    }
+    return this.consumer;
+  }
+
+  // Manejar mensajes broadcast
+  handleBroadcastMessage(data) {
+    console.log("Received broadcast:", data);
+    if (data.action === "client_moved") {
+      this.handleRemoteClientMove(data);
+    }
+  }
+
+  // Manejar movimiento de cliente desde otro usuario
+  handleRemoteClientMove(data) {
+    const { client_id, old_status, new_status, client_html } = data;
+    
+    // Verificar si este movimiento fue iniciado localmente
+    if (this.localMoves && this.localMoves.has(client_id)) {
+      this.localMoves.delete(client_id);
+      return; // No procesar movimientos locales
+    }
+    
+    // Buscar la tarjeta del cliente actual
+    const currentCard = document.querySelector(`[data-client-id="${client_id}"]`);
+    
+    if (currentCard) {
+      // Remover la tarjeta de su posición actual
+      const currentCardElement = currentCard.closest('.client-card');
+      if (currentCardElement) {
+        currentCardElement.remove();
+      }
+    }
+
+    // Encontrar la nueva columna de destino
+    const newColumn = document.querySelector(`[data-status="${new_status}"] [data-sales-flow-target="clientList"]`);
+    
+    if (newColumn) {
+      // Crear un elemento temporal para insertar el HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = client_html;
+      const newCard = tempDiv.firstElementChild;
+      
+      // Agregar la nueva tarjeta a la columna de destino
+      newColumn.appendChild(newCard);
+      
+      // Agregar efecto visual para indicar que fue actualizado remotamente
+      newCard.classList.add('remote-update');
+      setTimeout(() => {
+        newCard.classList.remove('remote-update');
+      }, 2000);
+    }
+
+    // Actualizar contadores de las columnas
+    this.updateColumnCounts();
+    
+    // Mostrar notificación sutil
+    this.showRemoteUpdateNotification(data);
+  }
+
+  // Mostrar notificación de actualización remota
+  showRemoteUpdateNotification(data) {
+    // Crear notificación temporal
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full';
+    notification.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        <span class="text-sm font-medium">Cliente actualizado por otro usuario</span>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 
   // Método para manejar el inicio del drag (alternativa al handle)
