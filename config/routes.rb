@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # --- Action Cable ---
+  mount ActionCable.server => "/cable"
+
   get "clients/index"
   # --- Rutas de Autenticación ---
   resource :session
