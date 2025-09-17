@@ -3,7 +3,7 @@ module ApplicationHelper
     controller_path.start_with?("settings/") || controller_path == "admin/users"
   end
 
-   def status_color(status)
+  def status_color(status)
     case status.to_s
     when "lead"
       "blue"
@@ -24,9 +24,7 @@ module ApplicationHelper
     end
   end
 
-  # Método adicional para obtener clases CSS completas de status
   def status_badge_classes(status)
-    color = status_color(status)
     case status.to_s
     when "lead"
       "bg-blue-100 text-blue-800"

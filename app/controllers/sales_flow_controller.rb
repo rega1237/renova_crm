@@ -22,7 +22,6 @@ class SalesFlowController < ApplicationController
   end
 
   def load_clients_by_status
-    # Definir todos los status en el orden correcto
     statuses = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro]
 
     clients_by_status = {}
