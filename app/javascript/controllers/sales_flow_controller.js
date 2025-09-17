@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 import { createConsumer } from "@rails/actioncable";
+import Sortable from "sortablejs";
 
 export default class extends Controller {
   static targets = ["board", "column", "clientList"];
@@ -7,28 +8,12 @@ export default class extends Controller {
 
   connect() {
     console.log("SalesFlow controller connected");
-    this.loadSortableJS().then(() => {
-      this.initializeDragAndDrop();
-    });
+    this.initializeDragAndDrop();
     this.connectWebSocket();
   }
 
   disconnect() {
     this.disconnectWebSocket();
-  }
-
-  // Cargar SortableJS desde CDN
-  async loadSortableJS() {
-    if (window.Sortable) return Promise.resolve();
-
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load SortableJS"));
-      document.head.appendChild(script);
-    });
   }
 
   // Prevenir que el link se active cuando se hace click en el drag handle
@@ -39,13 +24,8 @@ export default class extends Controller {
 
   // Inicializar funcionalidad de drag and drop
   initializeDragAndDrop() {
-    if (!window.Sortable) {
-      console.error("SortableJS not loaded");
-      return;
-    }
-
     this.clientListTargets.forEach((list) => {
-      new window.Sortable(list, {
+      new Sortable(list, {
         group: "kanban-clients",
         animation: 150,
         ghostClass: "sortable-ghost",
@@ -140,7 +120,6 @@ export default class extends Controller {
     }
   }
 
-  // Actualizar contadores de las columnas
   updateColumnCounts() {
     this.columnTargets.forEach((column) => {
       const status = column.dataset.status;
@@ -170,11 +149,41 @@ export default class extends Controller {
 
       const count = uniqueClientIds.size;
 
-      // Actualizar el badge
+      // Actualizar el badge - método más robusto
       this.updateColumnBadge(column, status, count);
     });
   }
 
+  // Método para remover clientes duplicados en una columna
+  removeDuplicateClients(clientList) {
+    const seenClientIds = new Set();
+    const clientCards = clientList.querySelectorAll(
+      "[data-client-id], .client-card[data-client-id], a[data-client-id]"
+    );
+
+    clientCards.forEach((card) => {
+      const clientId =
+        card.dataset.clientId ||
+        card.querySelector("[data-client-id]")?.dataset.clientId;
+
+      if (clientId) {
+        if (seenClientIds.has(clientId)) {
+          // Remover duplicado
+          const cardToRemove = card.classList.contains("client-card")
+            ? card
+            : card.closest(".client-card");
+          if (cardToRemove && cardToRemove.parentNode) {
+            cardToRemove.remove();
+            console.log(`Removed duplicate client ${clientId}`);
+          }
+        } else {
+          seenClientIds.add(clientId);
+        }
+      }
+    });
+  }
+
+  // Método auxiliar para actualizar el badge
   updateColumnBadge(column, status, count) {
     // Buscar el badge de múltiples formas posibles
     const statusColor = this.getStatusColor(status);
@@ -197,33 +206,6 @@ export default class extends Controller {
         }
       }
     }
-  }
-
-  removeDuplicateClients(clientList) {
-    const seenClientIds = new Set();
-    const clientCards = clientList.querySelectorAll(
-      "[data-client-id], .client-card[data-client-id], a[data-client-id]"
-    );
-
-    clientCards.forEach((card) => {
-      const clientId =
-        card.dataset.clientId ||
-        card.querySelector("[data-client-id]")?.dataset.clientId;
-
-      if (clientId) {
-        if (seenClientIds.has(clientId)) {
-          // Remover duplicado
-          const cardToRemove = card.classList.contains("client-card")
-            ? card
-            : card.closest(".client-card");
-          if (cardToRemove && cardToRemove.parentNode) {
-            cardToRemove.remove();
-          }
-        } else {
-          seenClientIds.add(clientId);
-        }
-      }
-    });
   }
 
   // Obtener color del status
@@ -301,6 +283,7 @@ export default class extends Controller {
 
   // Manejar mensajes broadcast
   handleBroadcastMessage(data) {
+    console.log("Received broadcast:", data);
     if (data.action === "client_moved") {
       this.handleRemoteClientMove(data);
     }
@@ -388,11 +371,5 @@ export default class extends Controller {
         }
       }, 300);
     }, 3000);
-  }
-
-  // Método para manejar el inicio del drag (alternativa al handle)
-  startDrag(event) {
-    // Este método es para implementación futura de long press
-    console.log("Start drag initiated");
   }
 }
