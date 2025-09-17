@@ -90,13 +90,18 @@ export default class extends Controller {
     this.localMoves = this.localMoves || new Set();
     this.localMoves.add(clientId);
 
-    // Actualizar el status en el servidor
-    this.updateClientStatus(clientId, newStatus, oldStatus);
-
-    // Actualizar el dataset de la tarjeta
+    // Actualizar el dataset de la tarjeta ANTES de la llamada al servidor
     if (oldStatusElement) {
       oldStatusElement.dataset.clientStatus = newStatus;
     }
+
+    // Actualizar contadores inmediatamente (optimistic update)
+    setTimeout(() => {
+      this.updateColumnCounts();
+    }, 100); // Pequeño delay para asegurar que el DOM se actualizó
+
+    // Actualizar el status en el servidor
+    this.updateClientStatus(clientId, newStatus, oldStatus);
   }
 
   // Actualizar status del cliente en el servidor
@@ -142,12 +147,81 @@ export default class extends Controller {
       const clientList = column.querySelector(
         '[data-sales-flow-target="clientList"]'
       );
-      const count = clientList ? clientList.children.length : 0;
-      const badge = column.querySelector(
-        ".bg-" + this.getStatusColor(status) + "-100"
+
+      if (!clientList) return;
+
+      // Limpiar duplicados antes de contar
+      this.removeDuplicateClients(clientList);
+
+      // Contar solo elementos únicos por client-id
+      const uniqueClientIds = new Set();
+      const clientCards = clientList.querySelectorAll(
+        "[data-client-id], .client-card[data-client-id], a[data-client-id]"
       );
-      if (badge) {
-        badge.textContent = count;
+
+      clientCards.forEach((card) => {
+        const clientId =
+          card.dataset.clientId ||
+          card.querySelector("[data-client-id]")?.dataset.clientId;
+        if (clientId) {
+          uniqueClientIds.add(clientId);
+        }
+      });
+
+      const count = uniqueClientIds.size;
+
+      // Actualizar el badge
+      this.updateColumnBadge(column, status, count);
+    });
+  }
+
+  updateColumnBadge(column, status, count) {
+    // Buscar el badge de múltiples formas posibles
+    const statusColor = this.getStatusColor(status);
+    let badge =
+      column.querySelector(`.bg-${statusColor}-100`) ||
+      column.querySelector("[data-count-badge]") ||
+      column.querySelector(".badge") ||
+      column.querySelector(".count-badge");
+
+    if (badge) {
+      badge.textContent = count;
+    } else {
+      // Si no encuentra el badge, buscar por texto que contenga números
+      const allElements = column.querySelectorAll("*");
+      for (let element of allElements) {
+        const text = element.textContent.trim();
+        if (/^\d+$/.test(text) && element.children.length === 0) {
+          element.textContent = count;
+          break;
+        }
+      }
+    }
+  }
+
+  removeDuplicateClients(clientList) {
+    const seenClientIds = new Set();
+    const clientCards = clientList.querySelectorAll(
+      "[data-client-id], .client-card[data-client-id], a[data-client-id]"
+    );
+
+    clientCards.forEach((card) => {
+      const clientId =
+        card.dataset.clientId ||
+        card.querySelector("[data-client-id]")?.dataset.clientId;
+
+      if (clientId) {
+        if (seenClientIds.has(clientId)) {
+          // Remover duplicado
+          const cardToRemove = card.classList.contains("client-card")
+            ? card
+            : card.closest(".client-card");
+          if (cardToRemove && cardToRemove.parentNode) {
+            cardToRemove.remove();
+          }
+        } else {
+          seenClientIds.add(clientId);
+        }
       }
     });
   }
@@ -227,7 +301,6 @@ export default class extends Controller {
 
   // Manejar mensajes broadcast
   handleBroadcastMessage(data) {
-    console.log("Received broadcast:", data);
     if (data.action === "client_moved") {
       this.handleRemoteClientMove(data);
     }
@@ -236,46 +309,50 @@ export default class extends Controller {
   // Manejar movimiento de cliente desde otro usuario
   handleRemoteClientMove(data) {
     const { client_id, old_status, new_status, client_html } = data;
-    
+
     // Verificar si este movimiento fue iniciado localmente
     if (this.localMoves && this.localMoves.has(client_id)) {
       this.localMoves.delete(client_id);
       return; // No procesar movimientos locales
     }
-    
+
     // Buscar la tarjeta del cliente actual
-    const currentCard = document.querySelector(`[data-client-id="${client_id}"]`);
-    
+    const currentCard = document.querySelector(
+      `[data-client-id="${client_id}"]`
+    );
+
     if (currentCard) {
       // Remover la tarjeta de su posición actual
-      const currentCardElement = currentCard.closest('.client-card');
+      const currentCardElement = currentCard.closest(".client-card");
       if (currentCardElement) {
         currentCardElement.remove();
       }
     }
 
     // Encontrar la nueva columna de destino
-    const newColumn = document.querySelector(`[data-status="${new_status}"] [data-sales-flow-target="clientList"]`);
-    
+    const newColumn = document.querySelector(
+      `[data-status="${new_status}"] [data-sales-flow-target="clientList"]`
+    );
+
     if (newColumn) {
       // Crear un elemento temporal para insertar el HTML
-      const tempDiv = document.createElement('div');
+      const tempDiv = document.createElement("div");
       tempDiv.innerHTML = client_html;
       const newCard = tempDiv.firstElementChild;
-      
+
       // Agregar la nueva tarjeta a la columna de destino
       newColumn.appendChild(newCard);
-      
+
       // Agregar efecto visual para indicar que fue actualizado remotamente
-      newCard.classList.add('remote-update');
+      newCard.classList.add("remote-update");
       setTimeout(() => {
-        newCard.classList.remove('remote-update');
+        newCard.classList.remove("remote-update");
       }, 2000);
     }
 
     // Actualizar contadores de las columnas
     this.updateColumnCounts();
-    
+
     // Mostrar notificación sutil
     this.showRemoteUpdateNotification(data);
   }
@@ -283,8 +360,9 @@ export default class extends Controller {
   // Mostrar notificación de actualización remota
   showRemoteUpdateNotification(data) {
     // Crear notificación temporal
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full';
+    const notification = document.createElement("div");
+    notification.className =
+      "fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full";
     notification.innerHTML = `
       <div class="flex items-center space-x-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,17 +371,17 @@ export default class extends Controller {
         <span class="text-sm font-medium">Cliente actualizado por otro usuario</span>
       </div>
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Animar entrada
     setTimeout(() => {
-      notification.classList.remove('translate-x-full');
+      notification.classList.remove("translate-x-full");
     }, 100);
-    
+
     // Remover después de 3 segundos
     setTimeout(() => {
-      notification.classList.add('translate-x-full');
+      notification.classList.add("translate-x-full");
       setTimeout(() => {
         if (notification.parentNode) {
           notification.parentNode.removeChild(notification);
