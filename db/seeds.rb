@@ -8,18 +8,19 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 
-# User.find_or_create_by!(email: 'admin@renova.com') do |user|
-#   user.name = 'Admin'
-#   user.password = 'renova1234' # Cambia esto por una contraseña segura
-#   user.password_confirmation = 'renova1234' # Y esto también
-#   user.rol = :admin
-# end
+User.find_or_create_by!(email: 'admin@renova.com') do |user|
+  user.name = 'Admin'
+  user.password = 'renova1234' # Cambia esto por una contraseña segura
+  user.password_confirmation = 'renova1234' # Y esto también
+  user.rol = :admin
+ end
 
 
 puts "Limpiando la base de datos..."
 Client.destroy_all
 Seller.destroy_all
 Installer.destroy_all
+State.destroy_all
 
 puts "Creando Vendedores..."
 sellers = []
@@ -42,10 +43,34 @@ puts "Creando Instaladores..."
 end
 puts "Instaladores creados!"
 
+puts "Creando States"
+
+states_ar = [ [ 'Texas', 'TX' ], [ 'Illinois', 'IL' ] ]
+
+states_ar.each do |state|
+  State.create!(
+    name: state[0],
+    abbreviation: state[1]
+  )
+end
+
+
+
 puts "Creando Clientes..."
 50.times do
   # Decidimos aleatoriamente si el cliente tendrá un vendedor asignado (aprox. 2/3 de las veces)
   client_seller = rand(3).zero? ? nil : sellers.sample
+  client_status = Client.statuses.keys.sample
+
+  # Generar una fecha base aleatoria en los últimos 30 días
+  base_date = rand(0..30).days.from_now + rand(24).hours
+
+  # Si es lead, updated_status_at es nil, si no, usar la fecha base
+  status_updated_at = if client_status == 'lead'
+                        nil
+  else
+                        base_date
+  end
 
   Client.create!(
     name: Faker::Name.name,
@@ -54,9 +79,12 @@ puts "Creando Clientes..."
     address: Faker::Address.street_address,
     zip_code: Faker::Address.zip_code,
     state_id: State.ordered.sample.id,
-    status: Client.statuses.keys.sample, # Elige un estado aleatorio del enum
-    source: Client.sources.keys.sample, # Elige una fuente aleatoria del enum
-    seller: client_seller # Asigna el vendedor (o nil)
+    status: client_status,
+    source: Client.sources.keys.sample,
+    seller: client_seller,
+    updated_status_at: status_updated_at,
+    updated_by_id: 1,
+    created_at: base_date  # Usar la fecha base para todos
   )
 end
 puts "Clientes creados!"
