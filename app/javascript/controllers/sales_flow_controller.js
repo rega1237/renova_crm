@@ -14,6 +14,30 @@ export default class extends Controller {
 
   disconnect() {
     this.disconnectWebSocket();
+    this.destroyDragAndDrop();
+  }
+
+  // Metodo que se ejecuta cuando Turbo Frame actualiza el contenido
+  boardTargetConnected() {
+    console.log("Board reconnected - reinitializing drag and drop");
+    // Destruir instancias anteriores antes de crear nuevas
+    this.destroyDragAndDrop();
+    // Pequeño delay para asegurar que el DOM esté completamente renderizado
+    setTimeout(() => {
+      this.initializeDragAndDrop();
+    }, 100);
+  }
+
+  // Método para destruir instancias de Sortable existentes
+  destroyDragAndDrop() {
+    if (this.sortableInstances) {
+      this.sortableInstances.forEach((instance) => {
+        if (instance && instance.destroy) {
+          instance.destroy();
+        }
+      });
+      this.sortableInstances = [];
+    }
   }
 
   // Prevenir que el link se active cuando se hace click en el drag handle
@@ -24,8 +48,11 @@ export default class extends Controller {
 
   // Inicializar funcionalidad de drag and drop
   initializeDragAndDrop() {
+    // Inicializar array para tracking de instancias si no existe
+    this.sortableInstances = this.sortableInstances || [];
+
     this.clientListTargets.forEach((list) => {
-      new Sortable(list, {
+      const sortableInstance = new Sortable(list, {
         group: "kanban-clients",
         animation: 150,
         ghostClass: "sortable-ghost",
@@ -49,7 +76,14 @@ export default class extends Controller {
           evt.item.classList.remove("dragging");
         },
       });
+
+      // Guardar referencia para poder destruir después
+      this.sortableInstances.push(sortableInstance);
     });
+
+    console.log(
+      `Initialized ${this.sortableInstances.length} sortable instances`
+    );
   }
 
   // Manejar el movimiento de cliente entre columnas
@@ -78,6 +112,8 @@ export default class extends Controller {
     // Actualizar contadores inmediatamente (optimistic update)
     setTimeout(() => {
       this.updateColumnCounts();
+      // Reorganizar elementos después del movimiento
+      this.reorganizeColumnsByDate();
     }, 100); // Pequeño delay para asegurar que el DOM se actualizó
 
     // Actualizar el status en el servidor
@@ -151,7 +187,61 @@ export default class extends Controller {
 
       // Actualizar el badge - método más robusto
       this.updateColumnBadge(column, status, count);
+
+      // Mostrar/ocultar mensaje "Sin clientes" según el conteo
+      this.updateEmptyStateMessage(column, count);
     });
+  }
+
+  // Metodo para manejar el mensaje de "Sin clientes" en las columnas
+  updateEmptyStateMessage(column, count) {
+    // Buscar el mensaje de "Sin clientes" primera forma
+    let emptyMessage = null;
+    let emptyIcon = null;
+
+    // Buscar por clases CSS comunes
+    emptyMessage =
+      column.querySelector(".empty-state") ||
+      column.querySelector('[class*="sin-clientes"]') ||
+      column.querySelector('[class*="Sin clientes"]');
+
+    // Si no se encuentra por clase, buscar por contenido de texto
+    if (!emptyMessage) {
+      const allElements = column.querySelectorAll("*");
+      for (const element of allElements) {
+        const text = element.textContent
+          ? element.textContent.trim().toLowerCase()
+          : "";
+        if (text === "sin clientes" && element.children.length === 0) {
+          emptyMessage = element;
+          break;
+        }
+      }
+    }
+
+    // Buscar el ícono de carpeta vacía
+    emptyIcon =
+      column.querySelector('svg[class*="folder"]') ||
+      column.querySelector('svg[class*="empty"]') ||
+      column.querySelector(".empty-icon");
+
+    // Si no encuentra ícono específico, buscar cualquier SVG que esté cerca del mensaje
+    if (!emptyIcon && emptyMessage) {
+      const parentElement = emptyMessage.parentElement;
+      if (parentElement) {
+        emptyIcon = parentElement.querySelector("svg");
+      }
+    }
+
+    if (count === 0) {
+      // Si no hay clientes, mostrar mensaje e ícono
+      if (emptyMessage) emptyMessage.style.display = "";
+      if (emptyIcon) emptyIcon.style.display = "";
+    } else {
+      // Si hay clientes, ocultar mensaje e ícono
+      if (emptyMessage) emptyMessage.style.display = "none";
+      if (emptyIcon) emptyIcon.style.display = "none";
+    }
   }
 
   // Método para remover clientes duplicados en una columna
@@ -291,7 +381,14 @@ export default class extends Controller {
 
   // Manejar movimiento de cliente desde otro usuario
   handleRemoteClientMove(data) {
-    const { client_id, old_status, new_status, client_html } = data;
+    const {
+      client_id,
+      client_name,
+      updated_by_name,
+      old_status,
+      new_status,
+      client_html,
+    } = data;
 
     // Verificar si este movimiento fue iniciado localmente
     if (this.localMoves && this.localMoves.has(client_id)) {
@@ -323,7 +420,7 @@ export default class extends Controller {
       tempDiv.innerHTML = client_html;
       const newCard = tempDiv.firstElementChild;
 
-      // Agregar la nueva tarjeta a la columna de destino
+      // Agregar la nueva tarjeta a la columna de destino (temporalmente al final)
       newColumn.appendChild(newCard);
 
       // Agregar efecto visual para indicar que fue actualizado remotamente
@@ -333,8 +430,11 @@ export default class extends Controller {
       }, 2000);
     }
 
-    // Actualizar contadores de las columnas
+    // Actualizar contadores y reorganizar por fecha
     this.updateColumnCounts();
+    setTimeout(() => {
+      this.reorganizeColumnsByDate();
+    }, 100);
 
     // Mostrar notificación sutil
     this.showRemoteUpdateNotification(data);
@@ -342,6 +442,8 @@ export default class extends Controller {
 
   // Mostrar notificación de actualización remota
   showRemoteUpdateNotification(data) {
+    const { client_name, updated_by_name, new_status } = data;
+
     // Crear notificación temporal
     const notification = document.createElement("div");
     notification.className =
@@ -351,7 +453,13 @@ export default class extends Controller {
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
-        <span class="text-sm font-medium">Cliente actualizado por otro usuario</span>
+        <div class="flex flex-col">
+          <span class="text-sm font-medium">Cliente ${client_name}</span>
+          <span class="text-xs opacity-90">Movido a ${new_status.replace(
+            "_",
+            " "
+          )} por ${updated_by_name}</span>
+        </div>
       </div>
     `;
 
@@ -362,7 +470,7 @@ export default class extends Controller {
       notification.classList.remove("translate-x-full");
     }, 100);
 
-    // Remover después de 3 segundos
+    // Remover después de 4 segundos
     setTimeout(() => {
       notification.classList.add("translate-x-full");
       setTimeout(() => {
@@ -370,6 +478,6 @@ export default class extends Controller {
           notification.parentNode.removeChild(notification);
         }
       }, 300);
-    }, 3000);
+    }, 4000);
   }
 }
