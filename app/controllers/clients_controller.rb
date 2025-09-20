@@ -3,7 +3,7 @@ class ClientsController < ApplicationController
   before_action :set_client, only: %i[ show edit update destroy ]
 
   def index
-    @clients = Client.includes(:state, :seller, :updated_by).order(:name)
+    @clients = Client.includes(:state, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
 
     # Filtro por búsqueda de nombre
     if params[:query].present?
@@ -20,9 +20,18 @@ class ClientsController < ApplicationController
       @clients = @clients.where(source: params[:source])
     end
 
-    # Filtro por estado (nuevo)
+    # Filtro por estado
     if params[:state_id].present?
       @clients = @clients.where(state_id: params[:state_id])
+    end
+
+    # Filtro por vendedor (busca en ambos campos)
+    if params[:seller_id].present?
+      @clients = @clients.where(
+        "prospecting_seller_id = ? OR assigned_seller_id = ?",
+        params[:seller_id],
+        params[:seller_id]
+      )
     end
 
     # Filtro por rango de fechas
@@ -94,7 +103,6 @@ class ClientsController < ApplicationController
     end
   end
 
-  # DELETE /clients/1
   def destroy
     @client.destroy
     redirect_to clients_url, notice: "Cliente eliminado exitosamente."
@@ -105,12 +113,14 @@ class ClientsController < ApplicationController
       @client = Client.find(params[:id])
     end
 
-    # Carga la lista de vendedores para el dropdown en el formulario
     def set_sellers
       @sellers = Seller.order(:name)
     end
 
     def client_params
-      params.require(:client).permit(:name, :phone, :email, :address, :zip_code, :state_id, :status, :source, :seller_id)
+      params.require(:client).permit(
+        :name, :phone, :email, :address, :zip_code, :state_id,
+        :status, :source, :prospecting_seller_id, :assigned_seller_id
+      )
     end
 end

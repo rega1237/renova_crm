@@ -1,4 +1,4 @@
-<%= form_with(model: client, class: "space-y-6") do |form| %>
+<%= form_with(model: client, class: "space-y-6", data: { controller: "client-form" }) do |form| %>
   <% if client.errors.any? %>
     <div id="error_explanation" class="bg-red-50 text-red-700 px-4 py-3 rounded-lg" role="alert">
       <strong class="font-bold font-poppins"><%= pluralize(client.errors.count, "Error") %> impidió guardar el cliente:</strong>
@@ -41,11 +41,6 @@
       { 
         class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" 
       } %>
-      <% if client.errors[:state_id].any? %>
-        <p class="text-red-500 text-xs font-montserrat mt-1">
-          <%= client.errors[:state_id].first %>
-        </p>
-      <% end %>
     </div>
     <div>
       <%= form.label :zip_code, "Código Postal", class: "block font-poppins text-sm font-medium text-negro-onix" %>
@@ -56,16 +51,42 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div>
       <%= form.label :status, class: "block font-poppins text-sm font-medium text-negro-onix" %>
-      <%= form.select :status, Client.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+      <%= form.select :status, Client.statuses.keys.map { |s| [s.humanize, s] }, {}, 
+          { 
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat",
+            data: { 
+              client_form_target: "statusSelect",
+              action: "change->client-form#statusChanged"
+            }
+          } %>
     </div>
     <div>
       <%= form.label :source, "Fuente", class: "block font-poppins text-sm font-medium text-negro-onix" %>
-      <%= form.select :source, Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, {}, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+      <%= form.select :source, Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, {}, 
+          { 
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat",
+            data: { 
+              client_form_target: "sourceSelect",
+              action: "change->client-form#sourceChanged"
+            }
+          } %>
     </div>
   </div>
-  <div>
-    <%= form.label :seller_id, "Vendedor (si es Referencia/Prospectación)", class: "block font-poppins text-sm font-medium text-negro-onix" %>
-    <%= form.select :seller_id, options_from_collection_for_select(@sellers, 'id', 'name', client.seller_id), { include_blank: 'Ninguno' }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  <!-- Campo para vendedor que generó el prospecto (solo si source es prospectacion o referencia) -->
+  <div data-client-form-target="prospectingSellerField" class="<%= 'hidden' unless client.requires_prospecting_seller? %>">
+    <%= form.label :prospecting_seller_id, "Vendedor que generó el prospecto", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.select :prospecting_seller_id, 
+        options_from_collection_for_select(@sellers, 'id', 'name', client.prospecting_seller_id), 
+        { include_blank: 'Seleccionar vendedor...' }, 
+        class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+  <!-- Campo para vendedor asignado (aparece cuando status requiere asignación) -->
+  <div data-client-form-target="assignedSellerField" class="<%= 'hidden' unless client.requires_assigned_seller? %>">
+    <%= form.label :assigned_seller_id, "Vendedor asignado para seguimiento", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.select :assigned_seller_id, 
+        options_from_collection_for_select(@sellers, 'id', 'name', client.assigned_seller_id), 
+        { include_blank: 'Seleccionar vendedor...' }, 
+        class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
   </div>
   <div class="flex items-center justify-end space-x-4 pt-4">
     <%= link_to "Cancelar", clients_path, class: "font-poppins text-negro-onix" %>

@@ -1,5 +1,6 @@
 class Client < ApplicationRecord
-  belongs_to :seller, optional: true
+  belongs_to :prospecting_seller, class_name: "Seller", optional: true
+  belongs_to :assigned_seller, class_name: "Seller", optional: true
   belongs_to :state, optional: true
   belongs_to :updated_by, class_name: "User", optional: true
   has_many :notes, dependent: :destroy
@@ -64,13 +65,19 @@ class Client < ApplicationRecord
     base_de_datos: 0,
     meta: 1,
     referencia: 2,
-    propectacion: 3,
+    prospectacion: 3,
     otro: 4
   }
 
   validates :name, presence: true
   validates :status, presence: true
   validates :source, presence: true
+
+  # Validación: si source es prospectacion, debe tener prospecting_seller
+  validates :prospecting_seller_id, presence: true, if: :prospectacion?
+
+  # Validación: si status es cita_agendada o superior, debe tener assigned_seller
+  validates :assigned_seller_id, presence: true, if: :requires_assigned_seller?
 
   # Callback para actualizar campos de tracking cuando cambie el status
   after_update :update_status_tracking, if: :saved_change_to_status?
@@ -85,6 +92,21 @@ class Client < ApplicationRecord
 
   def last_note
     notes.recent.first
+  end
+
+  # Método helper para obtener el vendedor principal según el contexto
+  def primary_seller
+    assigned_seller || prospecting_seller
+  end
+
+  # Método helper para saber si requiere vendedor asignado
+  def requires_assigned_seller?
+    %w[cita_agendada reprogramar vendido mal_credito no_cerro].include?(status)
+  end
+
+  # Método helper para saber si es prospectación o referencia
+  def requires_prospecting_seller?
+    %w[prospectacion referencia].include?(source)
   end
 
   private

@@ -140,10 +140,21 @@
           </span>
         </div>
       </div>
-      <% if client.seller.present? %>
-        <div>
-          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor Asignado</h3>
-          <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.seller.name %></p>
+      <!-- Vendedor que generó prospecto y Vendedor asignado -->
+      <% if client.prospecting_seller.present? || client.assigned_seller.present? %>
+        <div class="pt-4 border-t border-gray-200">
+          <% if client.prospecting_seller.present? %>
+            <div class="mb-3">
+              <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor que generó prospecto</h3>
+              <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.prospecting_seller.name %></p>
+            </div>
+          <% end %>
+          <% if client.assigned_seller.present? %>
+            <div>
+              <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor asignado</h3>
+              <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.assigned_seller.name %></p>
+            </div>
+          <% end %>
         </div>
       <% end %>
       <!-- Fechas de creación y actualización -->
@@ -158,10 +169,10 @@
             <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_at.strftime("%d/%m/%Y a las %H:%M") %></span>
           </div>
           <% if client.updated_status_at != nil %>
-          <div>
-            <span class="font-poppins font-semibold text-gray-500">Última actualización de status:</span>
-            <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_status_at.strftime("%d/%m/%Y a las %H:%M") %> / <%= client.updated_by.name %></span>
-          </div>
+            <div>
+              <span class="font-poppins font-semibold text-gray-500">Última actualización de status:</span>
+              <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_status_at.strftime("%d/%m/%Y a las %H:%M") %> / <%= client.updated_by.name %></span>
+            </div>
           <% end %>
         </div>
       </div>
