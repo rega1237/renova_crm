@@ -73,11 +73,8 @@ class Client < ApplicationRecord
   validates :status, presence: true
   validates :source, presence: true
 
-  # Validación: si source es prospectacion, debe tener prospecting_seller
-  validates :prospecting_seller_id, presence: true, if: :prospectacion?
-
-  # Validación: si status es cita_agendada o superior, debe tener assigned_seller
-  validates :assigned_seller_id, presence: true, if: :requires_assigned_seller?
+  # Validación: si source es prospectacion o referencia, debe tener prospecting_seller
+  validates :prospecting_seller_id, presence: true, if: :requires_prospecting_seller?
 
   # Callback para actualizar campos de tracking cuando cambie el status
   after_update :update_status_tracking, if: :saved_change_to_status?

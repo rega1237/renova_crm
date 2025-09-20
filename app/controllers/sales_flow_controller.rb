@@ -28,7 +28,7 @@ class SalesFlowController < ApplicationController
     clients_by_status = {}
 
     statuses.each do |status|
-      clients = Client.includes(:state, :seller, :notes, :updated_by)
+      clients = Client.includes(:state, :prospecting_seller, :assigned_seller, :notes, :updated_by)
                      .where(status: status)
 
       # Aplicar filtros

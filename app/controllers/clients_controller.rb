@@ -103,6 +103,39 @@ class ClientsController < ApplicationController
     end
   end
 
+  def update_assigned_seller
+    @client = Client.find(params[:id])
+    old_assigned_seller = @client.assigned_seller
+
+    if @client.update(assigned_seller_id: params[:client][:assigned_seller_id])
+      Rails.logger.info "Update exitoso"
+
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "assigned_seller_updated",
+          client_id: @client.id,
+          client_name: @client.name,
+          old_seller: old_assigned_seller&.name || "Sin asignar",
+          new_seller: @client.assigned_seller&.name || "Sin asignar",
+          updated_by_name: Current.user&.name || "Usuario desconocido"
+        }
+      )
+
+      render turbo_stream: turbo_stream.replace(
+        "assigned-seller-section",
+        partial: "clients/assigned_seller_section",
+        locals: { client: @client }
+      )
+    else
+      render json: {
+        status: "error",
+        errors: @client.errors.full_messages,
+        field_errors: @client.errors.messages
+      }, status: :unprocessable_content
+    end
+  end
+
   def destroy
     @client.destroy
     redirect_to clients_url, notice: "Cliente eliminado exitosamente."
