@@ -86,7 +86,7 @@ export default class extends Controller {
     );
   }
 
-  // Manejar el movimiento de cliente entre columnas
+  // Manejar el movimiento de cliente entre columnas (SIMPLIFICADO)
   handleClientMove(evt) {
     const clientCard = evt.item;
     const clientId =
@@ -114,7 +114,7 @@ export default class extends Controller {
       this.updateColumnCounts();
       // Reorganizar elementos después del movimiento
       this.reorganizeColumnsByDate();
-    }, 100); // Pequeño delay para asegurar que el DOM se actualizó
+    }, 100);
 
     // Actualizar el status en el servidor
     this.updateClientStatus(clientId, newStatus, oldStatus);
@@ -479,5 +479,48 @@ export default class extends Controller {
         }
       }, 300);
     }, 4000);
+  }
+
+  // Reorganizar elementos por fecha (método que faltaba pero se usa en el código)
+  reorganizeColumnsByDate() {
+    this.columnTargets.forEach((column) => {
+      const clientList = column.querySelector(
+        '[data-sales-flow-target="clientList"]'
+      );
+      if (!clientList) return;
+
+      const clientCards = Array.from(
+        clientList.querySelectorAll(".client-card, a[data-client-id]")
+      );
+
+      // Ordenar por fecha de creación (más recientes primero)
+      clientCards.sort((a, b) => {
+        const dateA = this.extractDateFromCard(a);
+        const dateB = this.extractDateFromCard(b);
+        return dateB - dateA; // Más recientes primero
+      });
+
+      // Reorganizar en el DOM
+      clientCards.forEach((card) => {
+        clientList.appendChild(card);
+      });
+    });
+  }
+
+  // Extraer fecha de la tarjeta para ordenamiento
+  extractDateFromCard(card) {
+    // Buscar fecha en el texto de la tarjeta
+    const dateText = card.querySelector(
+      '[class*="text-gray-400"]'
+    )?.textContent;
+    if (dateText && dateText.includes("Creado:")) {
+      const dateMatch = dateText.match(/\d{2}\/\d{2}/);
+      if (dateMatch) {
+        // Convertir fecha DD/MM a objeto Date
+        const [day, month] = dateMatch[0].split("/");
+        return new Date(new Date().getFullYear(), month - 1, day);
+      }
+    }
+    return new Date(0); // Fecha por defecto si no se encuentra
   }
 }
