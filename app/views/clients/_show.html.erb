@@ -141,20 +141,9 @@
         </div>
       </div>
       <!-- Vendedor que generó prospecto y Vendedor asignado -->
-      <% if client.prospecting_seller.present? || client.assigned_seller.present? %>
-        <div class="pt-4 border-t border-gray-200">
-          <% if client.prospecting_seller.present? %>
-            <div class="mb-3">
-              <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor que generó prospecto</h3>
-              <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.prospecting_seller.name %></p>
-            </div>
-          <% end %>
-          <% if client.assigned_seller.present? %>
-            <div>
-              <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor asignado</h3>
-              <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.assigned_seller.name %></p>
-            </div>
-          <% end %>
+      <% if client.prospecting_seller.present? || client.assigned_seller.present? || client.requires_assigned_seller? %>
+        <div data-controller="assigned-seller-form">
+          <%= render 'assigned_seller_section', client: client %>
         </div>
       <% end %>
       <!-- Fechas de creación y actualización -->
