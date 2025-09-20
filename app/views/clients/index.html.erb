@@ -27,6 +27,15 @@
           <%= select_tag :state_id, options_from_collection_for_select(State.ordered, :id, :display_name_with_abbreviation, params[:state_id]), include_blank: 'Todos los Estados', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
         
+        <!-- Filtro campos de fecha -->
+        <div class="w-full lg:w-auto">
+          <%= date_field_tag :date_from, params[:date_from], class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", placeholder: "Fecha desde" %>
+        </div>
+        
+        <div class="w-full lg:w-auto">
+          <%= date_field_tag :date_to, params[:date_to], class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", placeholder: "Fecha hasta" %>
+        </div>
+        
         <!-- Botones -->
         <div class="flex items-center gap-2 w-full lg:w-auto">
           <%= form.submit "Filtrar", class: "bg-negro-onix text-white font-poppins font-semibold py-2 px-4 rounded-lg cursor-pointer hover:opacity-90 transition-opacity" %>
@@ -55,6 +64,23 @@
                     <span class="px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">
                       <%= client.state.abbreviation %>
                     </span>
+                  <% end %>
+                </div>
+                <!-- Información adicional de fechas -->
+                <div class="flex items-center gap-2 mt-1">
+                  <% if client.status == 'lead' %>
+                    <span class="text-xs text-gray-400 font-montserrat">
+                      Creado: <%= client.created_at.strftime("%d/%m/%Y") %>
+                    </span>
+                  <% elsif client.updated_status_at.present? %>
+                    <span class="text-xs text-gray-400 font-montserrat">
+                      Actualizado: <%= client.updated_status_at.strftime("%d/%m/%Y") %>
+                    </span>
+                    <% if client.updated_by.present? %>
+                      <span class="text-xs text-gray-400 font-montserrat">
+                        por <%= client.updated_by.name %>
+                      </span>
+                    <% end %>
                   <% end %>
                 </div>
               </div>
