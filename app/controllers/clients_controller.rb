@@ -3,7 +3,7 @@ class ClientsController < ApplicationController
   before_action :set_client, only: %i[ show edit update destroy ]
 
   def index
-    @clients = Client.includes(:state, :seller)
+    @clients = Client.includes(:state, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
 
     # Filtro por búsqueda de nombre
     if params[:query].present?
@@ -20,9 +20,23 @@ class ClientsController < ApplicationController
       @clients = @clients.where(source: params[:source])
     end
 
-    # Filtro por estado (nuevo)
+    # Filtro por estado
     if params[:state_id].present?
       @clients = @clients.where(state_id: params[:state_id])
+    end
+
+    # Filtro por vendedor (busca en ambos campos)
+    if params[:seller_id].present?
+      @clients = @clients.where(
+        "prospecting_seller_id = ? OR assigned_seller_id = ?",
+        params[:seller_id],
+        params[:seller_id]
+      )
+    end
+
+    # Filtro por rango de fechas
+    if params[:date_from].present? || params[:date_to].present?
+      @clients = @clients.by_date_range(params[:date_from], params[:date_to])
     end
 
     @clients = @clients.order(created_at: :desc)
@@ -32,16 +46,13 @@ class ClientsController < ApplicationController
     @client = Client.find(params[:id])
   end
 
-  # GET /clients/new
   def new
     @client = Client.new
   end
 
-  # GET /clients/1/edit
   def edit
   end
 
-  # POST /clients
   def create
     @client = Client.new(client_params)
     if @client.save
@@ -51,7 +62,6 @@ class ClientsController < ApplicationController
     end
   end
 
-  # PATCH/PUT /clients/1
   def update
     if @client.update(client_params)
       redirect_to clients_path, notice: "Cliente actualizado exitosamente."
@@ -60,7 +70,72 @@ class ClientsController < ApplicationController
     end
   end
 
-  # DELETE /clients/1
+  def update_status
+    @client = Client.find(params[:id])
+    old_status = @client.status
+    new_status = params[:status]
+
+    if @client.update(status: new_status)
+      # Reload para obtener los datos actualizados incluyendo updated_by
+      @client.reload
+
+      # Broadcast del cambio via ActionCable
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "client_moved",
+          client_id: @client.id,
+          client_name: @client.name,
+          updated_by_name: @client.updated_by&.name || "Usuario desconocido",
+          old_status: old_status,
+          new_status: new_status,
+          client_html: render_to_string(
+            partial: "sales_flow/client_card",
+            locals: { client: @client },
+            formats: [ :html ]
+          )
+        }
+      )
+
+      render json: { status: "success", message: "Cliente actualizado correctamente" }
+    else
+      render json: { status: "error", errors: @client.errors.full_messages }
+    end
+  end
+
+  def update_assigned_seller
+    @client = Client.find(params[:id])
+    old_assigned_seller = @client.assigned_seller
+
+    if @client.update(assigned_seller_id: params[:client][:assigned_seller_id])
+      Rails.logger.info "Update exitoso"
+
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "assigned_seller_updated",
+          client_id: @client.id,
+          client_name: @client.name,
+          old_seller: old_assigned_seller&.name || "Sin asignar",
+          new_seller: @client.assigned_seller&.name || "Sin asignar",
+          updated_by_name: Current.user&.name || "Usuario desconocido"
+        }
+      )
+
+      render turbo_stream: turbo_stream.replace(
+        "assigned-seller-section",
+        partial: "clients/assigned_seller_section",
+        locals: { client: @client }
+      )
+    else
+      render json: {
+        status: "error",
+        errors: @client.errors.full_messages,
+        field_errors: @client.errors.messages
+      }, status: :unprocessable_content
+    end
+  end
+
   def destroy
     @client.destroy
     redirect_to clients_url, notice: "Cliente eliminado exitosamente."
@@ -71,12 +146,14 @@ class ClientsController < ApplicationController
       @client = Client.find(params[:id])
     end
 
-    # Carga la lista de vendedores para el dropdown en el formulario
     def set_sellers
       @sellers = Seller.order(:name)
     end
 
     def client_params
-      params.require(:client).permit(:name, :phone, :email, :address, :zip_code, :state_id, :status, :source, :seller_id)
+      params.require(:client).permit(
+        :name, :phone, :email, :address, :zip_code, :state_id,
+        :status, :source, :prospecting_seller_id, :assigned_seller_id
+      )
     end
 end

@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # --- Action Cable ---
+  mount ActionCable.server => "/cable"
+
   get "clients/index"
   # --- Rutas de Autenticación ---
   resource :session
@@ -21,7 +24,16 @@ Rails.application.routes.draw do
   # --- Rutas de Clientes ---
   resources :clients, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
     resources :notes, only: [ :index, :new, :create, :destroy ]
+    member do
+      patch :update_assigned_seller
+    end
   end
+
+  # --- Ruta para Flujo de Ventas ---
+  get "sales_flow", to: "sales_flow#index"
+
+  # --- Ruta para Actualizar Status via Drag & Drop ---
+  patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"
 
   # --- Rutas Principales y de Sistema ---
   get "up" => "rails/health#show", as: :rails_health_check

@@ -8,7 +8,8 @@ one:
   zip_code: "77001"
   status: :lead
   source: :meta
-  seller: one
+  prospecting_seller: one
+  assigned_seller: one
   state: texas  # <--- Usa la etiqueta del fixture de states
 
 two:
@@ -19,5 +20,6 @@ two:
   zip_code: "33101"
   status: :vendido
   source: :referencia
-  seller: two
+  prospecting_seller: two
+  assigned_seller: two
   state: florida

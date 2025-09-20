@@ -8,18 +8,19 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 
-# User.find_or_create_by!(email: 'admin@renova.com') do |user|
-#   user.name = 'Admin'
-#   user.password = 'renova1234' # Cambia esto por una contraseña segura
-#   user.password_confirmation = 'renova1234' # Y esto también
-#   user.rol = :admin
-# end
+User.find_or_create_by!(email: 'admin@renova.com') do |user|
+  user.name = 'Admin'
+  user.password = 'renova1234' # Cambia esto por una contraseña segura
+  user.password_confirmation = 'renova1234' # Y esto también
+  user.rol = :admin
+ end
 
 
 puts "Limpiando la base de datos..."
 Client.destroy_all
 Seller.destroy_all
 Installer.destroy_all
+State.destroy_all
 
 puts "Creando Vendedores..."
 sellers = []
@@ -42,23 +43,81 @@ puts "Creando Instaladores..."
 end
 puts "Instaladores creados!"
 
-puts "Creando Clientes..."
-50.times do
-  # Decidimos aleatoriamente si el cliente tendrá un vendedor asignado (aprox. 2/3 de las veces)
-  client_seller = rand(3).zero? ? nil : sellers.sample
+puts "Creando States"
 
-  Client.create!(
+states_ar = [ [ 'Texas', 'TX' ], [ 'Illinois', 'IL' ] ]
+
+states_ar.each do |state|
+  State.create!(
+    name: state[0],
+    abbreviation: state[1]
+  )
+end
+
+puts "Creando Clientes..."
+
+# Statuses que requieren vendedor asignado
+statuses_requiring_assigned_seller = %w[cita_agendada reprogramar vendido mal_credito no_cerro]
+
+users = User.all
+
+50.times do
+  client_status = Client.statuses.keys.sample
+  client_source = Client.sources.keys.sample
+
+  # Generar una fecha base aleatoria en los últimos 30 días
+  base_date = rand(0..30).days.ago + rand(24).hours
+
+  # Determinar prospecting_seller_id (solo si source es prospectacion o referencia)
+  prospecting_seller = if %w[prospectacion referencia].include?(client_source)
+                        # 90% de las veces asignar un vendedor si es prospectacion o referencia
+                        rand(10) < 9 ? sellers.sample : nil
+  else
+                        nil
+  end
+
+  # Determinar assigned_seller_id (solo si status requiere vendedor asignado)
+  assigned_seller = if statuses_requiring_assigned_seller.include?(client_status)
+                     # 95% de las veces asignar un vendedor si el status lo requiere
+                     rand(20) < 19 ? sellers.sample : nil
+  else
+                     nil
+  end
+
+  # Si es lead, updated_status_at es nil, si no, usar la fecha base
+  status_updated_at = if client_status == 'lead'
+                        nil
+  else
+                        base_date + rand(1..10).days  # Actualizado algunos días después
+  end
+
+  # Crear el cliente
+  client = Client.new(
     name: Faker::Name.name,
     email: Faker::Internet.unique.email,
     phone: Faker::PhoneNumber.cell_phone,
     address: Faker::Address.street_address,
     zip_code: Faker::Address.zip_code,
     state_id: State.ordered.sample.id,
-    status: Client.statuses.keys.sample, # Elige un estado aleatorio del enum
-    source: Client.sources.keys.sample, # Elige una fuente aleatoria del enum
-    seller: client_seller # Asigna el vendedor (o nil)
+    status: client_status,
+    source: client_source,
+    prospecting_seller: prospecting_seller,
+    assigned_seller: assigned_seller,
+    updated_status_at: status_updated_at,
+    updated_by_id: users.sample.id,  # Asignar un usuario aleatorio
+    created_at: base_date
+  )
+
+  # Guardar sin validaciones para evitar problemas con fechas del pasado
+  client.save!(validate: false)
+
+  # Actualizar manualmente las timestamps para que sean consistentes
+  client.update_columns(
+    created_at: base_date,
+    updated_at: status_updated_at || base_date
   )
 end
+
 puts "Clientes creados!"
 
 puts "¡Seed completado!"

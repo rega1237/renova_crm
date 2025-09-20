@@ -1,0 +1,87 @@
+<div id="assigned-seller-section" class="pt-4 border-t border-gray-200">
+  <% if client.prospecting_seller.present? %>
+    <div class="mb-3">
+      <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor que generó prospecto</h3>
+      <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.prospecting_seller.name %></p>
+    </div>
+  <% end %>
+  
+  <div>
+    <div class="flex items-center justify-between">
+      <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor asignado</h3>
+      
+      <!-- Botón para asignar/cambiar vendedor (siempre visible) -->
+      <button type="button" 
+              data-action="click->assigned-seller-form#toggleEdit"
+              data-assigned-seller-form-target="editButton"
+              class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+        <%= client.assigned_seller.present? ? 'Cambiar' : 'Asignar' %>
+      </button>
+    </div>
+    
+    <!-- Vista normal (mostrar vendedor actual) -->
+    <div data-assigned-seller-form-target="display" class="mt-2">
+      <% if client.assigned_seller.present? %>
+        <p class="font-montserrat text-lg text-negro-onix"><%= client.assigned_seller.name %></p>
+      <% else %>
+        <div class="flex items-center">
+          <p class="font-montserrat text-lg text-gray-400 italic">Sin asignar</p>
+          <span class="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium text-yellow-600 bg-yellow-100 rounded-full">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            Pendiente
+          </span>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Formulario de edición (oculto por defecto) -->
+    <div data-assigned-seller-form-target="editForm" class="hidden mt-2">
+      <%= form_with model: client, 
+          url: update_assigned_seller_client_path(client), 
+          method: :patch, 
+          local: false,
+          data: { turbo_frame: false },
+          class: "space-y-2" do |form| %>
+        
+        <%= form.select :assigned_seller_id, 
+            options_from_collection_for_select(
+              Seller.order(:name), 
+              'id', 
+              'name', 
+              client.assigned_seller_id
+            ), 
+            { include_blank: 'Sin asignar' },
+            { 
+              class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm bg-white",
+              data: { assigned_seller_form_target: "select" }
+            } %>
+        
+        <div class="flex items-center space-x-2">
+          <button type="submit" 
+                  class="px-3 py-1 bg-rojo-carmesi text-white text-xs font-medium rounded hover:opacity-90 transition-opacity">
+            <%= client.assigned_seller.present? ? 'Actualizar' : 'Asignar' %>
+          </button>
+          
+          <button type="button" 
+                  data-action="click->assigned-seller-form#cancelEdit"
+                  class="px-3 py-1 bg-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-400 transition-colors">
+            Cancelar
+          </button>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Indicador de carga -->
+    <div data-assigned-seller-form-target="loading" class="hidden mt-2">
+      <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full">
+        <svg class="animate-spin -ml-1 mr-2 h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Actualizando...
+      </span>
+    </div>
+  </div>
+</div>

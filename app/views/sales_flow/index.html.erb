@@ -1,0 +1,169 @@
+<div class="min-h-screen bg-gray-50 p-4 rounded-2xl" data-controller="sales-flow" data-sales-flow-user-id-value="<%= Current.user&.id %>">
+  <!-- Header con título y filtros -->
+  <div class="mb-6">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+      <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi">
+        Flujo de Ventas
+      </h1>
+      <!-- Botón para volver a la vista de clientes -->
+      <%= link_to clients_path, class: "bg-negro-onix text-white font-poppins font-medium py-2 px-4 rounded-lg hover:opacity-90 transition-opacity" do %>
+        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Vista Lista
+      <% end %>
+    </div>
+    <!-- Filtros -->
+    <%= form_with url: sales_flow_path, method: :get, local: true, data: { turbo_frame: "kanban-board" }, class: "bg-white p-4 rounded-xl shadow-md" do |form| %>
+      <div class="flex flex-col lg:flex-row items-center gap-4">
+        <!-- Campo de búsqueda -->
+        <div class="w-full lg:w-80">
+          <%= text_field_tag :query, params[:query], 
+              class: "block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", 
+              placeholder: "Buscar por nombre..." %>
+        </div>
+        <!-- Filtro por fuente -->
+        <div class="w-full lg:w-auto">
+          <%= select_tag :source, 
+              options_for_select(Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, params[:source]), 
+              include_blank: 'Todas las Fuentes', 
+              class: "block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+        </div>
+        <!-- Filtro por estado -->
+        <div class="w-full lg:w-auto">
+          <%= select_tag :state_id, 
+              options_from_collection_for_select(State.order(:name), :id, :name, params[:state_id]), 
+              include_blank: 'Todos los Estados', 
+              class: "block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+        </div>
+        <!-- Filtros por fecha -->
+        <div class="w-full lg:w-auto">
+          <%= date_field_tag :date_from, params[:date_from], 
+              class: "block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", 
+              placeholder: "Fecha desde" %>
+        </div>
+        <div class="w-full lg:w-auto">
+          <%= date_field_tag :date_to, params[:date_to], 
+              class: "block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", 
+              placeholder: "Fecha hasta" %>
+        </div>
+        <!-- Botones -->
+        <div class="flex items-center gap-2 w-full lg:w-auto">
+          <%= form.submit "Filtrar", class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity cursor-pointer" %>
+          <%= link_to "Limpiar", sales_flow_path, class: "text-gray-500 font-poppins font-medium py-2 px-4 hover:text-gray-700 transition-colors whitespace-nowrap" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  <!-- Kanban Board -->
+  <%= turbo_frame_tag "kanban-board" do %>
+    <div class="kanban-board overflow-x-scroll" data-sales-flow-target="board">
+      <% @clients_by_status.each do |status, clients| %>
+        <%= render 'column', status: status, clients: clients %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+<!-- Slideover para mostrar detalles del cliente -->
+<%= turbo_frame_tag "slideover" %>
+<style>
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    min-height: 70vh;
+  }
+
+  @media (min-width: 768px) {
+    .kanban-board {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .kanban-board {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .kanban-board {
+      grid-template-columns: repeat(8, 1fr);
+    }
+  }
+
+  .kanban-column {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-height: 500px;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .kanban-column.drag-over {
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    transform: scale(1.02);
+  }
+
+  .client-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .client-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .client-card.dragging {
+    opacity: 0.8;
+    transform: rotate(5deg);
+    cursor: grabbing;
+    z-index: 1000;
+  }
+
+  .sortable-ghost {
+    opacity: 0.5;
+    background: #f3f4f6;
+  }
+
+  .sortable-chosen {
+    cursor: grabbing;
+  }
+
+  .sortable-drag {
+    opacity: 0.8;
+    transform: rotate(5deg);
+  }
+
+  .drag-handle {
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .client-card:hover .drag-handle {
+    opacity: 1;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .remote-update {
+    animation: remoteUpdatePulse 2s ease-in-out;
+    border: 2px solid #3b82f6;
+  }
+
+  @keyframes remoteUpdatePulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+</style>
