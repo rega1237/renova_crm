@@ -3,7 +3,7 @@ class ClientsController < ApplicationController
   before_action :set_client, only: %i[ show edit update destroy ]
 
   def index
-    @clients = Client.includes(:state, :seller).order(:name)
+    @clients = Client.includes(:state, :seller, :updated_by).order(:name)
 
     # Filtro por búsqueda de nombre
     if params[:query].present?
@@ -25,6 +25,11 @@ class ClientsController < ApplicationController
       @clients = @clients.where(state_id: params[:state_id])
     end
 
+    # Filtro por rango de fechas
+    if params[:date_from].present? || params[:date_to].present?
+      @clients = @clients.by_date_range(params[:date_from], params[:date_to])
+    end
+
     @clients = @clients.order(created_at: :desc)
   end
 
@@ -32,16 +37,13 @@ class ClientsController < ApplicationController
     @client = Client.find(params[:id])
   end
 
-  # GET /clients/new
   def new
     @client = Client.new
   end
 
-  # GET /clients/1/edit
   def edit
   end
 
-  # POST /clients
   def create
     @client = Client.new(client_params)
     if @client.save
@@ -51,7 +53,6 @@ class ClientsController < ApplicationController
     end
   end
 
-  # PATCH/PUT /clients/1
   def update
     if @client.update(client_params)
       redirect_to clients_path, notice: "Cliente actualizado exitosamente."
@@ -66,12 +67,17 @@ class ClientsController < ApplicationController
     new_status = params[:status]
 
     if @client.update(status: new_status)
+      # Reload para obtener los datos actualizados incluyendo updated_by
+      @client.reload
+
       # Broadcast del cambio via ActionCable
       ActionCable.server.broadcast(
         "sales_flow_channel",
         {
           action: "client_moved",
           client_id: @client.id,
+          client_name: @client.name,
+          updated_by_name: @client.updated_by&.name || "Usuario desconocido",
           old_status: old_status,
           new_status: new_status,
           client_html: render_to_string(

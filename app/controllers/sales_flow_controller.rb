@@ -1,4 +1,3 @@
-# app/controllers/sales_flow_controller.rb
 class SalesFlowController < ApplicationController
   before_action :set_filters, only: [ :index ]
 
@@ -19,6 +18,8 @@ class SalesFlowController < ApplicationController
     @status_filter = params[:status]
     @source_filter = params[:source]
     @state_filter = params[:state_id]
+    @date_from = params[:date_from]
+    @date_to = params[:date_to]
   end
 
   def load_clients_by_status
@@ -27,7 +28,7 @@ class SalesFlowController < ApplicationController
     clients_by_status = {}
 
     statuses.each do |status|
-      clients = Client.includes(:state, :seller, :notes)
+      clients = Client.includes(:state, :seller, :notes, :updated_by)
                      .where(status: status)
 
       # Aplicar filtros
@@ -35,7 +36,23 @@ class SalesFlowController < ApplicationController
       clients = clients.where(source: @source_filter) if @source_filter.present?
       clients = clients.where(state_id: @state_filter) if @state_filter.present?
 
-      clients_by_status[status] = clients.order(:name).limit(50) # Limitar para performance
+      # Aplicar filtro de fechas
+      if @date_from.present? || @date_to.present?
+        clients = clients.by_date_range(@date_from, @date_to)
+      end
+
+      # Ordenar por fecha relevante: leads por created_at, otros por updated_status_at
+      # Más nuevos primero (DESC)
+      if status == "lead"
+        clients = clients.order(created_at: :desc)
+      else
+        # Para no-leads, ordenar por updated_status_at, pero como fallback usar created_at si es null
+        clients = clients.order(
+          Arel.sql("COALESCE(updated_status_at, created_at) DESC")
+        )
+      end
+
+      clients_by_status[status] = clients.limit(50) # Limitar para performance
     end
 
     clients_by_status
