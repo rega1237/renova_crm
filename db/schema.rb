@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_18_100433) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_20_091137) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -21,14 +21,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_18_100433) do
     t.string "zip_code"
     t.integer "status", default: 0
     t.integer "source"
-    t.bigint "seller_id"
+    t.bigint "prospecting_seller_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "email"
     t.bigint "state_id"
     t.datetime "updated_status_at"
     t.integer "updated_by_id"
-    t.index ["seller_id"], name: "index_clients_on_seller_id"
+    t.bigint "assigned_seller_id"
+    t.index ["assigned_seller_id"], name: "index_clients_on_assigned_seller_id"
+    t.index ["prospecting_seller_id"], name: "index_clients_on_prospecting_seller_id"
     t.index ["state_id"], name: "index_clients_on_state_id"
     t.index ["updated_by_id"], name: "index_clients_on_updated_by_id"
     t.index ["updated_status_at"], name: "index_clients_on_updated_status_at"
@@ -98,7 +100,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_18_100433) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
-  add_foreign_key "clients", "sellers"
+  add_foreign_key "clients", "sellers", column: "assigned_seller_id"
+  add_foreign_key "clients", "sellers", column: "prospecting_seller_id"
   add_foreign_key "clients", "states"
   add_foreign_key "clients", "users", column: "updated_by_id"
   add_foreign_key "notes", "clients"
