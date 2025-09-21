@@ -79,7 +79,7 @@ class ClientsController < ApplicationController
       # Reload para obtener los datos actualizados incluyendo updated_by
       @client.reload
 
-      # Broadcast del cambio via ActionCable
+      # Broadcast del cambio via ActionCable con información adicional
       ActionCable.server.broadcast(
         "sales_flow_channel",
         {
@@ -89,6 +89,7 @@ class ClientsController < ApplicationController
           updated_by_name: @client.updated_by&.name || "Usuario desconocido",
           old_status: old_status,
           new_status: new_status,
+          updated_at: @client.updated_status_at || @client.updated_at, # Incluir timestamp
           client_html: render_to_string(
             partial: "sales_flow/client_card",
             locals: { client: @client },
@@ -97,7 +98,11 @@ class ClientsController < ApplicationController
         }
       )
 
-      render json: { status: "success", message: "Cliente actualizado correctamente" }
+      render json: {
+        status: "success",
+        message: "Cliente actualizado correctamente",
+        updated_at: @client.updated_status_at || @client.updated_at # Para el frontend
+      }
     else
       render json: { status: "error", errors: @client.errors.full_messages }
     end

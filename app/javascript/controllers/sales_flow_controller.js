@@ -6,6 +6,10 @@ export default class extends Controller {
   static targets = ["board", "column", "clientList"];
   static values = { userId: Number };
 
+  // =============================================
+  // MÉTODOS DE CONEXIÓN Y CONFIGURACIÓN INICIAL
+  // =============================================
+
   connect() {
     console.log("SalesFlow controller connected");
     this.initializeDragAndDrop();
@@ -17,7 +21,7 @@ export default class extends Controller {
     this.destroyDragAndDrop();
   }
 
-  // Metodo que se ejecuta cuando Turbo Frame actualiza el contenido
+  // Método que se ejecuta cuando Turbo Frame actualiza el contenido
   boardTargetConnected() {
     console.log("Board reconnected - reinitializing drag and drop");
     // Destruir instancias anteriores antes de crear nuevas
@@ -28,23 +32,9 @@ export default class extends Controller {
     }, 100);
   }
 
-  // Método para destruir instancias de Sortable existentes
-  destroyDragAndDrop() {
-    if (this.sortableInstances) {
-      this.sortableInstances.forEach((instance) => {
-        if (instance && instance.destroy) {
-          instance.destroy();
-        }
-      });
-      this.sortableInstances = [];
-    }
-  }
-
-  // Prevenir que el link se active cuando se hace click en el drag handle
-  preventLinkClick(event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
+  // =============================================
+  // MÉTODOS DE DRAG AND DROP
+  // =============================================
 
   // Inicializar funcionalidad de drag and drop
   initializeDragAndDrop() {
@@ -86,7 +76,29 @@ export default class extends Controller {
     );
   }
 
-  // Manejar el movimiento de cliente entre columnas (SIMPLIFICADO)
+  // Método para destruir instancias de Sortable existentes
+  destroyDragAndDrop() {
+    if (this.sortableInstances) {
+      this.sortableInstances.forEach((instance) => {
+        if (instance && instance.destroy) {
+          instance.destroy();
+        }
+      });
+      this.sortableInstances = [];
+    }
+  }
+
+  // Prevenir que el link se active cuando se hace click en el drag handle
+  preventLinkClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  // =============================================
+  // MÉTODOS DE MOVIMIENTO DE CLIENTES
+  // =============================================
+
+  // Manejar el movimiento de cliente entre columnas
   handleClientMove(evt) {
     const clientCard = evt.item;
     const clientId =
@@ -120,6 +132,31 @@ export default class extends Controller {
     this.updateClientStatus(clientId, newStatus, oldStatus);
   }
 
+  // Revertir movimiento en caso de error
+  revertClientMove(clientId, originalStatus) {
+    const clientCard =
+      document
+        .querySelector(`[data-client-id="${clientId}"]`)
+        ?.closest(".client-card") ||
+      document.querySelector(`a[href*="${clientId}"]`);
+    const originalColumn = document.querySelector(
+      `[data-status="${originalStatus}"] [data-sales-flow-target="clientList"]`
+    );
+
+    if (clientCard && originalColumn) {
+      originalColumn.appendChild(clientCard);
+      const statusElement =
+        clientCard.querySelector("[data-client-status]") || clientCard;
+      if (statusElement) {
+        statusElement.dataset.clientStatus = originalStatus;
+      }
+    }
+  }
+
+  // =============================================
+  // MÉTODOS DE ACTUALIZACIÓN DEL SERVIDOR
+  // =============================================
+
   // Actualizar status del cliente en el servidor
   async updateClientStatus(clientId, newStatus, oldStatus) {
     try {
@@ -138,7 +175,22 @@ export default class extends Controller {
 
       if (result.status === "success") {
         console.log("Cliente actualizado correctamente");
+
+        // Actualizar el timestamp en el card para el ordenamiento correcto
+        const clientCard = document
+          .querySelector(`[data-client-id="${clientId}"]`)
+          ?.closest(".client-card");
+        if (clientCard) {
+          // Actualizar con el timestamp actual para que aparezca primero
+          clientCard.dataset.updatedAt = new Date().toISOString();
+        }
+
         this.updateColumnCounts();
+        // Reorganizar para colocar el elemento movido en la posición correcta
+        setTimeout(() => {
+          this.reorganizeColumnsByDate();
+        }, 200);
+
         // Limpiar el movimiento local después de un tiempo para permitir que el broadcast se procese
         setTimeout(() => {
           if (this.localMoves) {
@@ -156,6 +208,92 @@ export default class extends Controller {
     }
   }
 
+  // =============================================
+  // MÉTODOS DE ORGANIZACIÓN Y ORDENAMIENTO
+  // =============================================
+
+  // Reorganizar elementos por fecha
+  reorganizeColumnsByDate() {
+    this.columnTargets.forEach((column) => {
+      const status = column.dataset.status;
+      const clientList = column.querySelector(
+        '[data-sales-flow-target="clientList"]'
+      );
+      if (!clientList) return;
+
+      const clientCards = Array.from(
+        clientList.querySelectorAll(".client-card, a[data-client-id]")
+      );
+
+      // Ordenar por fecha según el tipo de estado
+      clientCards.sort((a, b) => {
+        const dateA = this.getCardDate(a, status);
+        const dateB = this.getCardDate(b, status);
+        return dateB - dateA; // Más recientes primero
+      });
+
+      // Reorganizar en el DOM
+      clientCards.forEach((card) => {
+        clientList.appendChild(card);
+      });
+    });
+  }
+
+  // Encontrar la posición correcta para insertar un elemento
+  findCorrectInsertPosition(column, newCard, status) {
+    const existingCards = Array.from(
+      column.querySelectorAll(".client-card, a[data-client-id]")
+    );
+    const newCardDate = this.getCardDate(newCard, status);
+
+    // Para leads, ordenar por created_at (más nuevos primero)
+    // Para otros estados, ordenar por updated_at (más nuevos primero)
+    for (let existingCard of existingCards) {
+      const existingCardDate = this.getCardDate(existingCard, status);
+
+      // Si la nueva tarjeta es más reciente, insertarla antes de esta
+      if (newCardDate > existingCardDate) {
+        return existingCard;
+      }
+    }
+
+    // Si no encontró una posición, el elemento va al final
+    return null;
+  }
+
+  // Obtener fecha de una tarjeta para comparación
+  getCardDate(card, status) {
+    // Primero verificar si hay un timestamp en el dataset
+    if (card.dataset.updatedAt) {
+      return new Date(card.dataset.updatedAt);
+    }
+
+    // Extraer fecha del contenido de la tarjeta
+    const dateText = card.querySelector(
+      '[class*="text-gray-400"]'
+    )?.textContent;
+
+    if (dateText && dateText.includes("Creado:")) {
+      const dateMatch = dateText.match(/\d{2}\/\d{2}/);
+      if (dateMatch) {
+        const [day, month] = dateMatch[0].split("/");
+        return new Date(new Date().getFullYear(), month - 1, day);
+      }
+    }
+
+    // Si es status "lead", usar created_at; para otros, usar el timestamp actual como fallback
+    if (status === "lead") {
+      return new Date(0); // Fecha antigua para leads sin fecha específica
+    } else {
+      return new Date(); // Fecha actual para otros estados
+    }
+  }
+
+  // =============================================
+  // MÉTODOS DE CONTADORES Y UI
+  // =============================================
+
+  // Actualizar contadores de las columnas
   updateColumnCounts() {
     this.columnTargets.forEach((column) => {
       const status = column.dataset.status;
@@ -193,7 +331,32 @@ export default class extends Controller {
     });
   }
 
-  // Metodo para manejar el mensaje de "Sin clientes" en las columnas
+  // Método auxiliar para actualizar el badge
+  updateColumnBadge(column, status, count) {
+    // Buscar el badge de múltiples formas posibles
+    const statusColor = this.getStatusColor(status);
+    let badge =
+      column.querySelector(`.bg-${statusColor}-100`) ||
+      column.querySelector("[data-count-badge]") ||
+      column.querySelector(".badge") ||
+      column.querySelector(".count-badge");
+
+    if (badge) {
+      badge.textContent = count;
+    } else {
+      // Si no encuentra el badge, buscar por texto que contenga números
+      const allElements = column.querySelectorAll("*");
+      for (let element of allElements) {
+        const text = element.textContent.trim();
+        if (/^\d+$/.test(text) && element.children.length === 0) {
+          element.textContent = count;
+          break;
+        }
+      }
+    }
+  }
+
+  // Método para manejar el mensaje de "Sin clientes" en las columnas
   updateEmptyStateMessage(column, count) {
     // Buscar el mensaje de "Sin clientes" primera forma
     let emptyMessage = null;
@@ -273,31 +436,6 @@ export default class extends Controller {
     });
   }
 
-  // Método auxiliar para actualizar el badge
-  updateColumnBadge(column, status, count) {
-    // Buscar el badge de múltiples formas posibles
-    const statusColor = this.getStatusColor(status);
-    let badge =
-      column.querySelector(`.bg-${statusColor}-100`) ||
-      column.querySelector("[data-count-badge]") ||
-      column.querySelector(".badge") ||
-      column.querySelector(".count-badge");
-
-    if (badge) {
-      badge.textContent = count;
-    } else {
-      // Si no encuentra el badge, buscar por texto que contenga números
-      const allElements = column.querySelectorAll("*");
-      for (let element of allElements) {
-        const text = element.textContent.trim();
-        if (/^\d+$/.test(text) && element.children.length === 0) {
-          element.textContent = count;
-          break;
-        }
-      }
-    }
-  }
-
   // Obtener color del status
   getStatusColor(status) {
     const colors = {
@@ -313,26 +451,9 @@ export default class extends Controller {
     return colors[status] || "gray";
   }
 
-  // Revertir movimiento en caso de error
-  revertClientMove(clientId, originalStatus) {
-    const clientCard =
-      document
-        .querySelector(`[data-client-id="${clientId}"]`)
-        ?.closest(".client-card") ||
-      document.querySelector(`a[href*="${clientId}"]`);
-    const originalColumn = document.querySelector(
-      `[data-status="${originalStatus}"] [data-sales-flow-target="clientList"]`
-    );
-
-    if (clientCard && originalColumn) {
-      originalColumn.appendChild(clientCard);
-      const statusElement =
-        clientCard.querySelector("[data-client-status]") || clientCard;
-      if (statusElement) {
-        statusElement.dataset.clientStatus = originalStatus;
-      }
-    }
-  }
+  // =============================================
+  // MÉTODOS DE WEBSOCKET Y TIEMPO REAL
+  // =============================================
 
   // Conectar WebSocket para actualizaciones en tiempo real
   connectWebSocket() {
@@ -420,8 +541,22 @@ export default class extends Controller {
       tempDiv.innerHTML = client_html;
       const newCard = tempDiv.firstElementChild;
 
-      // Agregar la nueva tarjeta a la columna de destino (temporalmente al final)
-      newColumn.appendChild(newCard);
+      // Agregar timestamp actual para ordenamiento correcto
+      newCard.dataset.updatedAt = new Date().toISOString();
+
+      // Encontrar la posición correcta para insertar el elemento
+      const insertPosition = this.findCorrectInsertPosition(
+        newColumn,
+        newCard,
+        new_status
+      );
+
+      if (insertPosition) {
+        newColumn.insertBefore(newCard, insertPosition);
+      } else {
+        // Si no hay posición específica, insertar al principio (más reciente)
+        newColumn.insertBefore(newCard, newColumn.firstChild);
+      }
 
       // Agregar efecto visual para indicar que fue actualizado remotamente
       newCard.classList.add("remote-update");
@@ -430,15 +565,16 @@ export default class extends Controller {
       }, 2000);
     }
 
-    // Actualizar contadores y reorganizar por fecha
+    // Actualizar contadores
     this.updateColumnCounts();
-    setTimeout(() => {
-      this.reorganizeColumnsByDate();
-    }, 100);
 
     // Mostrar notificación sutil
     this.showRemoteUpdateNotification(data);
   }
+
+  // =============================================
+  // MÉTODOS DE NOTIFICACIONES
+  // =============================================
 
   // Mostrar notificación de actualización remota
   showRemoteUpdateNotification(data) {
@@ -479,48 +615,5 @@ export default class extends Controller {
         }
       }, 300);
     }, 4000);
-  }
-
-  // Reorganizar elementos por fecha (método que faltaba pero se usa en el código)
-  reorganizeColumnsByDate() {
-    this.columnTargets.forEach((column) => {
-      const clientList = column.querySelector(
-        '[data-sales-flow-target="clientList"]'
-      );
-      if (!clientList) return;
-
-      const clientCards = Array.from(
-        clientList.querySelectorAll(".client-card, a[data-client-id]")
-      );
-
-      // Ordenar por fecha de creación (más recientes primero)
-      clientCards.sort((a, b) => {
-        const dateA = this.extractDateFromCard(a);
-        const dateB = this.extractDateFromCard(b);
-        return dateB - dateA; // Más recientes primero
-      });
-
-      // Reorganizar en el DOM
-      clientCards.forEach((card) => {
-        clientList.appendChild(card);
-      });
-    });
-  }
-
-  // Extraer fecha de la tarjeta para ordenamiento
-  extractDateFromCard(card) {
-    // Buscar fecha en el texto de la tarjeta
-    const dateText = card.querySelector(
-      '[class*="text-gray-400"]'
-    )?.textContent;
-    if (dateText && dateText.includes("Creado:")) {
-      const dateMatch = dateText.match(/\d{2}\/\d{2}/);
-      if (dateMatch) {
-        // Convertir fecha DD/MM a objeto Date
-        const [day, month] = dateMatch[0].split("/");
-        return new Date(new Date().getFullYear(), month - 1, day);
-      }
-    }
-    return new Date(0); // Fecha por defecto si no se encuentra
   }
 }
