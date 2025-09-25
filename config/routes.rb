@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "pages/privacy"
   # --- Action Cable ---
   mount ActionCable.server => "/cable"
 
@@ -34,6 +35,21 @@ Rails.application.routes.draw do
 
   # --- Ruta para Actualizar Status via Drag & Drop ---
   patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"
+
+  # --- RUTAS PARA LA AUTORIZACIÓN DE FACEBOOK (OAuth) ---
+  namespace :facebook do
+    get "auth", to: "authorizations#new"
+    get "auth/callback", to: "authorizations#create"
+    post "save_page_selection", to: "authorizations#save_page_selection"
+  end
+
+  # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
+  namespace :api do
+    namespace :facebook do
+      get "webhooks", to: "webhooks#verify"
+      post "webhooks", to: "webhooks#receive"
+    end
+  end
 
   # --- Rutas Principales y de Sistema ---
   get "up" => "rails/health#show", as: :rails_health_check
