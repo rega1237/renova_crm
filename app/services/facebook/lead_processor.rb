@@ -17,8 +17,31 @@ class Facebook::LeadProcessor
       return
     end
 
-    Client.create!(client_attributes)
-    puts "¡Nuevo cliente '#{client_attributes[:name]}' creado exitosamente!"
+    # 1. Creamos el cliente y lo guardamos en una variable
+    new_client = Client.new(client_attributes)
+
+    if new_client.save
+      puts "¡Nuevo cliente '#{new_client.name}' creado exitosamente!"
+
+      # 2. Renderizamos el HTML de la tarjeta del cliente
+      client_html = ApplicationController.render(
+        partial: "sales_flow/client_card",
+        locals: { client: new_client }
+      )
+
+      # 3. Hacemos el broadcast por Action Cable
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "new_lead_created", # Una acción nueva y específica
+          client_name: new_client.name,
+          client_html: client_html
+        }
+      )
+    else
+      puts "Error al crear el cliente: #{new_client.errors.full_messages.join(', ')}"
+    end
+
   rescue Koala::Facebook::APIError => e
     puts "Error de la API de Facebook: #{e.message}"
   end
@@ -30,7 +53,8 @@ class Facebook::LeadProcessor
   end
 
   def map_fields(fields)
-    mapped_attributes = { source: :meta }
+    # El valor por defecto para un nuevo lead de Meta debe ser 'lead'
+    mapped_attributes = { source: :meta, status: :lead }
 
     fields.each do |field|
       case field["name"]

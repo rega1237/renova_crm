@@ -497,6 +497,8 @@ export default class extends Controller {
     console.log("Received broadcast:", data);
     if (data.action === "client_moved") {
       this.handleRemoteClientMove(data);
+    } else if (data.action === "new_lead_created") {
+      this.handleNewLead(data);
     }
   }
 
@@ -572,29 +574,67 @@ export default class extends Controller {
     this.showRemoteUpdateNotification(data);
   }
 
+  // Metodo para manejar el broadcast del nuevo lead y insertarlo
+  handleNewLead(data) {
+    const { client_html } = data;
+
+    const leadColumnList = this.element.querySelector(
+      '[data-status="lead"] [data-sales-flow-target="clientList"]'
+    );
+
+    if (leadColumnList) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = client_html.trim();
+
+      const newCard = tempDiv.firstElementChild; 
+
+      if (newCard) {
+        leadColumnList.prepend(newCard);
+
+        newCard.classList.add("remote-update");
+        setTimeout(() => {
+          newCard.classList.remove("remote-update");
+        }, 2500);
+
+        this.updateColumnCounts();
+        this.showRemoteUpdateNotification(data);
+      }
+    }
+  }
+
   // =============================================
   // MÉTODOS DE NOTIFICACIONES
   // =============================================
 
   // Mostrar notificación de actualización remota
   showRemoteUpdateNotification(data) {
-    const { client_name, updated_by_name, new_status } = data;
+    let title = "";
+    let message = "";
+    let bgColor = "bg-blue-500"; // Color por defecto para movimientos
+
+    if (data.action === "client_moved") {
+      title = `Cliente ${data.client_name}`;
+      message = `Movido a ${data.new_status.replace("_", " ")} por ${
+        data.updated_by_name
+      }`;
+    } else if (data.action === "new_lead_created") {
+      title = "¡Nuevo Lead!";
+      message = `${data.client_name} ha entrado desde Meta.`;
+      bgColor = "bg-green-500"; // Color verde para nuevos leads
+    }
 
     // Crear notificación temporal
     const notification = document.createElement("div");
-    notification.className =
-      "fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full";
+    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+
     notification.innerHTML = `
       <div class="flex items-center space-x-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
         <div class="flex flex-col">
-          <span class="text-sm font-medium">Cliente ${client_name}</span>
-          <span class="text-xs opacity-90">Movido a ${new_status.replace(
-            "_",
-            " "
-          )} por ${updated_by_name}</span>
+          <span class="text-sm font-medium">${title}</span>
+          <span class="text-xs opacity-90">${message}</span>
         </div>
       </div>
     `;
