@@ -21,12 +21,12 @@
     <%= javascript_importmap_tags %>
   </head>
   <body class="bg-humo min-h-screen">
-    <div class="container mx-auto px-4">
-      <% if alert = flash[:alert] %>
-        <p class="py-3 px-4 bg-red-50 text-red-700 font-montserrat font-medium rounded-lg text-center" id="alert"><%= alert %></p>
-      <% end %>
+    <div class="fixed top-5 right-5 z-[100] w-full max-w-sm space-y-3">
       <% if notice = flash[:notice] %>
-        <p class="py-3 px-4 bg-green-50 text-green-700 font-montserrat font-medium rounded-lg text-center" id="notice"><%= notice %></p>
+        <%= render 'shared/flash_message', type: 'notice', message: notice %>
+      <% end %>
+      <% if alert = flash[:alert] %>
+        <%= render 'shared/flash_message', type: 'alert', message: alert %>
       <% end %>
     </div>
 
