@@ -115,15 +115,19 @@ class ClientsController < ApplicationController
     if @client.update(assigned_seller_id: params[:client][:assigned_seller_id])
       Rails.logger.info "Update exitoso"
 
+      # Renderizamos el HTML de la tarjeta actualizada para el broadcast
+      client_html = ApplicationController.render(
+        partial: "sales_flow/client_card",
+        locals: { client: @client }
+      )
+
       ActionCable.server.broadcast(
         "sales_flow_channel",
         {
           action: "assigned_seller_updated",
           client_id: @client.id,
-          client_name: @client.name,
-          old_seller: old_assigned_seller&.name || "Sin asignar",
-          new_seller: @client.assigned_seller&.name || "Sin asignar",
-          updated_by_name: Current.user&.name || "Usuario desconocido"
+          new_seller_name: @client.assigned_seller&.name || "Sin asignar",
+          client_html: client_html
         }
       )
 

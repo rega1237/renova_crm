@@ -499,6 +499,8 @@ export default class extends Controller {
       this.handleRemoteClientMove(data);
     } else if (data.action === "new_lead_created") {
       this.handleNewLead(data);
+    } else if (data.action === "assigned_seller_updated") {
+      this.handleSellerUpdate(data);
     }
   }
 
@@ -586,7 +588,7 @@ export default class extends Controller {
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = client_html.trim();
 
-      const newCard = tempDiv.firstElementChild; 
+      const newCard = tempDiv.firstElementChild;
 
       if (newCard) {
         leadColumnList.prepend(newCard);
@@ -598,6 +600,34 @@ export default class extends Controller {
 
         this.updateColumnCounts();
         this.showRemoteUpdateNotification(data);
+      }
+    }
+  }
+
+  // Metodo para manejar broadcast cuando se asigna un vendedor a un cliente
+  handleSellerUpdate(data) {
+    const { client_id, client_html } = data;
+
+    // 1. Buscar la tarjeta del cliente actual en el tablero
+    const currentCard = this.element.querySelector(
+      `.client-card[data-client-id="${client_id}"]`
+    );
+
+    if (currentCard) {
+      // 2. Crear el nuevo elemento de la tarjeta desde el HTML recibido
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = client_html.trim();
+      const newCard = tempDiv.firstElementChild;
+
+      if (newCard) {
+        // 3. Reemplazar la tarjeta antigua por la nueva
+        currentCard.replaceWith(newCard);
+
+        // 4. Aplicar un efecto visual para destacar el cambio
+        newCard.classList.add("remote-update");
+        setTimeout(() => {
+          newCard.classList.remove("remote-update");
+        }, 2500);
       }
     }
   }
