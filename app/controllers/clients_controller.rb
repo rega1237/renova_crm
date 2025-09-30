@@ -99,9 +99,9 @@ class ClientsController < ApplicationController
     if %w[state_id prospecting_seller_id assigned_seller_id].include?(field)
       case field
       when "state_id"
-        valid_model = State.exists?(value) if value.present?
+        valid_model = State.exists?(id: value) if value.present?
       when "prospecting_seller_id", "assigned_seller_id"
-        valid_model = Seller.exists?(value) if value.present?
+        valid_model = Seller.exists?(id: value) if value.present?
       end
 
       unless valid_model || value.blank?
