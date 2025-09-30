@@ -2,48 +2,52 @@
     method: :patch, 
     local: false,
     class: "space-y-2 font-montserrat" do |form| %>
-    
   <!-- Campo oculto para enviar el valor del campo específico -->
   <% case field %>
-  <% when 'name', 'phone', 'email', 'address', 'zip_code' %>
+  <% when 'name', 'phone', 'email', 'zip_code' %>
     <%= text_field_tag field, client.send(field),
         class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
-        
+  <% when 'address' %>
+    <div data-controller="address-autocomplete">
+      <%= text_field_tag field, client.send(field),
+          class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm",
+          data: {
+            address_autocomplete_target: "input",
+            action: "input->address-autocomplete#search"
+          } %>
+      <%# Contenedor para mostrar los resultados %>
+      <div data-address-autocomplete-target="results" class="hidden absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1"></div>
+    </div>
   <% when 'state_id' %>
     <%= select_tag field,
         options_from_collection_for_select(State.ordered, 'id', 'display_name_with_abbreviation', client.state_id),
         { include_blank: 'Seleccionar estado...', 
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
-        
   <% when 'status' %>
     <%= select_tag field,
         options_for_select(Client.statuses.keys.map { |s| [s.humanize, s] }, client.status),
         { 
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm"
         } %>
-        
   <% when 'source' %>
     <%= select_tag field,
         options_for_select(Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, client.source),
         { 
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm"
         } %>
-        
   <% when 'prospecting_seller_id', 'assigned_seller_id' %>
     <%= select_tag field,
         options_from_collection_for_select(Seller.order(:name), 'id', 'name', client.send(field.to_sym)),
         { include_blank: 'Sin asignar', 
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
-        
   <% end %>
-  
   <div class="flex items-center space-x-2 mt-2">
     <%= form.submit "Guardar", 
         class: "px-3 py-1 bg-rojo-carmesi text-white text-xs font-medium rounded hover:opacity-90 transition-opacity" %>
     <button type="button" 
             type="button"
             data-action="click->client-inline-edit#cancelEdit"
-            class="px-3 py-1 bg-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-400 transition-colors">
+      class="px-3 py-1 bg-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-400 transition-colors">
       Cancelar
     </button>
   </div>
