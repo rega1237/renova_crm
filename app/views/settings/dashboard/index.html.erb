@@ -2,7 +2,6 @@
   <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-8">
     Configuración del Sistema
   </h1>
-
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
     <%= link_to admin_users_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
       <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
@@ -12,7 +11,7 @@
         Crea, edita y administra las cuentas de los usuarios que acceden a la aplicación.
       </p>
     <% end %>
-
+    
     <%= link_to settings_sellers_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
       <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
         Gestionar Vendedores
@@ -39,5 +38,22 @@
         Añade nuevos estados o visualiza la lista de los existentes en el sistema.
       </p>
     <% end %>
+
+    <div class="block bg-white p-8 rounded-xl shadow-md">
+      <% if @facebook_integration&.persisted? %>
+        <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Conectado a Facebook</h2>
+        <p class="font-montserrat text-negro-onix mt-2">
+          Conectado a la página: <strong><%= @facebook_integration.page_name %></strong>.
+        </p>
+      <% else %>
+        <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Conectar con Facebook</h2>
+        <p class="font-montserrat text-negro-onix mt-2">
+          Conecta tu página para recibir los leads de tus campañas directamente en el CRM.
+        </p>
+        <div class="mt-4">
+          <%= link_to "Conectar mi Página", facebook_auth_path, class: "bg-blue-600 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90" %>
+        </div>
+      <% end %>
+    </div>
   </div>
 </div>

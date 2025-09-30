@@ -1,0 +1,22 @@
+<div class="flex items-center justify-center min-h-screen">
+  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-lg">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-poppins font-bold text-negro-onix">
+        Selecciona tu Página
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600 font-montserrat">
+        Elige la página de Facebook que quieres conectar al CRM.
+      </p>
+    </div>
+    <div class="mt-8 space-y-4">
+      <% session[:facebook_pages].each do |page| %>
+        <%= button_to facebook_save_page_selection_path(page_id: page['id']), method: :post, class: "w-full" do %>
+          <div class="w-full text-left p-4 border rounded-lg hover:bg-humo transition-colors">
+            <p class="font-poppins font-semibold text-negro-onix"><%= page['name'] %></p>
+            <p class="font-montserrat text-xs text-gray-500">ID: <%= page['id'] %></p>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

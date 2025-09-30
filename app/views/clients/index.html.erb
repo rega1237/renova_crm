@@ -5,7 +5,6 @@
     </h1>
     <%= link_to "Nuevo Cliente", new_client_path, class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
   </div>
-
   <div class="mb-8">
     <%= form_with url: clients_path, method: :get, class: "bg-white p-4 rounded-xl shadow-md" do |form| %>
       <div class="flex flex-col lg:flex-row items-center gap-4">
@@ -13,29 +12,23 @@
         <div class="w-full lg:w-80">
           <%= text_field_tag :query, params[:query], class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", placeholder: "Buscar por nombre..." %>
         </div>
-        
         <!-- Filtros de selección -->
         <div class="w-full lg:w-auto">
           <%= select_tag :status, options_for_select(Client.statuses.keys.map { |s| [s.humanize, s] }, params[:status]), include_blank: 'Todos los Estados del Cliente', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
-        
         <div class="w-full lg:w-auto">
           <%= select_tag :source, options_for_select(Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, params[:source]), include_blank: 'Todas las Fuentes', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
-        
         <div class="w-full lg:w-auto">
           <%= select_tag :state_id, options_from_collection_for_select(State.ordered, :id, :display_name_with_abbreviation, params[:state_id]), include_blank: 'Todos los Estados', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
-        
         <!-- Filtro campos de fecha -->
         <div class="w-full lg:w-auto">
           <%= date_field_tag :date_from, params[:date_from], class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", placeholder: "Fecha desde" %>
         </div>
-        
         <div class="w-full lg:w-auto">
           <%= date_field_tag :date_to, params[:date_to], class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", placeholder: "Fecha hasta" %>
         </div>
-        
         <!-- Botones -->
         <div class="flex items-center gap-2 w-full lg:w-auto">
           <%= form.submit "Filtrar", class: "bg-negro-onix text-white font-poppins font-semibold py-2 px-4 rounded-lg cursor-pointer hover:opacity-90 transition-opacity" %>
@@ -44,7 +37,6 @@
       </div>
     <% end %>
   </div>
-
   <div class="bg-white rounded-xl shadow-md">
     <ul class="divide-y divide-gray-200">
       <% if @clients.any? %>
@@ -66,6 +58,43 @@
                     </span>
                   <% end %>
                 </div>
+
+                <!-- Indicador de que necesita vendedor asignado -->
+                <div class="mt-0.5">
+                <% if client.assigned_seller.present? %>
+                  <!-- Vendedor asignado (más importante para el flujo de ventas) -->
+                  <div class="flex items-center">
+                    <svg class="w-3 h-3 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="font-montserrat text-xs text-green-700 truncate">
+                      Asignado: <%= client.assigned_seller.name %>
+                    </span>
+                  </div>
+                <% elsif client.requires_assigned_seller? %>
+                  <!-- Indicador de que necesita vendedor asignado -->
+                  <div class="flex items-center">
+                    <svg class="w-3 h-3 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-montserrat text-xs text-yellow-600">
+                      Necesita vendedor
+                    </span>
+                  </div>
+                <% elsif client.prospecting_seller.present? %>
+                  <!-- Vendedor que generó el prospecto -->
+                  <div class="flex items-center">
+                    <svg class="w-3 h-3 text-blue-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="font-montserrat text-xs text-blue-600 truncate">
+                      Prospecto: <%= client.prospecting_seller.name %>
+                    </span>
+                  </div>
+                <% end %>
+                </div>
+
+
                 <!-- Información adicional de fechas -->
                 <div class="flex items-center gap-2 mt-1">
                   <% if client.status == 'lead' %>
@@ -125,5 +154,4 @@
     </ul>
   </div>
 </div>
-
 <%= turbo_frame_tag "slideover" %>

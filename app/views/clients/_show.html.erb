@@ -47,105 +47,249 @@
         </div>
       </div>
     </div>
-    <div class="relative flex-1 p-6 space-y-6 overflow-y-auto">
+    <div class="relative flex-1 p-6 space-y-6 overflow-y-auto" data-controller="client-inline-edit">
+      <!-- Nombre -->
       <div>
-        <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Nombre</h3>
-        <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.name %></p>
+        <div class="flex items-center justify-between">
+          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Nombre</h3>
+          <button type="button" 
+                  data-action="click->client-inline-edit#toggleEdit"
+                  data-field="name"
+                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            Editar
+          </button>
+        </div>
+        <div id="client_name_display" data-client-inline-edit-target="display" data-field="name">
+          <p class="font-montserrat text-lg text-negro-onix mt-1"><%= client.name %></p>
+        </div>
+        <div data-client-inline-edit-target="editForm" data-field="name" class="hidden mt-1">
+          <%= render 'field_edit_form', client: client, field: 'name' %>
+        </div>
       </div>
+      
+      <!-- Teléfono -->
       <div>
-        <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Teléfono</h3>
-        <p class="font-montserrat text-lg text-negro-onix mt-1">
-          <% if client.phone.present? %>
-            <%= client.phone %>
-          <% else %>
-            <span class="text-gray-400 italic">No especificado</span>
-          <% end %>
-        </p>
-      </div>
-      <div>
-        <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Email</h3>
-        <p class="font-montserrat text-lg text-negro-onix mt-1">
-          <% if client.email.present? %>
-            <%= client.email %>
-          <% else %>
-            <span class="text-gray-400 italic">No especificado</span>
-          <% end %>
-        </p>
-      </div>
-      <div>
-        <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Dirección</h3>
-        <p class="font-montserrat text-lg text-negro-onix mt-1">
-          <% if client.address.present? %>
-            <%= client.address %>
-          <% else %>
-            <span class="text-gray-400 italic">No especificada</span>
-          <% end %>
-        </p>
-      </div>
-      <!-- Código Postal y Estado  -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Código Postal</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Teléfono</h3>
+          <button type="button" 
+                  data-action="click->client-inline-edit#toggleEdit"
+                  data-field="phone"
+                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            Editar
+          </button>
+        </div>
+        <div id="client_phone_display" data-client-inline-edit-target="display" data-field="phone">
           <p class="font-montserrat text-lg text-negro-onix mt-1">
-            <% if client.zip_code.present? %>
-              <%= client.zip_code %>
+            <% if client.phone.present? %>
+              <%= client.phone %>
             <% else %>
               <span class="text-gray-400 italic">No especificado</span>
             <% end %>
           </p>
         </div>
-        <div>
-          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Estado</h3>
+        <div data-client-inline-edit-target="editForm" data-field="phone" class="hidden mt-1">
+          <%= render 'field_edit_form', client: client, field: 'phone' %>
+        </div>
+      </div>
+      
+      <!-- Email -->
+      <div>
+        <div class="flex items-center justify-between">
+          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Email</h3>
+          <button type="button" 
+                  data-action="click->client-inline-edit#toggleEdit"
+                  data-field="email"
+                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            Editar
+          </button>
+        </div>
+        <div id="client_email_display" data-client-inline-edit-target="display" data-field="email">
           <p class="font-montserrat text-lg text-negro-onix mt-1">
-            <% if client.state.present? %>
-              <%= client.state %>
+            <% if client.email.present? %>
+              <%= client.email %>
             <% else %>
               <span class="text-gray-400 italic">No especificado</span>
             <% end %>
           </p>
         </div>
-      </div>
-      <!-- Estado del Cliente y Fuente  -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Estado del Cliente</h3>
-          <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full font-montserrat mt-1
-            <% case client.status %>
-            <% when 'lead' %>
-              bg-blue-100 text-blue-800
-            <% when 'no_contesto' %>
-              bg-gray-100 text-gray-800
-            <% when 'seguimiento' %>
-              bg-yellow-100 text-yellow-800
-            <% when 'cita_agendada' %>
-              bg-purple-100 text-purple-800
-            <% when 'reprogramar' %>
-              bg-orange-100 text-orange-800
-            <% when 'vendido' %>
-              bg-green-100 text-green-800
-            <% when 'mal_credito' %>
-              bg-red-100 text-red-800
-            <% when 'no_cerro' %>
-              bg-red-100 text-red-800
-            <% else %>
-              bg-gray-100 text-gray-800
-            <% end %>">
-            <%= client.status.humanize %>
-          </span>
+        <div data-client-inline-edit-target="editForm" data-field="email" class="hidden mt-1">
+          <%= render 'field_edit_form', client: client, field: 'email' %>
         </div>
+      </div>
+      
+      <!-- Dirección -->
+      <div>
+        <div class="flex items-center justify-between">
+          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Dirección</h3>
+          <button type="button" 
+                  data-action="click->client-inline-edit#toggleEdit"
+                  data-field="address"
+                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            Editar
+          </button>
+        </div>
+        <div id="client_address_display" data-client-inline-edit-target="display" data-field="address">
+          <p class="font-montserrat text-lg text-negro-onix mt-1">
+            <% if client.address.present? %>
+              <%= client.address %>
+            <% else %>
+              <span class="text-gray-400 italic">No especificada</span>
+            <% end %>
+          </p>
+        </div>
+        <div data-client-inline-edit-target="editForm" data-field="address" class="hidden mt-1">
+          <%= render 'field_edit_form', client: client, field: 'address' %>
+        </div>
+      </div>
+      
+      <!-- Código Postal y Estado -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Código Postal -->
         <div>
-          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Fuente</h3>
-          <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat mt-1">
-            <%= client.source.humanize.gsub('_', ' ') %>
-          </span>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Código Postal</h3>
+            <button type="button" 
+                    data-action="click->client-inline-edit#toggleEdit"
+                    data-field="zip_code"
+                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_zip_code_display" data-client-inline-edit-target="display" data-field="zip_code">
+            <p class="font-montserrat text-lg text-negro-onix mt-1">
+              <% if client.zip_code.present? %>
+                <%= client.zip_code %>
+              <% else %>
+                <span class="text-gray-400 italic">No especificado</span>
+              <% end %>
+            </p>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="zip_code" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'zip_code' %>
+          </div>
+        </div>
+        
+        <!-- Estado -->
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Estado</h3>
+            <button type="button" 
+                    data-action="click->client-inline-edit#toggleEdit"
+                    data-field="state_id"
+                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_state_id_display" data-client-inline-edit-target="display" data-field="state_id">
+            <p class="font-montserrat text-lg text-negro-onix mt-1">
+              <% if client.state.present? %>
+                <%= client.state %>
+              <% else %>
+                <span class="text-gray-400 italic">No especificado</span>
+              <% end %>
+            </p>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="state_id" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'state_id' %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Estado del Cliente y Fuente -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Estado del Cliente -->
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Estado del Cliente</h3>
+            <button type="button" 
+                    data-action="click->client-inline-edit#toggleEdit"
+                    data-field="status"
+                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_status_display" data-client-inline-edit-target="display" data-field="status">
+            <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full font-montserrat mt-1
+              <% case client.status %>
+              <% when 'lead' %>
+                bg-blue-100 text-blue-800
+              <% when 'no_contesto' %>
+                bg-gray-100 text-gray-800
+              <% when 'seguimiento' %>
+                bg-yellow-100 text-yellow-800
+              <% when 'cita_agendada' %>
+                bg-purple-100 text-purple-800
+              <% when 'reprogramar' %>
+                bg-orange-100 text-orange-800
+              <% when 'vendido' %>
+                bg-green-100 text-green-800
+              <% when 'mal_credito' %>
+                bg-red-100 text-red-800
+              <% when 'no_cerro' %>
+                bg-red-100 text-red-800
+              <% else %>
+                bg-gray-100 text-gray-800
+              <% end %>">
+              <%= client.status.humanize %>
+            </span>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="status" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'status' %>
+          </div>
+        </div>
+        
+        <!-- Fuente -->
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Fuente</h3>
+            <button type="button" 
+                    data-action="click->client-inline-edit#toggleEdit"
+                    data-field="source"
+                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_source_display" data-client-inline-edit-target="display" data-field="source">
+            <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat mt-1">
+              <%= client.source.humanize.gsub('_', ' ') %>
+            </span>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="source" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'source' %>
+          </div>
         </div>
       </div>
       <!-- Vendedor que generó prospecto y Vendedor asignado -->
-      <% if client.prospecting_seller.present? || client.assigned_seller.present? || client.requires_assigned_seller? %>
-        <div data-controller="assigned-seller-form">
-          <%= render 'assigned_seller_section', client: client %>
-        </div>
-      <% end %>
+      <div class="pt-4 border-t border-gray-200">
+        <% if client.prospecting_seller.present? || client.requires_prospecting_seller? %>
+          <div class="mb-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor que generó prospecto</h3>
+              <button type="button" 
+                      data-action="click->client-inline-edit#toggleEdit"
+                      data-field="prospecting_seller_id"
+                      class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+                Editar
+              </button>
+            </div>
+            <div id="client_prospecting_seller_id_display" data-client-inline-edit-target="display" data-field="prospecting_seller_id">
+              <p class="font-montserrat text-lg text-negro-onix mt-1">
+                <% if client.prospecting_seller.present? %>
+                  <%= client.prospecting_seller.name %>
+                <% else %>
+                  <span class="text-gray-400 italic">No asignado</span>
+                <% end %>
+              </p>
+            </div>
+            <div data-client-inline-edit-target="editForm" data-field="prospecting_seller_id" class="hidden mt-1">
+              <%= render 'field_edit_form', client: client, field: 'prospecting_seller_id' %>
+            </div>
+          </div>
+        <% end %>
+        
+        <!-- Vendedor asignado -->
+        <%= render 'assigned_seller_inline', client: client %>
+      </div>
       <!-- Fechas de creación y actualización -->
       <div class="pt-4 border-t border-gray-200">
         <div class="grid grid-cols-1 gap-3 text-sm">

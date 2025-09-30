@@ -70,6 +70,68 @@ class ClientsController < ApplicationController
     end
   end
 
+  def update_field
+    @client = Client.find(params[:id])
+    field = params[:field]
+    value = params[field] || params[:value] || (params[:client] && params[:client][field])
+    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id assigned_seller_id]
+    unless allowed_fields.include?(field)
+      return render turbo_stream: turbo_stream.update(
+        "client_#{field}_display",
+        partial: "clients/field_with_error",
+        locals: { error: "Campo no permitido", field: field, client: @client }
+      )
+    end
+
+    update_params = { field => value }
+
+    if %w[status source].include?(field)
+      valid_values = Client.send("#{field}s").keys
+      unless valid_values.include?(value)
+        return render turbo_stream: turbo_stream.update(
+          "client_#{field}_display",
+          partial: "clients/field_with_error",
+          locals: { error: "Valor inválido para #{field}", field: field, client: @client }
+        )
+      end
+    end
+
+    if %w[state_id prospecting_seller_id assigned_seller_id].include?(field)
+      case field
+      when "state_id"
+        valid_model = State.exists?(id: value) if value.present?
+      when "prospecting_seller_id", "assigned_seller_id"
+        valid_model = Seller.exists?(id: value) if value.present?
+      end
+
+      unless valid_model || value.blank?
+        return render turbo_stream: turbo_stream.update(
+          "client_#{field}_display",
+          partial: "clients/field_with_error",
+          locals: { error: "ID inválido para #{field}", field: field, client: @client }
+        )
+      end
+    end
+
+    if @client.update(update_params)
+      @client.update_column(:updated_by_id, Current.user&.id) if Current.user
+
+      render turbo_stream: turbo_stream.update(
+        "client_#{field}_display",
+        partial: "clients/field_display",
+        locals: { field: field, client: @client }
+      )
+    else
+
+      Rails.logger.error "Client update failed: #{@client.errors.full_messages.join(', ')}"
+      render turbo_stream: turbo_stream.update(
+        "client_#{field}_display",
+        partial: "clients/field_with_error",
+        locals: { error: @client.errors.full_messages.join(", "), field: field, client: @client }
+      )
+    end
+  end
+
   def update_status
     @client = Client.find(params[:id])
     old_status = @client.status
@@ -79,7 +141,7 @@ class ClientsController < ApplicationController
       # Reload para obtener los datos actualizados incluyendo updated_by
       @client.reload
 
-      # Broadcast del cambio via ActionCable
+      # Broadcast del cambio via ActionCable con información adicional
       ActionCable.server.broadcast(
         "sales_flow_channel",
         {
@@ -89,6 +151,7 @@ class ClientsController < ApplicationController
           updated_by_name: @client.updated_by&.name || "Usuario desconocido",
           old_status: old_status,
           new_status: new_status,
+          updated_at: @client.updated_status_at || @client.updated_at, # Incluir timestamp
           client_html: render_to_string(
             partial: "sales_flow/client_card",
             locals: { client: @client },
@@ -97,7 +160,11 @@ class ClientsController < ApplicationController
         }
       )
 
-      render json: { status: "success", message: "Cliente actualizado correctamente" }
+      render json: {
+        status: "success",
+        message: "Cliente actualizado correctamente",
+        updated_at: @client.updated_status_at || @client.updated_at # Para el frontend
+      }
     else
       render json: { status: "error", errors: @client.errors.full_messages }
     end
@@ -110,15 +177,19 @@ class ClientsController < ApplicationController
     if @client.update(assigned_seller_id: params[:client][:assigned_seller_id])
       Rails.logger.info "Update exitoso"
 
+      # Renderizamos el HTML de la tarjeta actualizada para el broadcast
+      client_html = ApplicationController.render(
+        partial: "sales_flow/client_card",
+        locals: { client: @client }
+      )
+
       ActionCable.server.broadcast(
         "sales_flow_channel",
         {
           action: "assigned_seller_updated",
           client_id: @client.id,
-          client_name: @client.name,
-          old_seller: old_assigned_seller&.name || "Sin asignar",
-          new_seller: @client.assigned_seller&.name || "Sin asignar",
-          updated_by_name: Current.user&.name || "Usuario desconocido"
+          new_seller_name: @client.assigned_seller&.name || "Sin asignar",
+          client_html: client_html
         }
       )
 

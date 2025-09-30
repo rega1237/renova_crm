@@ -1,0 +1,2 @@
+class FacebookIntegration < ApplicationRecord
+end

@@ -3,7 +3,8 @@
       turbo_frame: "slideover",
       client_id: client.id,
       client_status: client.status,
-      assigned_seller_id: client.assigned_seller_id
+      assigned_seller_id: client.assigned_seller_id,
+      updated_at: (client.status == 'lead' ? client.created_at : (client.updated_status_at || client.updated_at)).iso8601
     }, 
     class: "block client-card bg-white border border-gray-200 rounded-lg p-3 relative group hover:shadow-lg transition-shadow" do %>
   <!-- Drag handle único (solo visible en hover) -->

@@ -1,0 +1,39 @@
+<%
+  colors = case type
+           when "notice"
+             "bg-green-100 border-green-300 text-green-800"
+           when "alert"
+             "bg-red-100 border-red-300 text-red-800"
+           else
+             "bg-gray-100 border-gray-300 text-gray-800"
+           end
+
+  icon_path = case type
+              when "notice"
+                "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              when "alert"
+                "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              else
+                "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              end
+%>
+<div data-controller="flash-notification"
+     class="w-full max-w-sm p-4 rounded-lg shadow-lg flex items-start space-x-3 transform transition-all duration-500 ease-in-out opacity-0 translate-x-full <%= colors %>"
+     role="alert">
+  <div class="flex-shrink-0">
+    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= icon_path %>" />
+    </svg>
+  </div>
+
+  <div class="flex-1 font-medium font-montserrat text-sm">
+    <%= message %>
+  </div>
+        <div class="flex-shrink-0">
+          <button type="button" class="opacity-70 hover:opacity-100" data-action="click->flash-notification#close">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
