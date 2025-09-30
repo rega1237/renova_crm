@@ -1,0 +1,90 @@
+<% case field %>
+<% when 'name' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <%= client.name %>
+  </div>
+<% when 'phone' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.phone.present? %>
+      <%= client.phone %>
+    <% else %>
+      <span class="text-gray-400 italic">No especificado</span>
+    <% end %>
+  </div>
+<% when 'email' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.email.present? %>
+      <%= client.email %>
+    <% else %>
+      <span class="text-gray-400 italic">No especificado</span>
+    <% end %>
+  </div>
+<% when 'address' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.address.present? %>
+      <%= client.address %>
+    <% else %>
+      <span class="text-gray-400 italic">No especificada</span>
+    <% end %>
+  </div>
+<% when 'zip_code' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.zip_code.present? %>
+      <%= client.zip_code %>
+    <% else %>
+      <span class="text-gray-400 italic">No especificado</span>
+    <% end %>
+  </div>
+<% when 'state_id' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.state.present? %>
+      <%= client.state %>
+    <% else %>
+      <span class="text-gray-400 italic">No especificado</span>
+    <% end %>
+  </div>
+<% when 'status' %>
+  <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full font-montserrat mt-1
+    <% case client.status %>
+    <% when 'lead' %>
+      bg-blue-100 text-blue-800
+    <% when 'no_contesto' %>
+      bg-gray-100 text-gray-800
+    <% when 'seguimiento' %>
+      bg-yellow-100 text-yellow-800
+    <% when 'cita_agendada' %>
+      bg-purple-100 text-purple-800
+    <% when 'reprogramar' %>
+      bg-orange-100 text-orange-800
+    <% when 'vendido' %>
+      bg-green-100 text-green-800
+    <% when 'mal_credito' %>
+      bg-red-100 text-red-800
+    <% when 'no_cerro' %>
+      bg-red-100 text-red-800
+    <% else %>
+      bg-gray-100 text-gray-800
+    <% end %>">
+    <%= client.status.humanize %>
+  </span>
+<% when 'source' %>
+  <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat mt-1">
+    <%= client.source.humanize.gsub('_', ' ') %>
+  </span>
+<% when 'prospecting_seller_id' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.prospecting_seller.present? %>
+      <%= client.prospecting_seller.name %>
+    <% else %>
+      <span class="text-gray-400 italic">No asignado</span>
+    <% end %>
+  </div>
+<% when 'assigned_seller_id' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.assigned_seller.present? %>
+      <%= client.assigned_seller.name %>
+    <% else %>
+      <span class="text-gray-400 italic">No asignado</span>
+    <% end %>
+  </div>
+<% end %>

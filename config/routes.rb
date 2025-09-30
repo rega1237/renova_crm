@@ -27,6 +27,7 @@ Rails.application.routes.draw do
     resources :notes, only: [ :index, :new, :create, :destroy ]
     member do
       patch :update_assigned_seller
+      patch :update_field
     end
   end
 
