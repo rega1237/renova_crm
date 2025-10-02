@@ -44,6 +44,13 @@ Rails.application.routes.draw do
     post "save_page_selection", to: "authorizations#save_page_selection"
   end
 
+  # --- RUTAS PARA LA AUTORIZACIÓN DE GOOGLE (OAuth) ---
+  namespace :google do
+    get "auth", to: "authorizations#new"
+  end
+
+  get "/auth/google_oauth2/callback", to: "google/authorizations#create"
+
   # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
   namespace :api do
     namespace :facebook do

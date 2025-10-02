@@ -10,9 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_21_103539) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_01_135112) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "appointments", force: :cascade do |t|
+    t.bigint "client_id", null: false
+    t.bigint "seller_id", null: false
+    t.string "title"
+    t.text "description"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.string "google_event_id"
+    t.string "google_calendar_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["client_id"], name: "index_appointments_on_client_id"
+    t.index ["seller_id"], name: "index_appointments_on_seller_id"
+  end
 
   create_table "clients", force: :cascade do |t|
     t.string "name"
@@ -42,6 +57,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_21_103539) do
     t.text "access_token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "google_integrations", force: :cascade do |t|
+    t.string "access_token"
+    t.string "refresh_token"
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_google_integrations_on_user_id"
   end
 
   create_table "installers", force: :cascade do |t|
@@ -100,10 +125,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_21_103539) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "appointments", "clients"
+  add_foreign_key "appointments", "sellers"
   add_foreign_key "clients", "sellers", column: "assigned_seller_id"
   add_foreign_key "clients", "sellers", column: "prospecting_seller_id"
   add_foreign_key "clients", "states"
   add_foreign_key "clients", "users", column: "updated_by_id"
+  add_foreign_key "google_integrations", "users"
   add_foreign_key "notes", "clients"
   add_foreign_key "notes", "users", column: "created_by_id"
   add_foreign_key "sessions", "users"
