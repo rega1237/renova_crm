@@ -1,0 +1,32 @@
+<div class="bg-white p-6 rounded-xl shadow-md">
+  <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-6">
+    Calendario de Citas
+  </h1>
+
+  <%# Preparamos los datos para FullCalendar %>
+  <% 
+    events = @appointments.map do |appt|
+      {
+        title: appt.title,
+        start: appt.start_time.iso8601,
+        end: appt.end_time.iso8601,
+        extendedProps: {
+          clientPath: client_path(appt.client)
+        },
+        # Colores basados en el vendedor para una mejor visualización
+        backgroundColor: color_for_seller(appt.seller),
+        borderColor: color_for_seller(appt.seller)
+      }
+    end
+  %>
+
+  <%# El div que el controlador Stimulus usará para renderizar el calendario %>
+  <div 
+    data-controller="calendar"
+    data-calendar-events-value="<%= events.to_json %>"
+  ></div>
+</div>
+
+<%= turbo_frame_tag "slideover" %>
+
+
