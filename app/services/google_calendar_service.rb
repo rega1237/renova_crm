@@ -16,11 +16,11 @@ class GoogleCalendarService
       summary: appointment.title,
       description: appointment.description,
       start: Google::Apis::CalendarV3::EventDateTime.new(
-        date_time: appointment.start_time.iso8601,
+        date_time: appointment.start_time.strftime('%Y-%m-%dT%H:%M:%S'),
         time_zone: "America/New_York" # O la zona horaria que corresponda
       ),
       end: Google::Apis::CalendarV3::EventDateTime.new(
-        date_time: appointment.end_time.iso8601,
+        date_time: appointment.end_time.strftime('%Y-%m-%dT%H:%M:%S'),
         time_zone: "America/New_York" # O la zona horaria que corresponda
       ),
       attendees: build_attendees(appointment),
@@ -48,22 +48,22 @@ class GoogleCalendarService
   end
 
   def credentials
-    client_id = Google::Auth::ClientId.new(
-      Rails.application.credentials.dig(:google_oauth2, :client_id),
-      Rails.application.credentials.dig(:google_oauth2, :client_secret)
+    creds = Google::Auth::UserRefreshCredentials.new(
+      client_id: Rails.application.credentials.dig(:google_oauth2, :client_id),
+      client_secret: Rails.application.credentials.dig(:google_oauth2, :client_secret),
+      scope: Google::Apis::CalendarV3::AUTH_CALENDAR,
+      access_token: @integration.access_token,
+      refresh_token: @integration.refresh_token,
+      expires_at: @integration.expires_at
     )
 
-    authorizer = Google::Auth::UserAuthorizer.new(client_id, Google::Apis::CalendarV3::AUTH_CALENDAR, nil)
-
-    creds = authorizer.get_credentials_from_relation(@integration.attributes)
-    creds.refresh! if creds.expired?
+    creds.fetch_access_token! if creds.expired?
 
     # Guardar los tokens actualizados si se refrescaron
-    if creds.refresh_token != @integration.refresh_token || creds.access_token != @integration.access_token
+    if creds.access_token != @integration.access_token
       @integration.update(
         access_token: creds.access_token,
-        refresh_token: creds.refresh_token,
-        expires_at: Time.at(creds.expires_in + Time.now.to_i)
+        expires_at: creds.expires_at
       )
     end
 

@@ -21,7 +21,7 @@
     <%= javascript_importmap_tags %>
   </head>
   <body class="bg-humo min-h-screen">
-    <div class="fixed top-5 right-5 z-[100] w-full max-w-sm space-y-3">
+    <div id="notifications-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm space-y-3">
       <% if notice = flash[:notice] %>
         <%= render 'shared/flash_message', type: 'notice', message: notice %>
       <% end %>
