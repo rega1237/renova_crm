@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   # --- Rutas de Clientes ---
   resources :clients, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
     resources :notes, only: [ :index, :new, :create, :destroy ]
+    resources :appointments, only: [ :new, :create ]
     member do
       patch :update_assigned_seller
       patch :update_field
