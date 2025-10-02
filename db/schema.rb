@@ -10,22 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_01_135112) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_02_131859) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "appointments", force: :cascade do |t|
     t.bigint "client_id", null: false
-    t.bigint "seller_id", null: false
-    t.string "title"
-    t.text "description"
+    t.bigint "seller_id"
     t.datetime "start_time"
     t.datetime "end_time"
+    t.string "title"
+    t.text "description"
     t.string "google_event_id"
-    t.string "google_calendar_id"
+    t.integer "status", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["client_id"], name: "index_appointments_on_client_id"
+    t.index ["google_event_id"], name: "index_appointments_on_google_event_id"
     t.index ["seller_id"], name: "index_appointments_on_seller_id"
   end
 
