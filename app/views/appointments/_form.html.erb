@@ -16,22 +16,22 @@
     <div class="space-y-4">
       <div>
         <%= form.label :title, "Título", class: "block text-sm font-medium text-gray-700" %>
-        <%= form.text_field :title, value: "Cita con #{client.name}", class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi sm:text-sm" %>
+        <%= form.text_field :title, value: "Cita con #{client.name}", class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" %>
       </div>
 
       <div>
         <%= form.label :description, "Descripción", class: "block text-sm font-medium text-gray-700" %>
-        <%= form.text_area :description, rows: 3, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi sm:text-sm" %>
+        <%= form.text_area :description, rows: 3, class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" %>
       </div>
 
       <div>
         <%= form.label :start_time, "Fecha y hora de la cita", class: "block text-sm font-medium text-gray-700" %>
-        <%= form.datetime_local_field :start_time, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi sm:text-sm" %>
+        <%= form.datetime_local_field :start_time, class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" %>
       </div>
 
       <div>
         <%= form.label :seller_id, "Asignar Vendedor (Opcional)", class: "block text-sm font-medium text-gray-700" %>
-        <%= form.collection_select :seller_id, Seller.all, :id, :name, { include_blank: "Sin asignar" }, { class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi sm:text-sm" } %>
+        <%= form.collection_select :seller_id, Seller.all, :id, :name, { include_blank: "Sin asignar" }, { class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" } %>
       </div>
     </div>
 

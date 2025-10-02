@@ -54,16 +54,6 @@
           Asignado: <%= client.assigned_seller.name %>
         </span>
       </div>
-    <% elsif client.prospecting_seller.present? %>
-      <!-- Vendedor que generó el prospecto -->
-      <div class="flex items-center">
-        <svg class="w-3 h-3 text-blue-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-        </svg>
-        <span class="font-montserrat text-xs text-blue-600 truncate">
-          Prospecto: <%= client.prospecting_seller.name %>
-        </span>
-      </div>
     <% elsif client.requires_assigned_seller? %>
       <!-- Indicador de que necesita vendedor asignado -->
       <div class="flex items-center">
@@ -72,6 +62,16 @@
         </svg>
         <span class="font-montserrat text-xs text-yellow-600">
           Necesita vendedor
+        </span>
+      </div>
+    <% elsif client.prospecting_seller.present? %>
+      <!-- Vendedor que generó el prospecto -->
+      <div class="flex items-center">
+        <svg class="w-3 h-3 text-blue-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        <span class="font-montserrat text-xs text-blue-600 truncate">
+          Prospecto: <%= client.prospecting_seller.name %>
         </span>
       </div>
     <% end %>

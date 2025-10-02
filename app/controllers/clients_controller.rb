@@ -71,10 +71,17 @@ class ClientsController < ApplicationController
   end
 
   def update_field
+    # Si el campo a actualizar es el vendedor asignado, delega a la acción que sí tiene el broadcast.
+    if params[:field] == "assigned_seller_id"
+      # Re-mapear los parámetros para que coincidan con lo que espera `update_assigned_seller`
+      params[:client] = { assigned_seller_id: params[:assigned_seller_id] }
+      return update_assigned_seller
+    end
+
     @client = Client.find(params[:id])
     field = params[:field]
     value = params[field] || params[:value] || (params[:client] && params[:client][field])
-    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id assigned_seller_id]
+    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id]
     unless allowed_fields.include?(field)
       return render turbo_stream: turbo_stream.update(
         "client_#{field}_display",
@@ -96,11 +103,11 @@ class ClientsController < ApplicationController
       end
     end
 
-    if %w[state_id prospecting_seller_id assigned_seller_id].include?(field)
+    if %w[state_id prospecting_seller_id].include?(field)
       case field
       when "state_id"
         valid_model = State.exists?(id: value) if value.present?
-      when "prospecting_seller_id", "assigned_seller_id"
+      when "prospecting_seller_id"
         valid_model = Seller.exists?(id: value) if value.present?
       end
 
