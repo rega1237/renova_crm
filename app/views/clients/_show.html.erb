@@ -305,7 +305,7 @@
         <!-- El botón para mostrar/ocultar está en la cabecera -->
         <div id="appointment-form-container" data-toggle-target="content" class="hidden">
           <%# Instanciamos un appointment nuevo para el formulario %>
-          <%= render 'appointments/form', client: client, appointment: client.appointments.new(seller_id: client.assigned_seller_id) %>
+          <%= render 'appointments/form', client: client, appointment: client.appointments.new(seller_id: client.assigned_seller_id, address: client.address) %>
         </div>
       </div>
 

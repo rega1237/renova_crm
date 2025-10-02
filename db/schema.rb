@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_02_133107) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_02_181646) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -26,6 +26,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_02_133107) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "created_by_id", null: false
+    t.string "address"
     t.index ["client_id"], name: "index_appointments_on_client_id"
     t.index ["created_by_id"], name: "index_appointments_on_created_by_id"
     t.index ["google_event_id"], name: "index_appointments_on_google_event_id"

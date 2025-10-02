@@ -15,6 +15,7 @@ class GoogleCalendarService
     event = Google::Apis::CalendarV3::Event.new(
       summary: appointment.title,
       description: appointment.description,
+      location: appointment.address,
       start: Google::Apis::CalendarV3::EventDateTime.new(
         date_time: appointment.start_time.strftime('%Y-%m-%dT%H:%M:%S'),
         time_zone: "America/New_York" # O la zona horaria que corresponda
@@ -72,10 +73,6 @@ class GoogleCalendarService
 
   def build_attendees(appointment)
     attendees = []
-    # Añadir al cliente si tiene email
-    if appointment.client.email.present?
-      attendees << Google::Apis::CalendarV3::EventAttendee.new(email: appointment.client.email)
-    end
     # Añadir al vendedor asignado si existe y tiene email
     if appointment.seller&.email.present?
       attendees << Google::Apis::CalendarV3::EventAttendee.new(email: appointment.seller.email)

@@ -32,48 +32,30 @@ class AppointmentsController < ApplicationController
     ]
 
     should_update_seller = @appointment.seller.present? && @client.assigned_seller != @appointment.seller
-    should_update_status = [ "lead", "no_contesto", "seguimiento" ].include?(@client.status)
+    should_update_status = ['lead', 'no_contesto', 'seguimiento'].include?(@client.status)
+    should_update_address = @appointment.address.present? && @client.address.blank?
 
-    if should_update_seller || should_update_status
+    if should_update_seller || should_update_status || should_update_address
       old_status = @client.status
       update_params = {}
       update_params[:assigned_seller] = @appointment.seller if should_update_seller
-      update_params[:status] = "cita_agendada" if should_update_status
+      update_params[:status] = 'cita_agendada' if should_update_status
+      update_params[:address] = @appointment.address if should_update_address
 
       if @client.update(update_params)
-        # Si el vendedor cambió, actualiza la UI del usuario actual Y emite un broadcast.
         if should_update_seller
           streams << turbo_stream.replace("assigned-seller-section", partial: "clients/assigned_seller_section", locals: { client: @client })
-
-          # Broadcast para actualizar la tarjeta en el Sales Flow para todos los usuarios.
           client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
-          ActionCable.server.broadcast(
-            "sales_flow_channel",
-            {
-              action: "assigned_seller_updated",
-              client_id: @client.id,
-              new_seller_name: @client.assigned_seller&.name || "Sin asignar",
-              client_html: client_html
-            }
-          )
+          ActionCable.server.broadcast("sales_flow_channel", { action: "assigned_seller_updated", client_id: @client.id, new_seller_name: @client.assigned_seller&.name || "Sin asignar", client_html: client_html })
         end
-
-        # Si el estado cambió, emite el broadcast de movimiento de columna.
+        
         if should_update_status
           client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
-          ActionCable.server.broadcast(
-            "sales_flow_channel",
-            {
-              action: "client_moved",
-              client_id: @client.id,
-              client_name: @client.name,
-              updated_by_name: Current.user&.name || "Sistema",
-              old_status: old_status,
-              new_status: "cita_agendada",
-              updated_at: @client.updated_status_at,
-              client_html: client_html
-            }
-          )
+          ActionCable.server.broadcast("sales_flow_channel", { action: "client_moved", client_id: @client.id, client_name: @client.name, updated_by_name: Current.user&.name || "Sistema", old_status: old_status, new_status: 'cita_agendada', updated_at: @client.updated_status_at, client_html: client_html })
+        end
+
+        if should_update_address
+          streams << turbo_stream.update("client_address_display", partial: "clients/field_display", locals: { client: @client, field: 'address' })
         end
       end
     end
@@ -81,13 +63,11 @@ class AppointmentsController < ApplicationController
     render turbo_stream: streams
   end
 
-  private
-
   def set_client
     @client = Client.find(params[:client_id])
   end
 
   def appointment_params
-    params.require(:appointment).permit(:title, :description, :start_time, :seller_id)
+    params.require(:appointment).permit(:title, :description, :start_time, :seller_id, :address)
   end
 end

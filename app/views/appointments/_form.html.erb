@@ -21,7 +21,16 @@
 
       <div>
         <%= form.label :description, "Descripción", class: "block text-sm font-medium text-gray-700" %>
-        <%= form.text_area :description, rows: 3, class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" %>
+        <%= form.text_area :description, rows: 3, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" %>
+      </div>
+
+      <!-- Campo de Dirección con Autocompletado -->
+      <div data-controller="address-autocomplete">
+        <%= form.label :address, "Dirección", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :address, 
+            class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm",
+            data: { address_autocomplete_target: "input", action: "input->address-autocomplete#search" } %>
+        <div data-address-autocomplete-target="results" class="relative z-10"></div>
       </div>
 
       <div>
@@ -36,7 +45,7 @@
     </div>
 
     <div class="mt-6 flex items-center justify-end gap-x-4">
-      <%= link_to "Cancelar", client_path(client), class: "text-sm font-semibold leading-6 text-gray-900", data: { turbo_frame: "_top" } %>
+      <button type="button" data-action="click->toggle#toggle" class="text-sm font-semibold leading-6 text-gray-900">Cancelar</button>
       <%= form.submit "Guardar Cita", class: "rounded-md bg-rojo-carmesi px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rojo-carmesi" %>
     </div>
   <% end %>
