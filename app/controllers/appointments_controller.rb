@@ -14,6 +14,9 @@ class AppointmentsController < ApplicationController
       CreateGoogleEventJob.perform_later(@appointment)
       flash.now[:notice] = "Cita agendada exitosamente. Se está sincronizando con Google Calendar."
 
+      # Broadcast calendar update
+      broadcast_calendar_update
+
       # --- Lógica de actualización de Cliente y Broadcast ---
       update_client_and_broadcast
 
@@ -49,6 +52,9 @@ class AppointmentsController < ApplicationController
       UpdateGoogleEventJob.perform_later(@appointment)
       flash.now[:notice] = "Cita actualizada exitosamente."
 
+      # Broadcast calendar update
+      broadcast_calendar_update
+
       streams = [
         turbo_stream.update("appointment-details-section", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
         turbo_stream.update("appointment-form-container", ""),
@@ -73,6 +79,9 @@ class AppointmentsController < ApplicationController
     @appointment.update(status: :canceled)
     DeleteGoogleEventJob.perform_later(@appointment)
     flash.now[:notice] = "Cita cancelada exitosamente."
+
+    # Broadcast calendar update
+    broadcast_calendar_update
 
     streams = [
       turbo_stream.update("appointment-details-section", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
@@ -162,5 +171,12 @@ class AppointmentsController < ApplicationController
 
   def appointment_params
     params.require(:appointment).permit(:title, :description, :start_time, :seller_id, :address)
+  end
+
+  def broadcast_calendar_update
+    ActionCable.server.broadcast("calendar_updates", { 
+      action: "refresh_calendar",
+      appointment_id: @appointment.id 
+    })
   end
 end
