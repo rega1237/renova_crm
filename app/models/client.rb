@@ -107,6 +107,16 @@ class Client < ApplicationRecord
     %w[prospectacion referencia].include?(source)
   end
 
+  # Método para determinar la zona horaria del cliente
+  def timezone
+    case state&.abbreviation # Asumiendo que State tiene una abreviatura (ej. TX, IL)
+    when "TX", "IL" # Texas e Illinois
+      "America/Chicago" # Zona horaria central
+    else
+      Rails.application.config.time_zone # Zona horaria por defecto de la aplicación
+    end
+  end
+
   private
 
   def update_status_tracking

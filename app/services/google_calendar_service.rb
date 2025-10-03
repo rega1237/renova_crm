@@ -17,12 +17,12 @@ class GoogleCalendarService
       description: appointment.description,
       location: appointment.address,
       start: Google::Apis::CalendarV3::EventDateTime.new(
-        date_time: appointment.start_time.strftime('%Y-%m-%dT%H:%M:%S'),
-        time_zone: "America/New_York" # O la zona horaria que corresponda
+        date_time: appointment.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        time_zone: appointment.client.timezone
       ),
       end: Google::Apis::CalendarV3::EventDateTime.new(
-        date_time: appointment.end_time.strftime('%Y-%m-%dT%H:%M:%S'),
-        time_zone: "America/New_York" # O la zona horaria que corresponda
+        date_time: appointment.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        time_zone: appointment.client.timezone
       ),
       attendees: build_attendees(appointment),
       reminders: {
@@ -36,6 +36,32 @@ class GoogleCalendarService
 
     result = calendar_service.insert_event(CALENDAR_ID, event, send_notifications: true)
     result.id
+  end
+
+  def update_event(appointment)
+    return unless appointment.google_event_id
+
+    event = Google::Apis::CalendarV3::Event.new(
+      summary: appointment.title,
+      description: appointment.description,
+      location: appointment.address,
+      start: Google::Apis::CalendarV3::EventDateTime.new(
+        date_time: appointment.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        time_zone: appointment.client.timezone
+      ),
+      end: Google::Apis::CalendarV3::EventDateTime.new(
+        date_time: appointment.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        time_zone: appointment.client.timezone
+      ),
+      attendees: build_attendees(appointment)
+    )
+
+    calendar_service.update_event(CALENDAR_ID, appointment.google_event_id, event, send_notifications: true)
+  end
+
+  def delete_event(appointment)
+    return unless appointment.google_event_id
+    calendar_service.delete_event(CALENDAR_ID, appointment.google_event_id)
   end
 
   private

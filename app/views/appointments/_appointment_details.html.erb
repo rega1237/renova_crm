@@ -1,0 +1,15 @@
+<div class="pt-4 border-t border-gray-200">
+  <h3 class="font-poppins text-lg font-semibold text-negro-onix mb-4">Cita Agendada</h3>
+  <div class="space-y-2 text-sm">
+    <p><span class="font-semibold">Título:</span> <%= appointment.title %></p>
+    <p><span class="font-semibold">Descripción:</span> <%= appointment.description.presence || "N/A" %></p>
+    <p><span class="font-semibold">Inicio:</span> <%= l(appointment.start_time, format: :long) %></p>
+    <p><span class="font-semibold">Fin:</span> <%= l(appointment.end_time, format: :long) %></p>
+    <p><span class="font-semibold">Vendedor:</span> <%= appointment.seller&.name || "Sin asignar" %></p>
+    <p><span class="font-semibold">Dirección:</span> <%= appointment.address.presence || "N/A" %></p>
+  </div>
+  <div class="mt-4 flex justify-end space-x-2">
+    <button type="button" data-action="click->toggle#toggle" class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">Editar Cita</button>
+    <%= button_to "Cancelar Cita", client_appointment_path(client, appointment), method: :delete, data: { turbo_confirm: "¿Estás seguro de que quieres cancelar esta cita?" }, class: "rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600" %>
+  </div>
+</div>

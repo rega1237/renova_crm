@@ -1,8 +1,12 @@
 class AppointmentsController < ApplicationController
   before_action :set_client
+  before_action :set_appointment, only: [ :edit, :update, :destroy ]
 
   def create
-    @appointment = @client.appointments.new(appointment_params)
+    # Parsear start_time en la zona horaria del cliente
+    parsed_start_time = Time.find_zone(@client.timezone).parse(appointment_params[:start_time])
+
+    @appointment = @client.appointments.new(appointment_params.except(:start_time).merge(start_time: parsed_start_time))
     @appointment.created_by = Current.user
     @appointment.end_time = @appointment.start_time + 1.hour if @appointment.start_time
 
@@ -23,23 +27,76 @@ class AppointmentsController < ApplicationController
     end
   end
 
-  private
+  def edit
+    render turbo_stream: turbo_stream.update(
+      "appointment-form-container",
+      partial: "appointments/form",
+      locals: { client: @client, appointment: @appointment }
+    )
+  end
 
-  def update_client_and_broadcast
+  def update
+    # Parsear start_time en la zona horaria del cliente si se proporcionó
+    if appointment_params[:start_time]
+      parsed_start_time = Time.find_zone(@client.timezone).parse(appointment_params[:start_time])
+      @appointment.assign_attributes(appointment_params.except(:start_time).merge(start_time: parsed_start_time))
+      @appointment.end_time = @appointment.start_time + 1.hour
+    else
+      @appointment.assign_attributes(appointment_params)
+    end
+
+    if @appointment.save
+      UpdateGoogleEventJob.perform_later(@appointment)
+      flash.now[:notice] = "Cita actualizada exitosamente."
+
+      streams = [
+        turbo_stream.update("appointment-form-container", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+        turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
+      ]
+
+      # Lógica para actualizar la vista del cliente y el broadcast
+      update_client_and_broadcast_after_update(streams)
+
+      render turbo_stream: streams
+    else
+      # Re-render the form with errors
+      render turbo_stream: turbo_stream.update(
+        "appointment-form-container",
+        partial: "appointments/form",
+        locals: { client: @client, appointment: @appointment }
+      ), status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    @appointment.update(status: :canceled)
+    DeleteGoogleEventJob.perform_later(@appointment)
+    flash.now[:notice] = "Cita cancelada exitosamente."
+
     streams = [
-      turbo_stream.update("appointment-form-container", ""),
+      turbo_stream.update("appointment-form-container", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
 
+    # Lógica para actualizar la vista del cliente y el broadcast (si es necesario)
+    # Por ahora, solo actualizamos la UI localmente.
+
+    render turbo_stream: streams
+  end
+
+  private
+
+  def set_appointment
+    @appointment = @client.appointments.find(params[:id])
+  end
+
+  def update_client_and_broadcast_after_update(streams)
     should_update_seller = @appointment.seller.present? && @client.assigned_seller != @appointment.seller
-    should_update_status = ['lead', 'no_contesto', 'seguimiento'].include?(@client.status)
     should_update_address = @appointment.address.present? && @client.address.blank?
 
-    if should_update_seller || should_update_status || should_update_address
-      old_status = @client.status
+    if should_update_seller || should_update_address
       update_params = {}
       update_params[:assigned_seller] = @appointment.seller if should_update_seller
-      update_params[:status] = 'cita_agendada' if should_update_status
       update_params[:address] = @appointment.address if should_update_address
 
       if @client.update(update_params)
@@ -48,14 +105,45 @@ class AppointmentsController < ApplicationController
           client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
           ActionCable.server.broadcast("sales_flow_channel", { action: "assigned_seller_updated", client_id: @client.id, new_seller_name: @client.assigned_seller&.name || "Sin asignar", client_html: client_html })
         end
-        
+
+        if should_update_address
+          streams << turbo_stream.update("client_address_display", partial: "clients/field_display", locals: { client: @client, field: "address" })
+        end
+      end
+    end
+  end
+
+  def update_client_and_broadcast
+    streams = [
+      turbo_stream.update("appointment-form-container", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+      turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
+    ]
+
+    should_update_seller = @appointment.seller.present? && @client.assigned_seller != @appointment.seller
+    should_update_status = [ "lead", "no_contesto", "seguimiento" ].include?(@client.status)
+    should_update_address = @appointment.address.present? && @client.address.blank?
+
+    if should_update_seller || should_update_status || should_update_address
+      old_status = @client.status
+      update_params = {}
+      update_params[:assigned_seller] = @appointment.seller if should_update_seller
+      update_params[:status] = "cita_agendada" if should_update_status
+      update_params[:address] = @appointment.address if should_update_address
+
+      if @client.update(update_params)
+        if should_update_seller
+          streams << turbo_stream.replace("assigned-seller-section", partial: "clients/assigned_seller_section", locals: { client: @client })
+          client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
+          ActionCable.server.broadcast("sales_flow_channel", { action: "assigned_seller_updated", client_id: @client.id, new_seller_name: @client.assigned_seller&.name || "Sin asignar", client_html: client_html })
+        end
+
         if should_update_status
           client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
-          ActionCable.server.broadcast("sales_flow_channel", { action: "client_moved", client_id: @client.id, client_name: @client.name, updated_by_name: Current.user&.name || "Sistema", old_status: old_status, new_status: 'cita_agendada', updated_at: @client.updated_status_at, client_html: client_html })
+          ActionCable.server.broadcast("sales_flow_channel", { action: "client_moved", client_id: @client.id, client_name: @client.name, updated_by_name: Current.user&.name || "Sistema", old_status: old_status, new_status: "cita_agendada", updated_at: @client.updated_status_at, client_html: client_html })
         end
 
         if should_update_address
-          streams << turbo_stream.update("client_address_display", partial: "clients/field_display", locals: { client: @client, field: 'address' })
+          streams << turbo_stream.update("client_address_display", partial: "clients/field_display", locals: { client: @client, field: "address" })
         end
       end
     end
