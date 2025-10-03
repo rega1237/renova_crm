@@ -6,7 +6,14 @@
   <%# Preparamos los datos para FullCalendar %>
   <% 
     events = @appointments.map do |appt|
-      event_color = appt.canceled? ? '#dc3545' : color_for_seller(appt.seller) # Rojo para canceladas
+      if appt.canceled?
+        event_color = '#dc3545' # Rojo para canceladas
+      elsif appt.seller.present?
+        event_color = color_for_seller(appt.seller) # Color del vendedor
+      else
+        event_color = '#808080' # Gris para citas sin vendedor
+      end
+      
       {
         title: appt.title,
         start: appt.start_time.iso8601,
