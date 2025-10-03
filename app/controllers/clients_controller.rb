@@ -184,6 +184,28 @@ class ClientsController < ApplicationController
     if @client.update(assigned_seller_id: params[:client][:assigned_seller_id])
       Rails.logger.info "Update exitoso"
 
+      # Actualizar el vendedor en las citas activas del cliente
+      active_appointments = @client.appointments.where(status: "scheduled")
+      active_appointments.update_all(seller_id: @client.assigned_seller_id)
+
+      # Si hay citas activas actualizadas, broadcast calendar update
+      if active_appointments.any?
+        # Actualizar eventos de Google Calendar para cada cita activa
+        active_appointments.each do |appointment|
+          if appointment.google_event_id.present?
+            UpdateGoogleEventJob.perform_later(appointment)
+          end
+        end
+
+        ActionCable.server.broadcast(
+          "calendar_updates",
+          {
+            action: "refresh_calendar",
+            appointment_id: active_appointments.first.id
+          }
+        )
+      end
+
       # Renderizamos el HTML de la tarjeta actualizada para el broadcast
       client_html = ApplicationController.render(
         partial: "sales_flow/client_card",
