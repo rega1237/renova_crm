@@ -50,7 +50,8 @@ class AppointmentsController < ApplicationController
       flash.now[:notice] = "Cita actualizada exitosamente."
 
       streams = [
-        turbo_stream.update("appointment-form-container", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+        turbo_stream.update("appointment-details-section", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+        turbo_stream.update("appointment-form-container", ""),
         turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
       ]
 
@@ -74,7 +75,8 @@ class AppointmentsController < ApplicationController
     flash.now[:notice] = "Cita cancelada exitosamente."
 
     streams = [
-      turbo_stream.update("appointment-form-container", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+      turbo_stream.update("appointment-details-section", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+      turbo_stream.update("appointment-form-container", ""),
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
 
@@ -102,6 +104,7 @@ class AppointmentsController < ApplicationController
       if @client.update(update_params)
         if should_update_seller
           streams << turbo_stream.replace("assigned-seller-section", partial: "clients/assigned_seller_section", locals: { client: @client })
+          streams << turbo_stream.update("client_assigned_seller_id_display", partial: "clients/field_display", locals: { client: @client, field: "assigned_seller_id" })
           client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
           ActionCable.server.broadcast("sales_flow_channel", { action: "assigned_seller_updated", client_id: @client.id, new_seller_name: @client.assigned_seller&.name || "Sin asignar", client_html: client_html })
         end
@@ -115,7 +118,8 @@ class AppointmentsController < ApplicationController
 
   def update_client_and_broadcast
     streams = [
-      turbo_stream.update("appointment-form-container", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+      turbo_stream.update("appointment-details-section", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
+      turbo_stream.update("appointment-form-container", ""),
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
 
@@ -133,6 +137,7 @@ class AppointmentsController < ApplicationController
       if @client.update(update_params)
         if should_update_seller
           streams << turbo_stream.replace("assigned-seller-section", partial: "clients/assigned_seller_section", locals: { client: @client })
+          streams << turbo_stream.update("client_assigned_seller_id_display", partial: "clients/field_display", locals: { client: @client, field: "assigned_seller_id" })
           client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
           ActionCable.server.broadcast("sales_flow_channel", { action: "assigned_seller_updated", client_id: @client.id, new_seller_name: @client.assigned_seller&.name || "Sin asignar", client_html: client_html })
         end
