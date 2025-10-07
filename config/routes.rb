@@ -35,6 +35,7 @@ Rails.application.routes.draw do
   # --- Ruta para Flujo de Ventas ---
   get "sales_flow", to: "sales_flow#index"
   get "calendar", to: "calendar#index"
+  get "appointments_list", to: "appointments_list#index"
 
   # --- Ruta para Actualizar Status via Drag & Drop ---
   patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"

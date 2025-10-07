@@ -89,9 +89,6 @@ class AppointmentsController < ApplicationController
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
 
-    # Lógica para actualizar la vista del cliente y el broadcast (si es necesario)
-    # Por ahora, solo actualizamos la UI localmente.
-
     render turbo_stream: streams
   end
 
@@ -174,9 +171,9 @@ class AppointmentsController < ApplicationController
   end
 
   def broadcast_calendar_update
-    ActionCable.server.broadcast("calendar_updates", { 
+    ActionCable.server.broadcast("calendar_updates", {
       action: "refresh_calendar",
-      appointment_id: @appointment.id 
+      appointment_id: @appointment.id
     })
   end
 end
