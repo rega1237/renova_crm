@@ -28,6 +28,11 @@ export default class extends Controller {
 
   async refreshAppointmentsList() {
     try {
+      // Solo proceder si estamos en la página de lista de citas y el target existe
+      if (!this.hasListContainerTarget) {
+        return
+      }
+      
       // Obtener los parámetros de filtro actuales de la URL
       const urlParams = new URLSearchParams(window.location.search)
       const currentParams = {}

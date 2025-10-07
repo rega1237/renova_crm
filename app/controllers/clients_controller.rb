@@ -222,11 +222,27 @@ class ClientsController < ApplicationController
         }
       )
 
-      render turbo_stream: turbo_stream.replace(
-        "assigned-seller-section",
-        partial: "clients/assigned_seller_section",
-        locals: { client: @client }
+      # Preparar streams para actualizar múltiples elementos
+      streams = []
+      
+      # Actualizar el campo del vendedor asignado
+      streams << turbo_stream.update(
+        "client_assigned_seller_id_display",
+        partial: "clients/field_display",
+        locals: { field: "assigned_seller_id", client: @client }
       )
+
+      # Si hay citas activas, actualizar la sección de detalles de la cita
+      if active_appointments.any?
+        active_appointment = active_appointments.first
+        streams << turbo_stream.update(
+          "appointment-details-section",
+          partial: "appointments/appointment_details",
+          locals: { client: @client, appointment: active_appointment }
+        )
+      end
+
+      render turbo_stream: streams
     else
       render json: {
         status: "error",

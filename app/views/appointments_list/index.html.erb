@@ -1,4 +1,4 @@
-<div class="bg-white p-6 rounded-xl shadow-md" data-controller="appointments-list">
+<div class="bg-white p-6 rounded-xl shadow-md" data-controller="appointments-list appointments-list-updates">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
     <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-4 sm:mb-0">
       Lista de Citas
@@ -42,8 +42,7 @@
   <!-- Contenedor de la lista con ActionCable -->
   <%= turbo_frame_tag "appointments-list-content", 
       data: { 
-        appointments_list_target: "listContainer",
-        controller: "appointments-list-updates"
+        appointments_list_updates_target: "listContainer"
       } do %>
     
     <% if @appointments.any? %>
