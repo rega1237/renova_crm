@@ -7,6 +7,7 @@
     <p><span class="font-semibold">Fin:</span> <%= l(appointment.end_time, format: :long) %></p>
     <p><span class="font-semibold">Vendedor:</span> <%= appointment.seller&.name || "Sin asignar" %></p>
     <p><span class="font-semibold">Dirección:</span> <%= appointment.address.presence || "N/A" %></p>
+    <p><span class="font-semibold">Agendada por:</span> <%= appointment.created_by.name || "N/A" %></p>
   </div>
   <div class="mt-4 flex justify-end space-x-2">
     <button type="button" data-action="click->toggle#toggle" class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">Editar Cita</button>
