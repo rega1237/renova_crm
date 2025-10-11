@@ -644,9 +644,14 @@ export default class extends Controller {
 
     if (data.action === "client_moved") {
       title = `Cliente ${data.client_name}`;
-      message = `Movido a ${data.new_status.replace("_", " ")} por ${
-        data.updated_by_name
-      }`;
+      if (data.reentered && data.new_status === "lead") {
+        message = "Reingresó como lead.";
+        bgColor = "bg-green-500"; // Resaltar reingreso como lead
+      } else {
+        message = `Movido a ${data.new_status.replace("_", " ")} por ${
+          data.updated_by_name
+        }`;
+      }
     } else if (data.action === "new_lead_created") {
       title = "¡Nuevo Lead!";
       message = `${data.client_name} ha entrado desde Meta.`;

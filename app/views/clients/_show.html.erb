@@ -349,7 +349,7 @@
           <% if client.updated_status_at != nil %>
             <div>
               <span class="font-poppins font-semibold text-gray-500">Última actualización de status:</span>
-              <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_status_at.strftime("%d/%m/%Y a las %H:%M") %> / <%= client.updated_by.name %></span>
+              <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_status_at.strftime("%d/%m/%Y a las %H:%M") %> / <%= client.updated_by&.name || "Sistema" %></span>
             </div>
           <% end %>
         </div>

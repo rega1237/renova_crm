@@ -10,10 +10,59 @@ class Facebook::LeadProcessor
     lead_data = fetch_lead_data
     return unless lead_data
 
-    client_attributes = map_fields(lead_data["field_data"])
+    client_attributes = map_fields(lead_data["field_data"]) 
 
-    if Client.exists?(email: client_attributes[:email])
-      puts "Cliente duplicado encontrado para el email: #{client_attributes[:email]}. Saltando..."
+    existing_client = Client.find_by(email: client_attributes[:email])
+
+    if existing_client
+      reentry_time_val = lead_data["created_time"]
+      reentry_time =
+        case reentry_time_val
+        when Integer
+          Time.zone.at(reentry_time_val)
+        when String
+          reentry_time_val.present? ? Time.zone.parse(reentry_time_val) : Time.current
+        else
+          Time.current
+        end
+      old_status = existing_client.status
+
+      # 1) Si no es lead, mover a lead
+      if existing_client.status != "lead"
+        existing_client.update!(status: :lead)
+      end
+
+      # 2) Actualizar la fecha de creación para que aparezca primero en la columna de leads
+      existing_client.update_columns(created_at: reentry_time)
+
+      # 3) Agregar nota automática del reingreso por publicidad
+      note_creator = Current.user || existing_client.updated_by || User.first
+      Note.create!(
+        client: existing_client,
+        created_by: note_creator,
+        text: "Cliente volvió a entrar por publicidad el #{reentry_time.strftime('%d/%m/%Y a las %H:%M')}"
+      )
+
+      # 4) Broadcast al Sales Flow para actualizar la tarjeta y mostrar notificación
+      client_html = ApplicationController.render(
+        partial: "sales_flow/client_card",
+        locals: { client: existing_client }
+      )
+
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "client_moved",
+          client_id: existing_client.id,
+          client_name: existing_client.name,
+          updated_by_name: Current.user&.name || "Sistema",
+          old_status: old_status,
+          new_status: "lead",
+          reentered: true,
+          client_html: client_html
+        }
+      )
+
       return
     end
 

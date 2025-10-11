@@ -120,9 +120,9 @@ class Client < ApplicationRecord
   private
 
   def update_status_tracking
-    self.update_columns(
-      updated_status_at: Time.current,
-      updated_by_id: Current.user&.id
-    )
+    attrs = { updated_status_at: Time.current }
+    # No sobrescribir updated_by_id con nil si no hay usuario actual
+    attrs[:updated_by_id] = Current.user.id if Current.user
+    self.update_columns(attrs)
   end
 end
