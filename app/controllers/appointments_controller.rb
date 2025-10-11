@@ -83,9 +83,26 @@ class AppointmentsController < ApplicationController
     # Broadcast calendar update
     broadcast_calendar_update
 
+    # Actualizar el estado del cliente a "reprogramar" y emitir broadcast al Sales Flow
+    old_status = @client.status
+    if @client.update(status: :reprogramar)
+      client_html = ApplicationController.render(partial: "sales_flow/client_card", locals: { client: @client })
+      ActionCable.server.broadcast("sales_flow_channel", {
+        action: "client_moved",
+        client_id: @client.id,
+        client_name: @client.name,
+        updated_by_name: Current.user&.name || "Sistema",
+        old_status: old_status,
+        new_status: "reprogramar",
+        updated_at: @client.updated_status_at,
+        client_html: client_html
+      })
+    end
+
     streams = [
-      turbo_stream.update("appointment-details-section", partial: "appointments/appointment_details", locals: { client: @client, appointment: @appointment }),
-      turbo_stream.update("appointment-form-container", ""),
+      turbo_stream.update("appointment-details-section", partial: "appointments/empty"),
+      turbo_stream.update("client_status_display", partial: "clients/field_display", locals: { client: @client, field: "status" }),
+      turbo_stream.update("appointment-form-container", render_to_string(partial: "appointments/form", locals: { client: @client, appointment: (@client.appointments.find_by(status: 'scheduled') || @client.appointments.new(seller_id: @client.assigned_seller_id, address: @client.address)) })),
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
 
