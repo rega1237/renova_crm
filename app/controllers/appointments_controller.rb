@@ -78,6 +78,23 @@ class AppointmentsController < ApplicationController
   def destroy
     @appointment.update(status: :canceled)
     DeleteGoogleEventJob.perform_later(@appointment)
+    # Eliminar citas canceladas previas del cliente, dejando solo la última cancelada
+    @client.appointments.canceled.where.not(id: @appointment.id).destroy_all
+
+    # Incrementar contador de cancelaciones del cliente
+    @client.increment!(:cancellations_count)
+
+    # Crear nota automática indicando cancelación y usuario que cancela
+    cancel_user_name = Current.user&.name || "Sistema"
+    cancel_time_str = Time.current.strftime("%d/%m/%Y %H:%M")
+    note_text = "Cita cancelada por #{cancel_user_name} el #{cancel_time_str}."
+    note_text += " Título: #{@appointment.title}." if @appointment.title.present?
+    note_text += " Fecha: #{@appointment.start_time.strftime('%d/%m/%Y %H:%M')}." if @appointment.start_time.present?
+    note_text += " Dirección: #{@appointment.address}." if @appointment.address.present?
+    @note = @client.notes.build(text: note_text)
+    @note.created_by = Current.user if Current.user
+    @note.save
+
     flash.now[:notice] = "Cita cancelada exitosamente."
 
     # Broadcast calendar update
@@ -105,6 +122,11 @@ class AppointmentsController < ApplicationController
       turbo_stream.update("appointment-form-container", render_to_string(partial: "appointments/form", locals: { client: @client, appointment: (@client.appointments.find_by(status: 'scheduled') || @client.appointments.new(seller_id: @client.assigned_seller_id, address: @client.address)) })),
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
+
+    # Prepend de la nueva nota a la lista de notas si se creó
+    if @note&.persisted?
+      streams << turbo_stream.prepend("notes-list", partial: "notes/note", locals: { note: @note })
+    end
 
     render turbo_stream: streams
   end

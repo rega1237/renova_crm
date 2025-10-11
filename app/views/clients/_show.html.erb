@@ -306,6 +306,11 @@
 
         <div id="appointment-details-section">
           <% if active_appointment %>
+            <div class="mb-2">
+              <span class="text-xs font-poppins text-gray-600">
+                Citas canceladas: <%= client.cancellations_count %>
+              </span>
+            </div>
             <%= render 'appointments/appointment_details', client: client, appointment: active_appointment %>
           <% else %>
             <div class="pb-4 border-b border-gray-200">
@@ -315,6 +320,11 @@
                 </svg>
                 Agendar Nueva Cita
               </button>
+              <div class="mt-2 text-center">
+                <span class="text-xs font-poppins text-gray-600">
+                  Citas canceladas: <%= client.cancellations_count %>
+                </span>
+              </div>
             </div>
           <% end %>
         </div>
