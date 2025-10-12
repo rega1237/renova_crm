@@ -11,3 +11,6 @@ pin "sortablejs" # @1.15.6
 pin "@fullcalendar/core", to: "https://cdn.skypack.dev/@fullcalendar/core@6.1.9"
 pin "@fullcalendar/daygrid", to: "https://cdn.skypack.dev/@fullcalendar/daygrid@6.1.9"
 pin "@fullcalendar/timegrid", to: "https://cdn.skypack.dev/@fullcalendar/timegrid@6.1.9"
+
+# Charts library for interactive dashboard visuals (ESM-ready)
+pin "apexcharts", to: "https://cdn.skypack.dev/apexcharts@3.46.0"
