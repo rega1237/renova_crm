@@ -169,7 +169,7 @@ class AppointmentsController < ApplicationController
     ]
 
     should_update_seller = @appointment.seller.present? && @client.assigned_seller != @appointment.seller
-    should_update_status = [ "lead", "no_contesto", "seguimiento" ].include?(@client.status)
+    should_update_status = [ "lead", "no_contesto", "seguimiento", "no_cerro", "reprogramar" ].include?(@client.status)
     should_update_address = @appointment.address.present? && @client.address.blank?
 
     if should_update_seller || should_update_status || should_update_address
