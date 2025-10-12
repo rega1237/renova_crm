@@ -267,6 +267,27 @@
             <%= render 'field_edit_form', client: client, field: 'source' %>
           </div>
         </div>
+
+        <!-- Motivo (solo cuando el estado es 'no_cerro') -->
+        <% if client.status == 'no_cerro' %>
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Motivo</h3>
+            <button type="button"
+                    data-action="click->client-inline-edit#toggleEdit"
+                    data-field="reasons"
+                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_reasons_display" data-client-inline-edit-target="display" data-field="reasons">
+            <%= render 'field_display', client: client, field: 'reasons' %>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="reasons" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'reasons' %>
+          </div>
+        </div>
+        <% end %>
       </div>
       <!-- Vendedor que generó prospecto y Vendedor asignado -->
       <div class="pt-4 border-t border-gray-200">

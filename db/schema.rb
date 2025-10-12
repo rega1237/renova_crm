@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_11_120500) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -49,6 +49,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_120500) do
     t.integer "updated_by_id"
     t.bigint "assigned_seller_id"
     t.integer "cancellations_count", default: 0, null: false
+    t.string "reasons"
     t.index ["assigned_seller_id"], name: "index_clients_on_assigned_seller_id"
     t.index ["prospecting_seller_id"], name: "index_clients_on_prospecting_seller_id"
     t.index ["state_id"], name: "index_clients_on_state_id"

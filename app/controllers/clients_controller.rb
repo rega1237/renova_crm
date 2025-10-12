@@ -81,7 +81,7 @@ class ClientsController < ApplicationController
     @client = Client.find(params[:id])
     field = params[:field]
     value = params[field] || params[:value] || (params[:client] && params[:client][field])
-    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id]
+    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id reasons]
     unless allowed_fields.include?(field)
       return render turbo_stream: turbo_stream.update(
         "client_#{field}_display",
@@ -93,7 +93,7 @@ class ClientsController < ApplicationController
     update_params = { field => value }
 
     if %w[status source].include?(field)
-      valid_values = Client.send("#{field}s").keys
+      valid_values = Client.send(field.pluralize).keys
       unless valid_values.include?(value)
         return render turbo_stream: turbo_stream.update(
           "client_#{field}_display",
@@ -122,6 +122,22 @@ class ClientsController < ApplicationController
 
     if @client.update(update_params)
       @client.update_column(:updated_by_id, Current.user&.id) if Current.user
+
+      # Emitir broadcast al Sales Flow si el campo actualizado afecta la tarjeta
+      if field == "reasons"
+        client_html = ApplicationController.render(
+          partial: "sales_flow/client_card",
+          locals: { client: @client }
+        )
+        ActionCable.server.broadcast(
+          "sales_flow_channel",
+          {
+            action: "reason_updated",
+            client_id: @client.id,
+            client_html: client_html
+          }
+        )
+      end
 
       render turbo_stream: turbo_stream.update(
         "client_#{field}_display",
@@ -269,7 +285,7 @@ class ClientsController < ApplicationController
     def client_params
       params.require(:client).permit(
         :name, :phone, :email, :address, :zip_code, :state_id,
-        :status, :source, :prospecting_seller_id, :assigned_seller_id
+        :status, :source, :prospecting_seller_id, :assigned_seller_id, :reasons
       )
     end
 end
