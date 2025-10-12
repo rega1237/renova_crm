@@ -119,7 +119,7 @@ class AppointmentsController < ApplicationController
     streams = [
       turbo_stream.update("appointment-details-section", partial: "appointments/empty"),
       turbo_stream.update("client_status_display", partial: "clients/field_display", locals: { client: @client, field: "status" }),
-      turbo_stream.update("appointment-form-container", render_to_string(partial: "appointments/form", locals: { client: @client, appointment: (@client.appointments.find_by(status: 'scheduled') || @client.appointments.new(seller_id: @client.assigned_seller_id, address: @client.address)) })),
+      turbo_stream.update("appointment-form-container", render_to_string(partial: "appointments/form", locals: { client: @client, appointment: (@client.appointments.find_by(status: "scheduled") || @client.appointments.new(seller_id: @client.assigned_seller_id, address: @client.address)) })),
       turbo_stream.prepend("notifications-container", partial: "shared/flash_message", locals: { type: "notice", message: flash.now[:notice] })
     ]
 

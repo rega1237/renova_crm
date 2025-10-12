@@ -9,6 +9,7 @@ one:
   description: MyText
   google_event_id: MyString
   status: 1
+  created_by: one
 
 two:
   client: two
@@ -19,3 +20,4 @@ two:
   description: MyText
   google_event_id: MyString
   status: 1
+  created_by: two
