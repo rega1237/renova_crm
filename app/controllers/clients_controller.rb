@@ -71,6 +71,11 @@ class ClientsController < ApplicationController
   end
 
   def update_field
+    # Si el campo a actualizar es el status, delega a la acción que sí tiene el broadcast.
+    if params[:field] == "status"
+      return update_status
+    end
+
     # Si el campo a actualizar es el vendedor asignado, delega a la acción que sí tiene el broadcast.
     if params[:field] == "assigned_seller_id"
       # Re-mapear los parámetros para que coincidan con lo que espera `update_assigned_seller`
@@ -183,13 +188,33 @@ class ClientsController < ApplicationController
         }
       )
 
-      render json: {
-        status: "success",
-        message: "Cliente actualizado correctamente",
-        updated_at: @client.updated_status_at || @client.updated_at # Para el frontend
-      }
+      respond_to do |format|
+        format.json do
+          render json: {
+            status: "success",
+            message: "Cliente actualizado correctamente",
+            updated_at: @client.updated_status_at || @client.updated_at # Para el frontend
+          }
+        end
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "client_status_display",
+            partial: "clients/field_display",
+            locals: { field: "status", client: @client }
+          )
+        end
+      end
     else
-      render json: { status: "error", errors: @client.errors.full_messages }
+      respond_to do |format|
+        format.json { render json: { status: "error", errors: @client.errors.full_messages } }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "client_status_display",
+            partial: "clients/field_with_error",
+            locals: { error: @client.errors.full_messages.join(", "), field: "status", client: @client }
+          )
+        end
+      end
     end
   end
 
