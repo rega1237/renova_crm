@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   # --- Rutas de Clientes ---
   resources :clients, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
     resources :notes, only: [ :index, :new, :create, :destroy ]
+    resources :appointments, only: [ :create, :edit, :update, :destroy ]
     member do
       patch :update_assigned_seller
       patch :update_field
@@ -33,6 +34,8 @@ Rails.application.routes.draw do
 
   # --- Ruta para Flujo de Ventas ---
   get "sales_flow", to: "sales_flow#index"
+  get "calendar", to: "calendar#index"
+  get "appointments_list", to: "appointments_list#index"
 
   # --- Ruta para Actualizar Status via Drag & Drop ---
   patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"
@@ -43,6 +46,13 @@ Rails.application.routes.draw do
     get "auth/callback", to: "authorizations#create"
     post "save_page_selection", to: "authorizations#save_page_selection"
   end
+
+  # --- RUTAS PARA LA AUTORIZACIÓN DE GOOGLE (OAuth) ---
+  namespace :google do
+    get "auth", to: "authorizations#new"
+  end
+
+  get "/auth/google_oauth2/callback", to: "google/authorizations#create"
 
   # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
   namespace :api do

@@ -78,8 +78,7 @@ users = User.all
 
   # Determinar assigned_seller_id (solo si status requiere vendedor asignado)
   assigned_seller = if statuses_requiring_assigned_seller.include?(client_status)
-                     # 95% de las veces asignar un vendedor si el status lo requiere
-                     rand(20) < 19 ? sellers.sample : nil
+                     rand(20) < 10 ? sellers.sample : nil
   else
                      nil
   end

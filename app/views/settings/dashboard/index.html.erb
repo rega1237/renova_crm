@@ -55,5 +55,22 @@
         </div>
       <% end %>
     </div>
+
+    <div class="block bg-white p-8 rounded-xl shadow-md">
+      <% if GoogleIntegration.find_by(user: Current.user).present? %>
+        <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Conectado a Google Calendar</h2>
+        <p class="font-montserrat text-negro-onix mt-2">
+          La aplicación tiene permiso para gestionar eventos en tu calendario.
+        </p>
+      <% else %>
+        <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Conectar con Google Calendar</h2>
+        <p class="font-montserrat text-negro-onix mt-2">
+          Conecta tu cuenta de Google para poder crear y gestionar citas en tu calendario.
+        </p>
+        <div class="mt-4">
+          <%= link_to "Conectar mi Calendario", google_auth_path, class: "bg-red-600 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90", data: { turbo: false } %>
+        </div>
+      <% end %>
+    </div>
   </div>
 </div>

@@ -5,7 +5,8 @@
      data-action="click->slideover#clickOutside">
   <div class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl flex flex-col"
        data-slideover-target="panel"
-       data-action="click->slideover#preventClose">
+       data-action="click->slideover#preventClose"
+       data-controller="toggle">
     <div class="p-6 bg-rojo-carmesi">
       <div class="flex items-start justify-between">
         <h2 class="text-lg font-poppins font-medium text-white">
@@ -20,6 +21,14 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
             </svg>
           </button>
+
+          <!-- Botón Agendar Cita -->
+          <button type="button" data-action="click->toggle#toggle" class="p-2 rounded-md bg-purple-500 hover:bg-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" title="Agendar Cita">
+            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+
           <!-- Icono de libreta/editar  -->
           <%= link_to edit_client_path(client), 
           class: "p-2 rounded-md bg-blue-500 hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300",
@@ -258,6 +267,27 @@
             <%= render 'field_edit_form', client: client, field: 'source' %>
           </div>
         </div>
+
+        <!-- Motivo (solo cuando el estado es 'no_cerro') -->
+        <% if client.status == 'no_cerro' %>
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Motivo</h3>
+            <button type="button"
+                    data-action="click->client-inline-edit#toggleEdit"
+                    data-field="reasons"
+                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_reasons_display" data-client-inline-edit-target="display" data-field="reasons">
+            <%= render 'field_display', client: client, field: 'reasons' %>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="reasons" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'reasons' %>
+          </div>
+        </div>
+        <% end %>
       </div>
       <!-- Vendedor que generó prospecto y Vendedor asignado -->
       <div class="pt-4 border-t border-gray-200">
@@ -290,6 +320,42 @@
         <!-- Vendedor asignado -->
         <%= render 'assigned_seller_inline', client: client %>
       </div>
+
+      <!-- Contenedor para el formulario de citas -->
+      <div class="pt-4 border-t border-gray-200">
+        <% active_appointment = client.appointments.find_by(status: 'scheduled') %>
+
+        <div id="appointment-details-section">
+          <% if active_appointment %>
+            <div class="mb-2">
+              <span class="text-xs font-poppins text-gray-600">
+                Citas canceladas: <%= client.cancellations_count %>
+              </span>
+            </div>
+            <%= render 'appointments/appointment_details', client: client, appointment: active_appointment %>
+          <% else %>
+            <div class="pb-4 border-b border-gray-200">
+              <button type="button" data-action="click->toggle#toggle" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Agendar Nueva Cita
+              </button>
+              <div class="mt-2 text-center">
+                <span class="text-xs font-poppins text-gray-600">
+                  Citas canceladas: <%= client.cancellations_count %>
+                </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <div id="appointment-form-container" data-toggle-target="content" class="hidden">
+          <%# Instanciamos un appointment nuevo para el formulario %>
+          <%= render 'appointments/form', client: client, appointment: (active_appointment || client.appointments.new(seller_id: client.assigned_seller_id, address: client.address)) %>
+        </div>
+      </div>
+
       <!-- Fechas de creación y actualización -->
       <div class="pt-4 border-t border-gray-200">
         <div class="grid grid-cols-1 gap-3 text-sm">
@@ -304,7 +370,7 @@
           <% if client.updated_status_at != nil %>
             <div>
               <span class="font-poppins font-semibold text-gray-500">Última actualización de status:</span>
-              <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_status_at.strftime("%d/%m/%Y a las %H:%M") %> / <%= client.updated_by.name %></span>
+              <span class="font-montserrat text-gray-600 ml-2"><%= client.updated_status_at.strftime("%d/%m/%Y a las %H:%M") %> / <%= client.updated_by&.name || "Sistema" %></span>
             </div>
           <% end %>
         </div>

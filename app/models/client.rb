@@ -4,6 +4,7 @@ class Client < ApplicationRecord
   belongs_to :state, optional: true
   belongs_to :updated_by, class_name: "User", optional: true
   has_many :notes, dependent: :destroy
+  has_many :appointments, dependent: :destroy
 
   scope :with_recent_notes, -> { includes(:notes).order("notes.created_at DESC") }
 
@@ -106,12 +107,22 @@ class Client < ApplicationRecord
     %w[prospectacion referencia].include?(source)
   end
 
+  # Método para determinar la zona horaria del cliente
+  def timezone
+    case state&.abbreviation # Asumiendo que State tiene una abreviatura (ej. TX, IL)
+    when "TX", "IL" # Texas e Illinois
+      "America/Chicago" # Zona horaria central
+    else
+      Rails.application.config.time_zone # Zona horaria por defecto de la aplicación
+    end
+  end
+
   private
 
   def update_status_tracking
-    self.update_columns(
-      updated_status_at: Time.current,
-      updated_by_id: Current.user&.id
-    )
+    attrs = { updated_status_at: Time.current }
+    # No sobrescribir updated_by_id con nil si no hay usuario actual
+    attrs[:updated_by_id] = Current.user.id if Current.user
+    self.update_columns(attrs)
   end
 end

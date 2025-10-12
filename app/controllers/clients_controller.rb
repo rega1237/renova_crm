@@ -71,10 +71,22 @@ class ClientsController < ApplicationController
   end
 
   def update_field
+    # Si el campo a actualizar es el status, delega a la acción que sí tiene el broadcast.
+    if params[:field] == "status"
+      return update_status
+    end
+
+    # Si el campo a actualizar es el vendedor asignado, delega a la acción que sí tiene el broadcast.
+    if params[:field] == "assigned_seller_id"
+      # Re-mapear los parámetros para que coincidan con lo que espera `update_assigned_seller`
+      params[:client] = { assigned_seller_id: params[:assigned_seller_id] }
+      return update_assigned_seller
+    end
+
     @client = Client.find(params[:id])
     field = params[:field]
     value = params[field] || params[:value] || (params[:client] && params[:client][field])
-    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id assigned_seller_id]
+    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id reasons]
     unless allowed_fields.include?(field)
       return render turbo_stream: turbo_stream.update(
         "client_#{field}_display",
@@ -86,7 +98,7 @@ class ClientsController < ApplicationController
     update_params = { field => value }
 
     if %w[status source].include?(field)
-      valid_values = Client.send("#{field}s").keys
+      valid_values = Client.send(field.pluralize).keys
       unless valid_values.include?(value)
         return render turbo_stream: turbo_stream.update(
           "client_#{field}_display",
@@ -96,11 +108,11 @@ class ClientsController < ApplicationController
       end
     end
 
-    if %w[state_id prospecting_seller_id assigned_seller_id].include?(field)
+    if %w[state_id prospecting_seller_id].include?(field)
       case field
       when "state_id"
         valid_model = State.exists?(id: value) if value.present?
-      when "prospecting_seller_id", "assigned_seller_id"
+      when "prospecting_seller_id"
         valid_model = Seller.exists?(id: value) if value.present?
       end
 
@@ -115,6 +127,22 @@ class ClientsController < ApplicationController
 
     if @client.update(update_params)
       @client.update_column(:updated_by_id, Current.user&.id) if Current.user
+
+      # Emitir broadcast al Sales Flow si el campo actualizado afecta la tarjeta
+      if field == "reasons"
+        client_html = ApplicationController.render(
+          partial: "sales_flow/client_card",
+          locals: { client: @client }
+        )
+        ActionCable.server.broadcast(
+          "sales_flow_channel",
+          {
+            action: "reason_updated",
+            client_id: @client.id,
+            client_html: client_html
+          }
+        )
+      end
 
       render turbo_stream: turbo_stream.update(
         "client_#{field}_display",
@@ -160,13 +188,33 @@ class ClientsController < ApplicationController
         }
       )
 
-      render json: {
-        status: "success",
-        message: "Cliente actualizado correctamente",
-        updated_at: @client.updated_status_at || @client.updated_at # Para el frontend
-      }
+      respond_to do |format|
+        format.json do
+          render json: {
+            status: "success",
+            message: "Cliente actualizado correctamente",
+            updated_at: @client.updated_status_at || @client.updated_at # Para el frontend
+          }
+        end
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "client_status_display",
+            partial: "clients/field_display",
+            locals: { field: "status", client: @client }
+          )
+        end
+      end
     else
-      render json: { status: "error", errors: @client.errors.full_messages }
+      respond_to do |format|
+        format.json { render json: { status: "error", errors: @client.errors.full_messages } }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "client_status_display",
+            partial: "clients/field_with_error",
+            locals: { error: @client.errors.full_messages.join(", "), field: "status", client: @client }
+          )
+        end
+      end
     end
   end
 
@@ -176,6 +224,28 @@ class ClientsController < ApplicationController
 
     if @client.update(assigned_seller_id: params[:client][:assigned_seller_id])
       Rails.logger.info "Update exitoso"
+
+      # Actualizar el vendedor en las citas activas del cliente
+      active_appointments = @client.appointments.where(status: "scheduled")
+      active_appointments.update_all(seller_id: @client.assigned_seller_id)
+
+      # Si hay citas activas actualizadas, broadcast calendar update
+      if active_appointments.any?
+        # Actualizar eventos de Google Calendar para cada cita activa
+        active_appointments.each do |appointment|
+          if appointment.google_event_id.present?
+            UpdateGoogleEventJob.perform_later(appointment)
+          end
+        end
+
+        ActionCable.server.broadcast(
+          "calendar_updates",
+          {
+            action: "refresh_calendar",
+            appointment_id: active_appointments.first.id
+          }
+        )
+      end
 
       # Renderizamos el HTML de la tarjeta actualizada para el broadcast
       client_html = ApplicationController.render(
@@ -193,11 +263,27 @@ class ClientsController < ApplicationController
         }
       )
 
-      render turbo_stream: turbo_stream.replace(
-        "assigned-seller-section",
-        partial: "clients/assigned_seller_section",
-        locals: { client: @client }
+      # Preparar streams para actualizar múltiples elementos
+      streams = []
+
+      # Actualizar el campo del vendedor asignado
+      streams << turbo_stream.update(
+        "client_assigned_seller_id_display",
+        partial: "clients/field_display",
+        locals: { field: "assigned_seller_id", client: @client }
       )
+
+      # Si hay citas activas, actualizar la sección de detalles de la cita
+      if active_appointments.any?
+        active_appointment = active_appointments.first
+        streams << turbo_stream.update(
+          "appointment-details-section",
+          partial: "appointments/appointment_details",
+          locals: { client: @client, appointment: active_appointment }
+        )
+      end
+
+      render turbo_stream: streams
     else
       render json: {
         status: "error",
@@ -224,7 +310,7 @@ class ClientsController < ApplicationController
     def client_params
       params.require(:client).permit(
         :name, :phone, :email, :address, :zip_code, :state_id,
-        :status, :source, :prospecting_seller_id, :assigned_seller_id
+        :status, :source, :prospecting_seller_id, :assigned_seller_id, :reasons
       )
     end
 end

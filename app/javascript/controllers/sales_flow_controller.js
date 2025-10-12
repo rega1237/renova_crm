@@ -501,6 +501,8 @@ export default class extends Controller {
       this.handleNewLead(data);
     } else if (data.action === "assigned_seller_updated") {
       this.handleSellerUpdate(data);
+    } else if (data.action === "reason_updated") {
+      this.handleReasonUpdate(data);
     }
   }
 
@@ -632,6 +634,32 @@ export default class extends Controller {
     }
   }
 
+  // Metodo para manejar update del motivo y reemplazar tarjeta sin mover columnas
+  handleReasonUpdate(data) {
+    const { client_id, client_html } = data;
+
+    const currentCard =
+      this.element.querySelector(`.client-card[data-client-id="${client_id}"]`) ||
+      this.element
+        .querySelector(`[data-client-id="${client_id}"]`)
+        ?.closest(".client-card");
+
+    if (!currentCard) return;
+
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = client_html.trim();
+    const newCard = tempDiv.firstElementChild;
+
+    if (!newCard) return;
+
+    currentCard.replaceWith(newCard);
+
+    newCard.classList.add("remote-update");
+    setTimeout(() => {
+      newCard.classList.remove("remote-update");
+    }, 2500);
+  }
+
   // =============================================
   // MÉTODOS DE NOTIFICACIONES
   // =============================================
@@ -644,9 +672,14 @@ export default class extends Controller {
 
     if (data.action === "client_moved") {
       title = `Cliente ${data.client_name}`;
-      message = `Movido a ${data.new_status.replace("_", " ")} por ${
-        data.updated_by_name
-      }`;
+      if (data.reentered && data.new_status === "lead") {
+        message = "Reingresó como lead.";
+        bgColor = "bg-green-500"; // Resaltar reingreso como lead
+      } else {
+        message = `Movido a ${data.new_status.replace("_", " ")} por ${
+          data.updated_by_name
+        }`;
+      }
     } else if (data.action === "new_lead_created") {
       title = "¡Nuevo Lead!";
       message = `${data.client_name} ha entrado desde Meta.`;

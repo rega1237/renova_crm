@@ -1,0 +1,156 @@
+<div class="bg-white p-6 rounded-xl shadow-md" data-controller="appointments-list appointments-list-updates">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+    <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-4 sm:mb-0">
+      Lista de Citas
+    </h1>
+    
+    <!-- Filtros de fecha -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <%= form_with url: appointments_list_path, method: :get, local: false, 
+          data: { 
+            controller: "date-filter",
+            action: "submit->date-filter#filterAppointments",
+            turbo_frame: "appointments-list-content"
+          }, 
+          class: "flex flex-col sm:flex-row gap-3" do |form| %>
+        
+        <div class="flex flex-col">
+          <%= form.label :start_date, "Fecha inicio", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
+          <%= form.date_field :start_date, 
+              value: params[:start_date], 
+              class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
+        </div>
+        
+        <div class="flex flex-col">
+          <%= form.label :end_date, "Fecha fin", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
+          <%= form.date_field :end_date, 
+              value: params[:end_date], 
+              class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
+        </div>
+        
+        <div class="flex items-end gap-2">
+          <%= form.submit "Filtrar", 
+              class: "bg-rojo-carmesi text-white font-poppins font-medium py-2 px-4 rounded-md hover:opacity-90 transition-opacity text-sm" %>
+          <%= link_to "Limpiar", appointments_list_path, 
+              class: "bg-gray-500 text-white font-poppins font-medium py-2 px-4 rounded-md hover:opacity-90 transition-opacity text-sm",
+              data: { turbo_frame: "appointments-list-content" } %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Contenedor de la lista con ActionCable -->
+  <%= turbo_frame_tag "appointments-list-content", 
+      data: { 
+        appointments_list_updates_target: "listContainer"
+      } do %>
+    
+    <% if @appointments.any? %>
+      <div class="space-y-4">
+        <% @appointments.each do |appointment| %>
+          <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+               data-action="click->appointments-list#openClientDetails"
+               data-client-path="<%= client_path(appointment.client) %>"
+               data-appointments-list-target="appointmentItem">
+            
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <!-- Título y hora -->
+                <div class="flex items-center gap-3 mb-2">
+                  <h3 class="font-poppins text-lg font-semibold text-negro-onix">
+                    <%= appointment.title %>
+                  </h3>
+                  
+                  <!-- Estado de la cita -->
+                  <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full font-montserrat
+                    <% case appointment.status %>
+                    <% when 'scheduled' %>
+                      bg-green-100 text-green-800
+                    <% when 'canceled' %>
+                      bg-red-100 text-red-800
+                    <% when 'completed' %>
+                      bg-blue-100 text-blue-800
+                    <% else %>
+                      bg-gray-100 text-gray-800
+                    <% end %>">
+                    <%= appointment.status.humanize %>
+                  </span>
+                </div>
+                
+                <!-- Información del cliente -->
+                <div class="mb-2">
+                  <p class="font-montserrat text-negro-onix font-medium">
+                    <span class="text-gray-600">Cliente:</span> <%= appointment.client.name %>
+                  </p>
+                  <% if appointment.client.phone.present? %>
+                    <p class="font-montserrat text-sm text-gray-600">
+                      <span class="text-gray-500">Teléfono:</span> <%= appointment.client.phone %>
+                    </p>
+                  <% end %>
+                </div>
+                
+                <!-- Dirección -->
+                <% if appointment.address.present? %>
+                  <p class="font-montserrat text-sm text-gray-600 mb-2">
+                    <span class="text-gray-500">Dirección:</span> <%= appointment.address %>
+                  </p>
+                <% end %>
+                
+                <!-- Descripción -->
+                <% if appointment.description.present? %>
+                  <p class="font-montserrat text-sm text-gray-700 mb-2">
+                    <%= appointment.description %>
+                  </p>
+                <% end %>
+              </div>
+              
+              <!-- Información de fecha y vendedor -->
+              <div class="text-right ml-4">
+                <div class="mb-2">
+                  <p class="font-poppins text-sm font-medium text-gray-700">
+                    <%= appointment.start_time.strftime("%d/%m/%Y") %>
+                  </p>
+                  <p class="font-montserrat text-sm text-gray-600">
+                    <%= appointment.start_time.strftime("%H:%M") %> - <%= appointment.end_time.strftime("%H:%M") %>
+                  </p>
+                </div>
+                
+                <!-- Vendedor asignado -->
+                <% if appointment.seller.present? %>
+                  <div class="flex items-center justify-end gap-2">
+                    <div class="w-3 h-3 rounded-full" 
+                         style="background-color: <%= color_for_seller(appointment.seller) %>"></div>
+                    <span class="font-montserrat text-sm text-gray-700">
+                      <%= appointment.seller.name %>
+                    </span>
+                  </div>
+                <% else %>
+                  <span class="font-montserrat text-sm text-gray-400 italic">
+                    Sin vendedor asignado
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-poppins font-medium text-gray-900">No hay citas</h3>
+        <p class="mt-1 text-sm font-montserrat text-gray-500">
+          <% if params[:start_date].present? || params[:end_date].present? %>
+            No se encontraron citas para el rango de fechas seleccionado.
+          <% else %>
+            No hay citas programadas en este momento.
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<!-- Frame para el slideover del cliente -->
+<%= turbo_frame_tag "slideover" %>
