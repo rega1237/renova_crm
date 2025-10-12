@@ -10,7 +10,7 @@ class Facebook::LeadProcessor
     lead_data = fetch_lead_data
     return unless lead_data
 
-    client_attributes = map_fields(lead_data["field_data"]) 
+    client_attributes = map_fields(lead_data["field_data"])
 
     existing_client = Client.find_by(email: client_attributes[:email])
 

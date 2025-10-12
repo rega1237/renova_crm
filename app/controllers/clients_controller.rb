@@ -265,7 +265,7 @@ class ClientsController < ApplicationController
 
       # Preparar streams para actualizar múltiples elementos
       streams = []
-      
+
       # Actualizar el campo del vendedor asignado
       streams << turbo_stream.update(
         "client_assigned_seller_id_display",
