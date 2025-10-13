@@ -36,8 +36,8 @@ class DashboardController < ApplicationController
         # Constrain to month range
         month_start = month_date.beginning_of_month
         month_end = month_date.end_of_month
-        date_from = sub_from.present? ? [Date.parse(sub_from), month_start].max.beginning_of_day : month_start.beginning_of_day
-        date_to = sub_to.present? ? [Date.parse(sub_to), month_end].min.end_of_day : month_end.end_of_day
+        date_from = sub_from.present? ? [ Date.parse(sub_from), month_start ].max.beginning_of_day : month_start.beginning_of_day
+        date_to = sub_to.present? ? [ Date.parse(sub_to), month_end ].min.end_of_day : month_end.end_of_day
       else
         date_from = month_date.beginning_of_month.beginning_of_day
         date_to = month_date.end_of_month.end_of_day
@@ -60,21 +60,21 @@ class DashboardController < ApplicationController
     when :day
       # Single day -> single category (the day)
       category = date_from.to_date.strftime("%Y-%m-%d")
-      sources_keys = source && Client.sources.key?(source) ? [source] : Client.sources.keys
+      sources_keys = source && Client.sources.key?(source) ? [ source ] : Client.sources.keys
       series = sources_keys.map do |src|
         count = scope.where(source: Client.sources[src]).count
-        { name: src.humanize, data: [count] }
+        { name: src.humanize, data: [ count ] }
       end
-      render json: { categories: [category], series: series }
+      render json: { categories: [ category ], series: series }
     when :month_single
       # Month (or subrange within month) -> single category (YYYY-MM)
       category = date_from.to_date.strftime("%Y-%m")
-      sources_keys = source && Client.sources.key?(source) ? [source] : Client.sources.keys
+      sources_keys = source && Client.sources.key?(source) ? [ source ] : Client.sources.keys
       series = sources_keys.map do |src|
         count = scope.where(source: Client.sources[src]).count
-        { name: src.humanize, data: [count] }
+        { name: src.humanize, data: [ count ] }
       end
-      render json: { categories: [category], series: series }
+      render json: { categories: [ category ], series: series }
     when :months
       # Default monthly view (last 6 months), source may be selected or not
       start_month = date_from.to_date.beginning_of_month
@@ -85,7 +85,7 @@ class DashboardController < ApplicationController
         months_range << current_month.strftime("%Y-%m")
         current_month = current_month.next_month
       end
-      sources_keys = source && Client.sources.key?(source) ? [source] : Client.sources.keys
+      sources_keys = source && Client.sources.key?(source) ? [ source ] : Client.sources.keys
       series = sources_keys.map do |src|
         counts = scope.where(source: Client.sources[src]).group("DATE_TRUNC('month', created_at)").count
         counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
@@ -123,8 +123,8 @@ class DashboardController < ApplicationController
       if sub_from.present? || sub_to.present?
         month_start = month_date.beginning_of_month
         month_end = month_date.end_of_month
-        date_from = sub_from.present? ? [Date.parse(sub_from), month_start].max.beginning_of_day : month_start.beginning_of_day
-        date_to = sub_to.present? ? [Date.parse(sub_to), month_end].min.end_of_day : month_end.end_of_day
+        date_from = sub_from.present? ? [ Date.parse(sub_from), month_start ].max.beginning_of_day : month_start.beginning_of_day
+        date_to = sub_to.present? ? [ Date.parse(sub_to), month_end ].min.end_of_day : month_end.end_of_day
       else
         date_from = month_date.beginning_of_month.beginning_of_day
         date_to = month_date.end_of_month.end_of_day
@@ -137,7 +137,7 @@ class DashboardController < ApplicationController
     end
 
     # Base client scope: non-lead statuses, filtered by updated_status_at and optional source/agent
-    client_scope = Client.where.not(status: Client.statuses['lead'])
+    client_scope = Client.where.not(status: Client.statuses["lead"])
     client_scope = client_scope.where(source: Client.sources[source]) if source && Client.sources.key?(source)
     client_scope = client_scope.where(updated_by_id: agent_id) if agent_id
     client_scope = client_scope.where(updated_status_at: date_from..date_to)
@@ -148,33 +148,33 @@ class DashboardController < ApplicationController
     appointment_scope = appointment_scope.where(created_by_id: agent_id) if agent_id
 
     # Status series keys (excluding lead)
-    status_keys = Client.statuses.keys - ["lead"]
+    status_keys = Client.statuses.keys - [ "lead" ]
 
     case grouping
     when :day
       category = date_from.to_date.strftime("%Y-%m-%d")
       series = status_keys.map do |st|
-        if st == 'cita_agendada'
+        if st == "cita_agendada"
           count = appointment_scope.count
-          { name: st.humanize, data: [count] }
+          { name: st.humanize, data: [ count ] }
         else
           count = client_scope.where(status: Client.statuses[st]).count
-          { name: st.humanize, data: [count] }
+          { name: st.humanize, data: [ count ] }
         end
       end
-      render json: { categories: [category], series: series }
+      render json: { categories: [ category ], series: series }
     when :month_single
       category = date_from.to_date.strftime("%Y-%m")
       series = status_keys.map do |st|
-        if st == 'cita_agendada'
+        if st == "cita_agendada"
           count = appointment_scope.count
-          { name: st.humanize, data: [count] }
+          { name: st.humanize, data: [ count ] }
         else
           count = client_scope.where(status: Client.statuses[st]).count
-          { name: st.humanize, data: [count] }
+          { name: st.humanize, data: [ count ] }
         end
       end
-      render json: { categories: [category], series: series }
+      render json: { categories: [ category ], series: series }
     when :months
       start_month = date_from.to_date.beginning_of_month
       end_month = date_to.to_date.beginning_of_month
@@ -185,7 +185,7 @@ class DashboardController < ApplicationController
         current_month = current_month.next_month
       end
       series = status_keys.map do |st|
-        if st == 'cita_agendada'
+        if st == "cita_agendada"
           counts = appointment_scope.group("DATE_TRUNC('month', start_time)").count
           counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
           data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
@@ -209,7 +209,7 @@ class DashboardController < ApplicationController
 
     # Estados permitidos y la opción especial de citas agendadas
     allowed_status_keys = %w[vendido mal_credito no_cerro]
-    selected_status_key = allowed_status_keys.include?(status_param) ? status_param : 'vendido'
+    selected_status_key = allowed_status_keys.include?(status_param) ? status_param : "vendido"
 
     # Decide grouping and date bounds
     if day_param.present?
@@ -232,8 +232,8 @@ class DashboardController < ApplicationController
       if sub_from.present? || sub_to.present?
         month_start = month_date.beginning_of_month
         month_end = month_date.end_of_month
-        date_from = sub_from.present? ? [Date.parse(sub_from), month_start].max.beginning_of_day : month_start.beginning_of_day
-        date_to = sub_to.present? ? [Date.parse(sub_to), month_end].min.end_of_day : month_end.end_of_day
+        date_from = sub_from.present? ? [ Date.parse(sub_from), month_start ].max.beginning_of_day : month_start.beginning_of_day
+        date_to = sub_to.present? ? [ Date.parse(sub_to), month_end ].min.end_of_day : month_end.end_of_day
       else
         date_from = month_date.beginning_of_month.beginning_of_day
         date_to = month_date.end_of_month.end_of_day
@@ -260,48 +260,48 @@ class DashboardController < ApplicationController
 
     case grouping
     when :day
-      categories = [date_from.to_date.strftime("%Y-%m-%d")]
+      categories = [ date_from.to_date.strftime("%Y-%m-%d") ]
 
-      if status_param == 'citas_agendadas'
+      if status_param == "citas_agendadas"
         series = sellers.map do |seller|
           count = appointment_scope.where(seller_id: seller.id).count
-          { name: seller.name, data: [count] }
+          { name: seller.name, data: [ count ] }
         end
-      elsif selected_status_key == 'no_cerro'
+      elsif selected_status_key == "no_cerro"
         series = sellers.flat_map do |seller|
-          base = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses['no_cerro'])
+          base = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses["no_cerro"])
           [
-            { name: "#{seller.name} (no aplico)", data: [base.where(reasons: 'no_cerro_no_aplico').count] },
-            { name: "#{seller.name} (buen credito)", data: [base.where(reasons: 'no_cerro_buen_credito').count] }
+            { name: "#{seller.name} (no aplico)", data: [ base.where(reasons: "no_cerro_no_aplico").count ] },
+            { name: "#{seller.name} (buen credito)", data: [ base.where(reasons: "no_cerro_buen_credito").count ] }
           ]
         end
       else
         series = sellers.map do |seller|
           count = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses[selected_status_key]).count
-          { name: seller.name, data: [count] }
+          { name: seller.name, data: [ count ] }
         end
       end
 
     when :month_single
-      categories = [date_from.to_date.strftime("%Y-%m")]
+      categories = [ date_from.to_date.strftime("%Y-%m") ]
 
-      if status_param == 'citas_agendadas'
+      if status_param == "citas_agendadas"
         series = sellers.map do |seller|
           count = appointment_scope.where(seller_id: seller.id).count
-          { name: seller.name, data: [count] }
+          { name: seller.name, data: [ count ] }
         end
-      elsif selected_status_key == 'no_cerro'
+      elsif selected_status_key == "no_cerro"
         series = sellers.flat_map do |seller|
-          base = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses['no_cerro'])
+          base = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses["no_cerro"])
           [
-            { name: "#{seller.name} (no aplico)", data: [base.where(reasons: 'no_cerro_no_aplico').count] },
-            { name: "#{seller.name} (buen credito)", data: [base.where(reasons: 'no_cerro_buen_credito').count] }
+            { name: "#{seller.name} (no aplico)", data: [ base.where(reasons: "no_cerro_no_aplico").count ] },
+            { name: "#{seller.name} (buen credito)", data: [ base.where(reasons: "no_cerro_buen_credito").count ] }
           ]
         end
       else
         series = sellers.map do |seller|
           count = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses[selected_status_key]).count
-          { name: seller.name, data: [count] }
+          { name: seller.name, data: [ count ] }
         end
       end
 
@@ -317,18 +317,18 @@ class DashboardController < ApplicationController
       end
       categories = months_range
 
-      if status_param == 'citas_agendadas'
+      if status_param == "citas_agendadas"
         series = sellers.map do |seller|
           counts = appointment_scope.where(seller_id: seller.id).group("DATE_TRUNC('month', start_time)").count
           counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
           data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
           { name: seller.name, data: data }
         end
-      elsif selected_status_key == 'no_cerro'
+      elsif selected_status_key == "no_cerro"
         series = sellers.flat_map do |seller|
-          base = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses['no_cerro'])
-          counts_no_aplico = base.where(reasons: 'no_cerro_no_aplico').group("DATE_TRUNC('month', updated_status_at)").count
-          counts_buen_credito = base.where(reasons: 'no_cerro_buen_credito').group("DATE_TRUNC('month', updated_status_at)").count
+          base = client_scope.where(assigned_seller_id: seller.id, status: Client.statuses["no_cerro"])
+          counts_no_aplico = base.where(reasons: "no_cerro_no_aplico").group("DATE_TRUNC('month', updated_status_at)").count
+          counts_buen_credito = base.where(reasons: "no_cerro_buen_credito").group("DATE_TRUNC('month', updated_status_at)").count
           counts_no_aplico_by_month = counts_no_aplico.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
           counts_buen_credito_by_month = counts_buen_credito.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
           [
@@ -348,11 +348,11 @@ class DashboardController < ApplicationController
 
     # KPIs: Vendido, Mal credito, No cerro subdividido por razones y Citas agendadas
     totals_by_status = {}
-    totals_by_status['Vendido'] = client_scope.where(status: Client.statuses['vendido']).count
-    totals_by_status['Mal credito'] = client_scope.where(status: Client.statuses['mal_credito']).count
-    totals_by_status['No cerro (no aplico)'] = client_scope.where(status: Client.statuses['no_cerro'], reasons: 'no_cerro_no_aplico').count
-    totals_by_status['No cerro (buen credito)'] = client_scope.where(status: Client.statuses['no_cerro'], reasons: 'no_cerro_buen_credito').count
-    totals_by_status['Citas agendadas'] = appointment_scope.count
+    totals_by_status["Vendido"] = client_scope.where(status: Client.statuses["vendido"]).count
+    totals_by_status["Mal credito"] = client_scope.where(status: Client.statuses["mal_credito"]).count
+    totals_by_status["No cerro (no aplico)"] = client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_no_aplico").count
+    totals_by_status["No cerro (buen credito)"] = client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_buen_credito").count
+    totals_by_status["Citas agendadas"] = appointment_scope.count
 
     render json: { categories: categories, series: series, totals_by_status: totals_by_status }
   end
