@@ -65,5 +65,6 @@ Rails.application.routes.draw do
   # --- Rutas Principales y de Sistema ---
   get "up" => "rails/health#show", as: :rails_health_check
   get "dashboard/leads_metrics", to: "dashboard#leads_metrics"
+  get "dashboard/telemarketing_metrics", to: "dashboard#telemarketing_metrics"
   root "dashboard#index"
 end

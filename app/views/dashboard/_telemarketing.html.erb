@@ -1,0 +1,77 @@
+<div data-controller="telemarketing-chart" class="bg-white rounded-xl shadow p-6">
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Origen (source)</label>
+        <select data-telemarketing-chart-target="source" data-action="change->telemarketing-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi">
+          <option value="">Todos</option>
+          <% Client.sources.keys.each do |src| %>
+            <option value="<%= src %>"><%= src.humanize %></option>
+          <% end %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Agente</label>
+        <select data-telemarketing-chart-target="agent" data-action="change->telemarketing-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi">
+          <option value="">Todos</option>
+          <% @telemarketers.each do |tm| %>
+            <option value="<%= tm.id %>"><%= tm.name %></option>
+          <% end %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Día específico</label>
+        <input type="date" data-telemarketing-chart-target="day" data-action="change->telemarketing-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Mes</label>
+        <input type="month" data-telemarketing-chart-target="month" data-action="change->telemarketing-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" />
+      </div>
+      <div data-telemarketing-chart-target="dateFromWrapper" class="hidden">
+        <label class="block text-sm font-medium text-negro-onix">Desde (dentro del mes)</label>
+        <input type="date" data-telemarketing-chart-target="dateFrom" data-action="change->telemarketing-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" disabled />
+      </div>
+      <div data-telemarketing-chart-target="dateToWrapper" class="hidden">
+        <label class="block text-sm font-medium text-negro-onix">Hasta (dentro del mes)</label>
+        <input type="date" data-telemarketing-chart-target="dateTo" data-action="change->telemarketing-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" disabled />
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-red-500 p-4">
+      <p class="text-xs font-medium text-gray-500">No contestó</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiNoContesto">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-amber-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Seguimiento</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiSeguimiento">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-emerald-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Cita agendada</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiCitaAgendada">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-blue-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Reprogramar</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiReprogramar">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-purple-600 p-4">
+      <p class="text-xs font-medium text-gray-500">Vendido</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiVendido">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-indigo-500 p-4">
+      <p class="text-xs font-medium text-gray-500">No cerró</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiNoCerro">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-teal-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Mal crédito</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-telemarketing-chart-target="kpiMalCredito">0</p>
+    </div>
+  </div>
+
+  <div data-telemarketing-chart-target="chart"></div>
+</div>

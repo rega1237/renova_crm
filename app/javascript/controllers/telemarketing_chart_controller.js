@@ -1,12 +1,12 @@
 import { Controller } from "@hotwired/stimulus";
 import ApexCharts from "apexcharts";
 
-// Connects to data-controller="leads-chart"
+// Connects to data-controller="telemarketing-chart"
 export default class extends Controller {
   static targets = [
     "chart",
     "source",
-    "state",
+    "agent",
     "month",
     "dateFrom",
     "dateTo",
@@ -14,12 +14,13 @@ export default class extends Controller {
     "dateToWrapper",
     "day",
     // KPI targets
-    "kpiBaseDeDatos",
-    "kpiMeta",
-    "kpiReferencia",
-    "kpiProspectacion",
-    "kpiOtro",
-    "kpiTotal"
+    "kpiNoContesto",
+    "kpiSeguimiento",
+    "kpiCitaAgendada",
+    "kpiReprogramar",
+    "kpiVendido",
+    "kpiNoCerro",
+    "kpiMalCredito"
   ];
 
   connect() {
@@ -44,7 +45,6 @@ export default class extends Controller {
     const monthVal = this.hasMonthTarget ? this.monthTarget.value : null;
     const hasMonth = Boolean(monthVal);
 
-    // Toggle visibility of wrappers
     if (this.hasDateFromWrapperTarget) {
       this.dateFromWrapperTarget.classList.toggle("hidden", !hasMonth);
     }
@@ -52,11 +52,9 @@ export default class extends Controller {
       this.dateToWrapperTarget.classList.toggle("hidden", !hasMonth);
     }
 
-    // Enable/disable subfilters
     if (this.hasDateFromTarget) this.dateFromTarget.disabled = !hasMonth;
     if (this.hasDateToTarget) this.dateToTarget.disabled = !hasMonth;
 
-    // Constrain dates when month is selected
     if (hasMonth) {
       const [yearStr, monthStr] = monthVal.split("-");
       const year = parseInt(yearStr, 10);
@@ -95,14 +93,14 @@ export default class extends Controller {
     const params = new URLSearchParams();
 
     const source = this.hasSourceTarget ? this.sourceTarget.value : null;
-    const stateId = this.hasStateTarget ? this.stateTarget.value : null;
+    const agentId = this.hasAgentTarget ? this.agentTarget.value : null;
     const month = this.hasMonthTarget ? this.monthTarget.value : null;
     const dateFrom = this.hasDateFromTarget ? this.dateFromTarget.value : null;
     const dateTo = this.hasDateToTarget ? this.dateToTarget.value : null;
     const day = this.hasDayTarget ? this.dayTarget.value : null;
 
     if (source) params.append("source", source);
-    if (stateId) params.append("state_id", stateId);
+    if (agentId) params.append("agent_id", agentId);
 
     if (day) {
       params.append("day", day);
@@ -113,37 +111,41 @@ export default class extends Controller {
     }
 
     try {
-      const response = await fetch(`/dashboard/leads_metrics.json?${params.toString()}`, {
+      const response = await fetch(`/dashboard/telemarketing_metrics.json?${params.toString()}`, {
         headers: { "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content }
       });
       const data = await response.json();
       this.renderChart(data);
       this.updateKpis(data);
     } catch (e) {
-      console.error("Error cargando métricas de leads", e);
+      console.error("Error cargando métricas de telemarketing", e);
     }
   }
 
   updateKpis(data) {
     const series = data.series || [];
     const totalsByName = {};
-    let grandTotal = 0;
     for (const s of series) {
       const total = (s.data || []).reduce((acc, val) => acc + (Number(val) || 0), 0);
       totalsByName[s.name] = total;
-      grandTotal += total;
     }
-
-    const setText = (hasTarget, targetEl, value) => {
-      if (hasTarget && targetEl) targetEl.textContent = value;
+    // Map series names (humanized) to KPI targets
+    const setKpi = (targetName, seriesName) => {
+      const value = totalsByName[seriesName] || 0;
+      const hasTargetProp = `has${targetName.charAt(0).toUpperCase()}${targetName.slice(1)}Target`;
+      const targetProp = `${targetName}Target`;
+      if (this[hasTargetProp] && this[targetProp]) {
+        this[targetProp].textContent = value;
+      }
     };
 
-    setText(this.hasKpiBaseDeDatosTarget, this.kpiBaseDeDatosTarget, totalsByName["Base de datos"] || 0);
-    setText(this.hasKpiMetaTarget, this.kpiMetaTarget, totalsByName["Meta"] || 0);
-    setText(this.hasKpiReferenciaTarget, this.kpiReferenciaTarget, totalsByName["Referencia"] || 0);
-    setText(this.hasKpiProspectacionTarget, this.kpiProspectacionTarget, totalsByName["Prospectacion"] || 0);
-    setText(this.hasKpiOtroTarget, this.kpiOtroTarget, totalsByName["Otro"] || 0);
-    setText(this.hasKpiTotalTarget, this.kpiTotalTarget, grandTotal || 0);
+    setKpi("kpiNoContesto", "No contesto");
+    setKpi("kpiSeguimiento", "Seguimiento");
+    setKpi("kpiCitaAgendada", "Cita agendada");
+    setKpi("kpiReprogramar", "Reprogramar");
+    setKpi("kpiVendido", "Vendido");
+    setKpi("kpiNoCerro", "No cerro");
+    setKpi("kpiMalCredito", "Mal credito");
   }
 
   renderChart(data) {
@@ -153,7 +155,7 @@ export default class extends Controller {
     const options = {
       chart: { type: "bar", height: 320, toolbar: { show: false }, animations: { enabled: true } },
       theme: { mode: "light" },
-      colors: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#9333ea"],
+      colors: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#9333ea", "#6366f1", "#14b8a6"],
       plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: "45%" } },
       dataLabels: { enabled: false },
       stroke: { show: true, width: 2, colors: ["transparent"] },

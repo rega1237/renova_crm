@@ -1,6 +1,7 @@
 class DashboardController < ApplicationController
   def index
     @states = State.ordered
+    @telemarketers = User.telemarketing
   end
 
   def leads_metrics
@@ -89,6 +90,89 @@ class DashboardController < ApplicationController
         counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
         data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
         { name: src.humanize, data: data }
+      end
+      render json: { categories: months_range, series: series }
+    end
+  end
+
+  def telemarketing_metrics
+    source = params[:source].presence
+    agent_id = params[:agent_id].presence
+    month = params[:month].presence
+    day_param = params[:day].presence
+
+    # Decide grouping and date bounds (based on updated_status_at)
+    if day_param.present?
+      begin
+        day_date = Date.parse(day_param)
+        date_from = day_date.beginning_of_day
+        date_to = day_date.end_of_day
+      rescue ArgumentError
+        render json: { categories: [], series: [] } and return
+      end
+      grouping = :day
+    elsif month.present?
+      begin
+        month_date = Date.strptime(month, "%Y-%m")
+      rescue ArgumentError
+        render json: { categories: [], series: [] } and return
+      end
+      sub_from = params[:date_from].presence
+      sub_to = params[:date_to].presence
+      if sub_from.present? || sub_to.present?
+        month_start = month_date.beginning_of_month
+        month_end = month_date.end_of_month
+        date_from = sub_from.present? ? [Date.parse(sub_from), month_start].max.beginning_of_day : month_start.beginning_of_day
+        date_to = sub_to.present? ? [Date.parse(sub_to), month_end].min.end_of_day : month_end.end_of_day
+      else
+        date_from = month_date.beginning_of_month.beginning_of_day
+        date_to = month_date.end_of_month.end_of_day
+      end
+      grouping = :month_single
+    else
+      date_from = 6.months.ago.beginning_of_month
+      date_to = Time.zone.now.end_of_month
+      grouping = :months
+    end
+
+    # Base scope: non-lead statuses, filter by updated_status_at and optional source/agent
+    scope = Client.where.not(status: Client.statuses['lead'])
+    scope = scope.where(source: Client.sources[source]) if source && Client.sources.key?(source)
+    scope = scope.where(updated_by_id: agent_id) if agent_id
+    scope = scope.where(updated_status_at: date_from..date_to)
+
+    # Series: each telemarketing status (excluding lead)
+    status_keys = Client.statuses.keys - ["lead"]
+
+    case grouping
+    when :day
+      category = date_from.to_date.strftime("%Y-%m-%d")
+      series = status_keys.map do |st|
+        count = scope.where(status: Client.statuses[st]).count
+        { name: st.humanize, data: [count] }
+      end
+      render json: { categories: [category], series: series }
+    when :month_single
+      category = date_from.to_date.strftime("%Y-%m")
+      series = status_keys.map do |st|
+        count = scope.where(status: Client.statuses[st]).count
+        { name: st.humanize, data: [count] }
+      end
+      render json: { categories: [category], series: series }
+    when :months
+      start_month = date_from.to_date.beginning_of_month
+      end_month = date_to.to_date.beginning_of_month
+      months_range = []
+      current_month = start_month
+      while current_month <= end_month
+        months_range << current_month.strftime("%Y-%m")
+        current_month = current_month.next_month
+      end
+      series = status_keys.map do |st|
+        counts = scope.where(status: Client.statuses[st]).group("DATE_TRUNC('month', updated_status_at)").count
+        counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
+        data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
+        { name: st.humanize, data: data }
       end
       render json: { categories: months_range, series: series }
     end
