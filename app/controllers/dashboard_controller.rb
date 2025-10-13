@@ -102,7 +102,7 @@ class DashboardController < ApplicationController
     month = params[:month].presence
     day_param = params[:day].presence
 
-    # Decide grouping and date bounds (based on updated_status_at)
+    # Decide grouping and date bounds (clients based on updated_status_at)
     if day_param.present?
       begin
         day_date = Date.parse(day_param)
@@ -136,28 +136,43 @@ class DashboardController < ApplicationController
       grouping = :months
     end
 
-    # Base scope: non-lead statuses, filter by updated_status_at and optional source/agent
-    scope = Client.where.not(status: Client.statuses['lead'])
-    scope = scope.where(source: Client.sources[source]) if source && Client.sources.key?(source)
-    scope = scope.where(updated_by_id: agent_id) if agent_id
-    scope = scope.where(updated_status_at: date_from..date_to)
+    # Base client scope: non-lead statuses, filtered by updated_status_at and optional source/agent
+    client_scope = Client.where.not(status: Client.statuses['lead'])
+    client_scope = client_scope.where(source: Client.sources[source]) if source && Client.sources.key?(source)
+    client_scope = client_scope.where(updated_by_id: agent_id) if agent_id
+    client_scope = client_scope.where(updated_status_at: date_from..date_to)
 
-    # Series: each telemarketing status (excluding lead)
+    # Base appointment scope: scheduled appointments by telemarketing team, filtered by start_time and optional agent (created_by)
+    telemarketer_ids = User.telemarketing.select(:id)
+    appointment_scope = Appointment.scheduled.where(start_time: date_from..date_to).where(created_by_id: telemarketer_ids)
+    appointment_scope = appointment_scope.where(created_by_id: agent_id) if agent_id
+
+    # Status series keys (excluding lead)
     status_keys = Client.statuses.keys - ["lead"]
 
     case grouping
     when :day
       category = date_from.to_date.strftime("%Y-%m-%d")
       series = status_keys.map do |st|
-        count = scope.where(status: Client.statuses[st]).count
-        { name: st.humanize, data: [count] }
+        if st == 'cita_agendada'
+          count = appointment_scope.count
+          { name: st.humanize, data: [count] }
+        else
+          count = client_scope.where(status: Client.statuses[st]).count
+          { name: st.humanize, data: [count] }
+        end
       end
       render json: { categories: [category], series: series }
     when :month_single
       category = date_from.to_date.strftime("%Y-%m")
       series = status_keys.map do |st|
-        count = scope.where(status: Client.statuses[st]).count
-        { name: st.humanize, data: [count] }
+        if st == 'cita_agendada'
+          count = appointment_scope.count
+          { name: st.humanize, data: [count] }
+        else
+          count = client_scope.where(status: Client.statuses[st]).count
+          { name: st.humanize, data: [count] }
+        end
       end
       render json: { categories: [category], series: series }
     when :months
@@ -170,10 +185,17 @@ class DashboardController < ApplicationController
         current_month = current_month.next_month
       end
       series = status_keys.map do |st|
-        counts = scope.where(status: Client.statuses[st]).group("DATE_TRUNC('month', updated_status_at)").count
-        counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
-        data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
-        { name: st.humanize, data: data }
+        if st == 'cita_agendada'
+          counts = appointment_scope.group("DATE_TRUNC('month', start_time)").count
+          counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
+          data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
+          { name: st.humanize, data: data }
+        else
+          counts = client_scope.where(status: Client.statuses[st]).group("DATE_TRUNC('month', updated_status_at)").count
+          counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
+          data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
+          { name: st.humanize, data: data }
+        end
       end
       render json: { categories: months_range, series: series }
     end
