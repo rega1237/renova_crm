@@ -1,0 +1,73 @@
+<div data-controller="sellers-chart" class="bg-white rounded-xl shadow p-6">
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Vendedor</label>
+        <select data-sellers-chart-target="seller" data-action="change->sellers-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi">
+          <option value="">Todos</option>
+          <% @sellers.each do |seller| %>
+            <option value="<%= seller.id %>"><%= seller.name %></option>
+          <% end %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Estado</label>
+        <select data-sellers-chart-target="status" data-action="change->sellers-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi">
+          <option value="vendido">Vendido</option>
+          <option value="mal_credito">Mal crédito</option>
+          <option value="no_cerro">No cerró</option>
+          <option value="citas_agendadas">Citas agendadas</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Día específico</label>
+        <input type="date" data-sellers-chart-target="day" data-action="change->sellers-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+      <div>
+        <label class="block text-sm font-medium text-negro-onix">Mes</label>
+        <input type="month" data-sellers-chart-target="month" data-action="change->sellers-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" />
+      </div>
+      <div data-sellers-chart-target="dateFromWrapper" class="hidden">
+        <label class="block text-sm font-medium text-negro-onix">Desde (dentro del mes)</label>
+        <input type="date" data-sellers-chart-target="dateFrom" data-action="change->sellers-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" disabled />
+      </div>
+      <div data-sellers-chart-target="dateToWrapper" class="hidden">
+        <label class="block text-sm font-medium text-negro-onix">Hasta (dentro del mes)</label>
+        <input type="date" data-sellers-chart-target="dateTo" data-action="change->sellers-chart#updateFilters" class="mt-1 block p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-rojo-carmesi focus:ring-rojo-carmesi" disabled />
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-4 mb-6">
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-teal-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Vendido</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-sellers-chart-target="kpiVendido">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-rose-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Mal crédito</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-sellers-chart-target="kpiMalCredito">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-indigo-500 p-4">
+      <p class="text-xs font-medium text-gray-500">No cerró (No aplicó)</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-sellers-chart-target="kpiNoCerroNoAplico">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-indigo-600 p-4">
+      <p class="text-xs font-medium text-gray-500">No cerró (Buen crédito)</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-sellers-chart-target="kpiNoCerroBuenCredito">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-emerald-500 p-4">
+      <p class="text-xs font-medium text-gray-500">Citas agendadas</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-sellers-chart-target="kpiCitaAgendada">0</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow border-t-4 border-gray-700 p-4">
+      <p class="text-xs font-medium text-gray-500">Total</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900" data-sellers-chart-target="kpiTotal">0</p>
+    </div>
+  </div>
+
+  <div data-sellers-chart-target="chart" class="w-full h-[320px]"></div>
+</div>
