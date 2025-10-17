@@ -361,8 +361,27 @@ class DashboardController < ApplicationController
     totals_by_status["Mal credito"] = client_scope.where(status: Client.statuses["mal_credito"]).count
     totals_by_status["No cerro (no aplico)"] = client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_no_aplico").count
     totals_by_status["No cerro (buen credito)"] = client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_buen_credito").count
-    totals_by_status["Citas agendadas"] = appointment_scope.count
+    totals_by_status["No cerro (no presento)"] = client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_no_presento").count
+    totals_by_status["Citas agendadas"] = appointment_scope.where.not(seller_id: nil).count
 
-    render json: { categories: categories, series: series, totals_by_status: totals_by_status }
+    # Datos para graficas de pie por vendedor
+    pie_by_seller = sellers.map do |seller|
+      seller_client_scope = client_scope.where(assigned_seller_id: seller.id)
+      seller_appointment_scope = appointment_scope.where(seller_id: seller.id)
+      {
+        seller_id: seller.id,
+        seller_name: seller.name,
+        data: [
+          { label: "Vendido", value: seller_client_scope.where(status: Client.statuses["vendido"]).count },
+          { label: "Mal credito", value: seller_client_scope.where(status: Client.statuses["mal_credito"]).count },
+          { label: "No cerro (no aplico)", value: seller_client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_no_aplico").count },
+          { label: "No cerro (buen credito)", value: seller_client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_buen_credito").count },
+          { label: "No cerro (no presento)", value: seller_client_scope.where(status: Client.statuses["no_cerro"], reasons: "no_cerro_no_presento").count },
+          { label: "Citas agendadas", value: seller_appointment_scope.count }
+        ]
+      }
+    end
+
+    render json: { categories: categories, series: series, totals_by_status: totals_by_status, pie_by_seller: pie_by_seller }
   end
 end

@@ -19,20 +19,20 @@ export default class extends Controller {
     "kpiMalCredito",
     "kpiNoCerroNoAplico",
     "kpiNoCerroBuenCredito",
-    "kpiCitaAgendada",
-    "kpiTotal"
+    "kpiNoCerroNoPresento",
+    "kpiCitaAgendada"
   ];
 
   connect() {
-    this.chartInstance = null;
+    this.chartInstances = [];
     this.setupMonthSubfilters();
     this.fetchAndRender();
   }
 
   disconnect() {
-    if (this.chartInstance) {
-      this.chartInstance.destroy();
-      this.chartInstance = null;
+    if (this.chartInstances && this.chartInstances.length) {
+      this.chartInstances.forEach((inst) => inst.destroy());
+      this.chartInstances = [];
     }
   }
 
@@ -93,7 +93,7 @@ export default class extends Controller {
     const params = new URLSearchParams();
 
     const sellerId = this.hasSellerTarget ? this.sellerTarget.value : null;
-    const statusKey = this.hasStatusTarget ? this.statusTarget.value : null;
+    const statusKey = this.hasStatusTarget ? this.statusTarget.value : null; // ya no se usa para pie, pero se mantiene por compatibilidad
     const month = this.hasMonthTarget ? this.monthTarget.value : null;
     const dateFrom = this.hasDateFromTarget ? this.dateFromTarget.value : null;
     const dateTo = this.hasDateToTarget ? this.dateToTarget.value : null;
@@ -115,7 +115,7 @@ export default class extends Controller {
         headers: { "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content }
       });
       const data = await response.json();
-      this.renderChart(data);
+      this.renderPieCharts(data);
       this.updateKpis(data);
     } catch (e) {
       console.error("Error cargando métricas de vendedores", e);
@@ -129,6 +129,7 @@ export default class extends Controller {
       "Mal credito": "kpiMalCredito",
       "No cerro (no aplico)": "kpiNoCerroNoAplico",
       "No cerro (buen credito)": "kpiNoCerroBuenCredito",
+      "No cerro (no presento)": "kpiNoCerroNoPresento",
       "Citas agendadas": "kpiCitaAgendada"
     };
 
@@ -138,44 +139,106 @@ export default class extends Controller {
       if (hasProp && el) el.textContent = value;
     };
 
-    let grandTotal = 0;
     Object.entries(nameMap).forEach(([human, target]) => {
       const val = Number(totals[human] || 0);
-      grandTotal += val;
       setText(target, val);
     });
-    setText("kpiTotal", grandTotal);
   }
 
-  renderChart(data) {
-    const categories = data.categories || [];
-    const series = data.series || [];
+  renderPieCharts(data) {
+    const pieBySeller = data.pie_by_seller || [];
 
-    const options = {
-      chart: { type: "bar", height: 320, toolbar: { show: false }, animations: { enabled: true } },
-      theme: { mode: "light" },
-      colors: [
-        "#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#9333ea",
-        "#14b8a6", "#f97316", "#22c55e", "#06b6d4", "#a855f7",
-        "#64748b", "#84cc16", "#e11d48", "#0ea5e9", "#8b5cf6"
-      ],
-      plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: "45%" } },
-      dataLabels: { enabled: false },
-      stroke: { show: true, width: 2, colors: ["transparent"] },
-      xaxis: { categories, labels: { style: { colors: "#111827", fontFamily: "Montserrat" } } },
-      yaxis: { labels: { style: { colors: "#111827", fontFamily: "Montserrat" } } },
-      legend: { position: "top", fontFamily: "Poppins" },
-      grid: { strokeDashArray: 4 },
-      series,
-      noData: { text: "Sin datos", align: "center" }
+    // Limpiar contenedor y destruir instancias previas
+    if (this.chartInstances && this.chartInstances.length) {
+      this.chartInstances.forEach((inst) => inst.destroy());
+      this.chartInstances = [];
+    }
+    if (this.hasChartTarget) {
+      this.chartTarget.innerHTML = "";
+    }
+
+    if (!pieBySeller.length) {
+      // Mostrar mensaje sin datos
+      const empty = document.createElement("div");
+      empty.className = "w-full text-center text-gray-500 py-12";
+      empty.textContent = "Sin datos";
+      this.chartTarget.appendChild(empty);
+      return;
+    }
+
+    // Colores por estado para consistencia
+    const colorMap = {
+      "Vendido": "#10b981", // green
+      "Mal credito": "#ef4444", // red
+      "No cerro (no aplico)": "#6366f1", // indigo
+      "No cerro (buen credito)": "#8b5cf6", // violet
+      "No cerro (no presento)": "#f97316", // orange
+      "Citas agendadas": "#3b82f6" // blue
     };
 
-    if (this.chartInstance) {
-      this.chartInstance.updateOptions(options);
-      this.chartInstance.updateSeries(series);
-    } else {
-      this.chartInstance = new ApexCharts(this.chartTarget, options);
-      this.chartInstance.render();
-    }
+    // Renderizar un pie por vendedor
+    pieBySeller.forEach((entry, idx) => {
+      const labels = entry.data.map((d) => d.label);
+      const series = entry.data.map((d) => Number(d.value || 0));
+      const colors = labels.map((l) => colorMap[l] || "#64748b");
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "bg-white rounded-xl p-4 shadow-sm border border-gray-100";
+
+      const title = document.createElement("div");
+      title.className = "text-sm font-semibold text-gray-700 mb-2";
+      title.textContent = entry.seller_name;
+      wrapper.appendChild(title);
+
+      const chartEl = document.createElement("div");
+      chartEl.style.width = "100%";
+      chartEl.style.height = "320px";
+      wrapper.appendChild(chartEl);
+
+      this.chartTarget.appendChild(wrapper);
+
+      const options = {
+        chart: { type: "pie", height: 320 },
+        labels,
+        series,
+        colors,
+        dataLabels: {
+          enabled: true,
+          formatter: function (val, opts) {
+            // Mostrar el número absoluto (serie) en lugar del porcentaje
+            return opts.w.globals.series[opts.seriesIndex];
+          }
+        },
+        legend: {
+          position: "bottom",
+          fontFamily: "Poppins",
+          formatter: function (seriesName, opts) {
+            // Mostrar el número junto al nombre en la leyenda
+            const val = opts.w.globals.series[opts.seriesIndex];
+            return `${seriesName} (${val})`;
+          }
+        },
+        tooltip: {
+          y: {
+            formatter: function (value, { seriesIndex, w }) {
+              // Mostrar solo el número absoluto en el tooltip
+              return w.globals.series[seriesIndex];
+            }
+          }
+        },
+        responsive: [{
+          breakpoint: 480,
+          options: {
+            chart: { height: 240 },
+            legend: { position: "bottom" }
+          }
+        }],
+        noData: { text: "Sin datos", align: "center" }
+      };
+
+      const chart = new ApexCharts(chartEl, options);
+      chart.render();
+      this.chartInstances.push(chart);
+    });
   }
 }

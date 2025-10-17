@@ -90,7 +90,7 @@
 <% when 'reasons' %>
   <div class="font-montserrat text-lg text-negro-onix mt-1">
     <% if client.reasons.present? %>
-      <%= client.reasons == 'no_cerro_buen_credito' ? 'No cerro, buen credito' : (client.reasons == 'no_cerro_no_aplico' ? 'No cerro, no aplico' : client.reasons.humanize) %>
+      <%= client.reasons == 'no_cerro_buen_credito' ? 'No cerro, buen credito' : (client.reasons == 'no_cerro_no_aplico' ? 'No cerro, no aplico' : (client.reasons == 'no_cerro_no_presento' ? 'No cerró, no presentó' : client.reasons.humanize)) %>
     <% else %>
       <span class="text-gray-400 italic">Sin motivo</span>
     <% end %>
