@@ -102,7 +102,7 @@ class DashboardController < ApplicationController
     month = params[:month].presence
     day_param = params[:day].presence
 
-    # Decide grouping and date bounds (clients based on updated_status_at)
+    # Decide grouping and date bounds (basado en citas)
     if day_param.present?
       begin
         day_date = Date.parse(day_param)
@@ -136,44 +136,47 @@ class DashboardController < ApplicationController
       grouping = :months
     end
 
-    # Base client scope: non-lead statuses, filtered by updated_status_at and optional source/agent
-    client_scope = Client.where.not(status: Client.statuses["lead"])
-    client_scope = client_scope.where(source: Client.sources[source]) if source && Client.sources.key?(source)
-    client_scope = client_scope.where(updated_by_id: agent_id) if agent_id
-    client_scope = client_scope.where(updated_status_at: date_from..date_to)
-
-    # Base appointment scope: scheduled appointments by telemarketing team, filtered by start_time and optional agent (created_by)
+    # Base appointment scope: citas programadas creadas por telemarketing dentro del rango de fechas
     telemarketer_ids = User.telemarketing.select(:id)
     appointment_scope = Appointment.scheduled.where(start_time: date_from..date_to).where(created_by_id: telemarketer_ids)
     appointment_scope = appointment_scope.where(created_by_id: agent_id) if agent_id
+    appointment_scope = appointment_scope.joins(:client)
+    appointment_scope = appointment_scope.where(clients: { source: Client.sources[source] }) if source && Client.sources.key?(source)
 
-    # Status series keys (excluding lead)
-    status_keys = Client.statuses.keys - [ "lead" ]
+    # Estados a graficar (excluye lead) y se atribuyen por la cita creada
+    status_keys = [ "no_contesto", "seguimiento", "cita_agendada", "reprogramar", "vendido", "mal_credito", "no_cerro" ]
 
     case grouping
     when :day
       category = date_from.to_date.strftime("%Y-%m-%d")
+      # Citas del día (por start_time)
+      day_scope = appointment_scope.where(start_time: date_from..date_to)
+      day_client_ids = day_scope.distinct.pluck(:client_id)
+
       series = status_keys.map do |st|
         if st == "cita_agendada"
-          count = appointment_scope.count
-          { name: st.humanize, data: [ count ] }
+          count = day_scope.count
         else
-          count = client_scope.where(status: Client.statuses[st]).count
-          { name: st.humanize, data: [ count ] }
+          count = Client.where(id: day_client_ids, status: Client.statuses[st]).count
         end
+        { name: st.humanize, data: [ count ] }
       end
+
       render json: { categories: [ category ], series: series }
     when :month_single
       category = date_from.to_date.strftime("%Y-%m")
+      # Citas del rango (subrango dentro del mes si aplica)
+      month_client_ids = appointment_scope.distinct.pluck(:client_id)
+
       series = status_keys.map do |st|
         if st == "cita_agendada"
           count = appointment_scope.count
-          { name: st.humanize, data: [ count ] }
         else
-          count = client_scope.where(status: Client.statuses[st]).count
-          { name: st.humanize, data: [ count ] }
+          count = Client.where(id: month_client_ids, status: Client.statuses[st]).count
         end
+        { name: st.humanize, data: [ count ] }
       end
+
       render json: { categories: [ category ], series: series }
     when :months
       start_month = date_from.to_date.beginning_of_month
@@ -184,19 +187,25 @@ class DashboardController < ApplicationController
         months_range << current_month.strftime("%Y-%m")
         current_month = current_month.next_month
       end
+
       series = status_keys.map do |st|
         if st == "cita_agendada"
           counts = appointment_scope.group("DATE_TRUNC('month', start_time)").count
           counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
-          data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
+          data = months_range.map { |m| counts_by_month_str[m] || 0 }
           { name: st.humanize, data: data }
         else
-          counts = client_scope.where(status: Client.statuses[st]).group("DATE_TRUNC('month', updated_status_at)").count
-          counts_by_month_str = counts.transform_keys { |k| k.respond_to?(:strftime) ? k.strftime("%Y-%m") : k.to_s }
-          data = months_range.map { |month_str| counts_by_month_str[month_str] || 0 }
+          data = months_range.map do |m|
+            month_start = Date.strptime(m, "%Y-%m").beginning_of_month
+            month_end = month_start.end_of_month
+            month_scope = appointment_scope.where(start_time: month_start.beginning_of_day..month_end.end_of_day)
+            month_client_ids = month_scope.distinct.pluck(:client_id)
+            Client.where(id: month_client_ids, status: Client.statuses[st]).count
+          end
           { name: st.humanize, data: data }
         end
       end
+
       render json: { categories: months_range, series: series }
     end
   end
