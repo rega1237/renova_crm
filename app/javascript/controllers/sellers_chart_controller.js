@@ -197,32 +197,38 @@ export default class extends Controller {
 
       this.chartTarget.appendChild(wrapper);
 
+      const totalSeries = series.reduce((a, b) => a + b, 0);
       const options = {
-        chart: { type: "pie", height: 320 },
+        chart: { type: "pie", height: 320, toolbar: { show: false } },
         labels,
         series,
         colors,
         dataLabels: {
           enabled: true,
           formatter: function (val, opts) {
-            // Mostrar el número absoluto (serie) en lugar del porcentaje
-            return opts.w.globals.series[opts.seriesIndex];
+            const idx = opts && typeof opts.seriesIndex === "number" ? opts.seriesIndex : -1;
+            const num = idx >= 0 ? (series[idx] || 0) : 0;
+            const pct = totalSeries > 0 ? Math.round((num / totalSeries) * 100) : 0;
+            return `${num} (${pct}%)`;
           }
         },
         legend: {
           position: "bottom",
           fontFamily: "Poppins",
           formatter: function (seriesName, opts) {
-            // Mostrar el número junto al nombre en la leyenda
-            const val = opts.w.globals.series[opts.seriesIndex];
-            return `${seriesName} (${val})`;
+            const idx = opts && typeof opts.seriesIndex === "number" ? opts.seriesIndex : -1;
+            const num = idx >= 0 ? (series[idx] || 0) : 0;
+            const pct = totalSeries > 0 ? Math.round((num / totalSeries) * 100) : 0;
+            return `${seriesName} (${num}, ${pct}%)`;
           }
         },
         tooltip: {
           y: {
-            formatter: function (value, { seriesIndex, w }) {
-              // Mostrar solo el número absoluto en el tooltip
-              return w.globals.series[seriesIndex];
+            formatter: function (value, opts) {
+              const idx = opts && typeof opts.seriesIndex === "number" ? opts.seriesIndex : -1;
+              const num = idx >= 0 ? (series[idx] || 0) : value;
+              const pct = totalSeries > 0 ? Math.round(((idx >= 0 ? (series[idx] || 0) : value) / totalSeries) * 100) : 0;
+              return `${num} (${pct}%)`;
             }
           }
         },
