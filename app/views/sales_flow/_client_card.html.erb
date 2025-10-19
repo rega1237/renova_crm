@@ -79,7 +79,7 @@
     <% if client.reasons.present? %>
       <div class="mt-1 text-xs font-montserrat text-gray-700">
         <span class="font-semibold text-rojo-carmesi">Motivo:</span>
-        <%= client.reasons == 'no_cerro_buen_credito' ? 'No cerro, buen credito' : (client.reasons == 'no_cerro_no_aplico' ? 'No cerro, no aplico' : client.reasons.humanize) %>
+        <%= client.reasons == 'no_cerro_buen_credito' ? 'No cerro, buen credito' : (client.reasons == 'no_cerro_no_aplico' ? 'No cerro, no aplico' : (client.reasons == 'no_cerro_no_presento' ? 'No cerró, no presentó' : client.reasons.humanize)) %>
       </div>
     <% end %>
     <!-- Última nota -->

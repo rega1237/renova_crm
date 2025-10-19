@@ -44,7 +44,8 @@
     <%= select_tag field,
         options_for_select([
           ['No cerro, buen credito', 'no_cerro_buen_credito'],
-          ['No cerro, no aplico', 'no_cerro_no_aplico']
+          ['No cerro, no aplico', 'no_cerro_no_aplico'],
+          ['No cerro, no presento', 'no_cerro_no_presento']
         ], client.reasons),
         { include_blank: 'Selecciona un motivo...',
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
