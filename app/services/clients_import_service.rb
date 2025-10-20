@@ -144,8 +144,22 @@ class ClientsImportService
 
     client.assign_attributes(client_attrs)
 
-    # Establecer created_at solo en nuevos clientes
-    client.created_at = created_at_client if client.new_record?
+    # Establecer fechas según el estado del cliente
+    if client.new_record?
+      # Para clientes nuevos, siempre establecer created_at
+      client.created_at = created_at_client
+      
+      # Si el estado no es 'lead', también establecer updated_status_at
+      if status_mapped != "lead"
+        client.updated_status_at = created_at_client
+      end
+    else
+      # Para clientes existentes que se están actualizando
+      # Si el estado cambió y no es 'lead', actualizar updated_status_at
+      if client.status_changed? && status_mapped != "lead"
+        client.updated_status_at = created_at_client
+      end
+    end
 
     if client.save
       if update_existing && !client.previous_changes.empty?
