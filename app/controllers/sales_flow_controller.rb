@@ -43,7 +43,7 @@ class SalesFlowController < ApplicationController
   end
 
   def load_clients_by_status
-    statuses = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro]
+    statuses = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro no_aplica_no_interesado]
 
     clients_by_status = {}
 
@@ -81,7 +81,7 @@ class SalesFlowController < ApplicationController
 
   # Totales por status (aplicando los mismos filtros) para los contadores "cargados/total"
   def total_counts_by_status
-    statuses = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro]
+    statuses = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro no_aplica_no_interesado]
     totals = {}
 
     statuses.each do |status|

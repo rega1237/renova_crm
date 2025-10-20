@@ -464,6 +464,7 @@ export default class extends Controller {
       vendido: "green",
       mal_credito: "red",
       no_cerro: "red",
+      no_aplica_no_interesado: "red",
     };
     return colors[status] || "gray";
   }

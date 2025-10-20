@@ -7,7 +7,7 @@
   <div class="p-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
       <h3 class="font-poppins font-semibold text-gray-800">
-        <%= status.humanize %>
+        <%= status_display_name(status) %>
       </h3>
       <span data-count-badge class="bg-<%= status_color(status) %>-100 text-<%= status_color(status) %>-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
         <%= clients.count %>/<%= (@total_counts_by_status || {})[status] || clients.count %>

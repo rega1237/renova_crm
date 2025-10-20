@@ -189,7 +189,7 @@ class ClientsImportService
 
   def map_status(value)
     norm = normalize_status(value)
-    allowed = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro]
+    allowed = %w[lead no_contesto seguimiento cita_agendada reprogramar vendido mal_credito no_cerro no_aplica_no_interesado]
     if allowed.include?(norm)
       norm
     else
@@ -203,6 +203,8 @@ class ClientsImportService
         "mal_credito"
       when "nocerro"
         "no_cerro"
+      when "noaplica", "no_aplica", "nointeresado", "no_interesado", "no_aplica_no_interesado"
+        "no_aplica_no_interesado"
       else
         "lead"
       end

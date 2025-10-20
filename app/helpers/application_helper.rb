@@ -17,7 +17,7 @@ module ApplicationHelper
       "orange"
     when "vendido"
       "green"
-    when "mal_credito", "no_cerro"
+    when "mal_credito", "no_cerro", "no_aplica_no_interesado"
       "red"
     else
       "gray"
@@ -38,10 +38,19 @@ module ApplicationHelper
       "bg-orange-100 text-orange-800"
     when "vendido"
       "bg-green-100 text-green-800"
-    when "mal_credito", "no_cerro"
+    when "mal_credito", "no_cerro", "no_aplica_no_interesado"
       "bg-red-100 text-red-800"
     else
       "bg-gray-100 text-gray-800"
+    end
+  end
+
+  def status_display_name(status)
+    case status.to_s
+    when "no_aplica_no_interesado"
+      "No aplica / no interesado"
+    else
+      status.to_s.humanize
     end
   end
 end

@@ -59,7 +59,8 @@ class Client < ApplicationRecord
     reprogramar: 4,
     vendido: 5,
     mal_credito: 6,
-    no_cerro: 7
+    no_cerro: 7,
+    no_aplica_no_interesado: 8
   }
 
   enum :source, {
