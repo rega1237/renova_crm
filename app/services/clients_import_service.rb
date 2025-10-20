@@ -125,7 +125,12 @@ class ClientsImportService
       status_mapped = "lead"
     end
 
-    source = row["source"].to_s.strip
+    source_value = row["source"].to_s
+    source_mapped = map_source(source_value)
+    if source_value.present? && source_mapped == "otro" && normalize_source(source_value) != "otro"
+      @result.warnings << "Fuente desconocida '#{source_value}', se asigna 'otro' (tel #{phone})"
+    end
+    source_final = source_mapped || "base_de_datos"
 
     client_attrs = {
       name: full_name,
@@ -133,7 +138,7 @@ class ClientsImportService
       address: address,
       state: state,
       status: status_mapped,
-      source: source.present? ? source : :base_de_datos
+      source: source_final
     }
 
     client = if update_existing
@@ -218,6 +223,37 @@ class ClientsImportService
     s.downcase.gsub(/[^a-z0-9]+/, "_").gsub(/_{2,}/, "_").gsub(/^_|_$/, "")
   end
 
+  def map_source(value)
+    norm = normalize_source(value)
+    return nil if norm.blank?
+
+    allowed = Client.sources.keys
+    return norm if allowed.include?(norm)
+
+    case norm
+    when "base", "basededatos", "base_datos", "base-de-datos", "bd"
+      "base_de_datos"
+    when "referencias", "referido", "referidos", "ref"
+      "referencia"
+    when "prospectacion", "prospectacion_", "prospecta", "prospect"
+      "prospectacion"
+    when "meta_ads", "metaads"
+      "meta"
+    when "otro", "otros"
+      "otro"
+    else
+      # Si no coincide con nada conocido y venía algo, mapear a 'otro'
+      "otro"
+    end
+  end
+
+  def normalize_source(value)
+    s = value.to_s.strip
+    return "" if s.blank?
+    s = I18n.transliterate(s)
+    s.downcase.gsub(/[^a-z0-9]+/, "_").gsub(/_{2,}/, "_").gsub(/^_|_$/, "")
+  end
+
   def create_notes_for_row(client, row)
     tz_name = client.timezone
     tz = ActiveSupport::TimeZone[tz_name] || Time.zone
@@ -270,7 +306,7 @@ class ClientsImportService
         nil
       end
     when Numeric
-      # Algunos formatos Excel pueden llegar como numericos (dias desde un origen). Roo suele convertir, pero por si acaso.
+      # Alguns formatos Excel pueden llegar como numericos (dias desde un origen). Roo suele convertir, pero por si acaso.
       # Usar DateTime.jd si fuese serial tipo Excel? Por simplicidad, devolvemos nil.
       nil
     else
