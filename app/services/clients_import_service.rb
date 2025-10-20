@@ -100,8 +100,7 @@ class ClientsImportService
     phone_raw = row["phone"].to_s
     phone = normalize_phone(phone_raw)
     if phone.blank?
-      @result.errors << "Teléfono vacío o inválido"
-      return
+      phone = "123456"
     end
 
     created_at_client = parse_excel_datetime(row["created_at"]) || Time.current
@@ -110,8 +109,7 @@ class ClientsImportService
     last_name = row["last_name"].to_s.strip
     full_name = [ name, last_name ].reject(&:blank?).join(" ")
     if full_name.blank?
-      @result.errors << "Nombre vacío para teléfono #{phone}"
-      return
+      full_name = "Sin nombre"
     end
 
     address = row["address"].to_s.strip
@@ -121,7 +119,13 @@ class ClientsImportService
 
     status_value = row["status"].to_s
     status_mapped = map_status(status_value)
-    @result.warnings << "Status desconocido '#{status_value}', se asigna 'lead' (tel #{phone})" if status_value.present? && status_mapped == "lead" && normalize_status(status_value) != "lead"
+    if status_value.present? && status_mapped == "lead" && normalize_status(status_value) != "lead"
+      @result.warnings << "Status desconocido '#{status_value}', se asigna 'lead' (tel #{phone})"
+    elsif status_value.blank?
+      status_mapped = "lead"
+    end
+
+    source = row["source"].to_s.strip
 
     client_attrs = {
       name: full_name,
@@ -129,7 +133,7 @@ class ClientsImportService
       address: address,
       state: state,
       status: status_mapped,
-      source: :base_de_datos
+      source: source.present? ? source : :base_de_datos
     }
 
     client = if update_existing

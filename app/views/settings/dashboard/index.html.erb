@@ -73,23 +73,43 @@
       <% end %>
     </div>
     <div class="block bg-white p-8 rounded-xl shadow-md">
-      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Importar Clientes desde Excel</h2>
-      <p class="font-montserrat text-negro-onix mt-2">
-        Sube un archivo .xlsx o .xls con las columnas: <code>phone, created_at, name, last_name, address, state, note_date, note_hour, note_text_* (ej. note_text_howa, note_text_adriana, note_text_nazareth), status</code>.
-        Se admiten múltiples hojas dentro del mismo archivo.
-      </p>
-      <div class="mt-4">
-        <%= form_with url: settings_import_clients_path, method: :post, local: true, html: { multipart: true, class: "space-y-4" } do |f| %>
-          <div>
-            <label class="font-poppins text-negro-onix block mb-2">Archivo Excel</label>
-            <%= file_field_tag :file, accept: ".xlsx,.xls", class: "block w-full border rounded p-2" %>
-          </div>
-          <div>
-            <%= submit_tag "Importar", class: "bg-green-600 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90" %>
-          </div>
-        <% end %>
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi mb-4">Importar Clientes desde Excel</h2>
+      
+      <div class="mb-4 text-sm text-gray-600">
+        <p class="font-bold">Instrucciones:</p>
+        <ul class="list-disc list-inside">
+          <li>El archivo debe ser un formato Excel (.xlsx, .xls).</li>
+          <li>La primera fila debe contener las cabeceras exactas: 
+            <code class="bg-gray-200 p-1 rounded">name</code>, 
+            <code class="bg-gray-200 p-1 rounded">last_name</code>, 
+            <code class="bg-gray-200 p-1 rounded">phone</code>, 
+            <code class="bg-gray-200 p-1 rounded">address</code>, 
+            <code class="bg-gray-200 p-1 rounded">state</code>, 
+            <code class="bg-gray-200 p-1 rounded">city</code>, 
+            <code class="bg-gray-200 p-1 rounded">zip</code>, 
+            <code class="bg-gray-200 p-1 rounded">status</code>,
+            <code class="bg-gray-200 p-1 rounded">source</code>,
+            <code class="bg-gray-200 p-1 rounded">created_at</code>,
+            y notas de telemarketing como <code class="bg-gray-200 p-1 rounded">note_text_howa</code>.
+          </li>
+        </ul>
       </div>
-      <p class="font-montserrat text-xs text-gray-500 mt-2">Las notas se asociarán al usuario de telemarketing detectado por el sufijo de <code>note_text_*</code>. Si no se encuentra, se usará un usuario placeholder.</p>
+
+      <%= form_with url: settings_import_clients_path, method: :post, multipart: true, class: "space-y-4" do |form| %>
+        <div>
+          <%= form.label :file, "Archivo Excel", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.file_field :file, accept: ".xlsx, .xls", class: "mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rojo-carmesi file:text-white hover:file:bg-rojo-carmesi-dark" %>
+        </div>
+        
+        <div class="flex items-center">
+          <%= form.check_box :update_existing, class: "h-4 w-4 text-rojo-carmesi border-gray-300 rounded focus:ring-rojo-carmesi" %>
+          <%= form.label :update_existing, "Actualizar clientes existentes por teléfono", class: "ml-2 block text-sm text-gray-900" %>
+        </div>
+
+        <div>
+          <%= form.submit "Importar Clientes", class: "w-full bg-rojo-carmesi text-white font-bold py-2 px-4 rounded-lg hover:bg-rojo-carmesi-dark transition-colors" %>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

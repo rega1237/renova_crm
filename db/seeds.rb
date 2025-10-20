@@ -34,3 +34,33 @@ states_ar.each do |state|
 end
 
 puts "¡Seed completado!"
+
+telemarketing_ar = [
+  {
+    name: 'Howa',
+    email: 'telemarketing1@renova.com',
+    password: 'renova1234',
+    password_confirmation: 'renova1234'
+  },
+  {
+    name: 'Adriana',
+    email: 'telemarketing2@renova.com',
+    password: 'renova1234',
+    password_confirmation: 'renova1234'
+  },
+  {
+    name: 'Nazareth',
+    email: 'telemarketing3@renova.com',
+    password: 'renova1234',
+    password_confirmation: 'renova1234'
+  }
+]
+
+telemarketing_ar.each do |telemarketing|
+  User.find_or_create_by!(email: telemarketing[:email]) do |user|
+    user.name = telemarketing[:name]
+    user.password = telemarketing[:password]
+    user.password_confirmation = telemarketing[:password_confirmation]
+    user.rol = :telemarketing
+  end
+end

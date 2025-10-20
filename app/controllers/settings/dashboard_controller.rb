@@ -11,9 +11,11 @@ class Settings::DashboardController < ApplicationController
     end
 
     service = ClientsImportService.new(params[:file], current_user: Current.user)
-    result = service.call(update_existing: false)
+    update_existing = params[:update_existing] == "1"
+    result = service.call(update_existing: update_existing)
 
-    flash_message = "Importación completada: #{result.imported_clients_count} nuevos clientes, #{result.notes_created_count} notas. " \
+    flash_message = "Importación completada: #{result.imported_clients_count} nuevos clientes, " \
+                    "#{result.updated_clients_count} actualizados, #{result.notes_created_count} notas. " \
                     "#{result.warnings.count} advertencias, #{result.errors.count} errores."
     if result.errors.any?
       flash_message += " Errores: #{result.errors.take(5).join(' | ')}"
