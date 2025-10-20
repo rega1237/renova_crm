@@ -72,5 +72,24 @@
         </div>
       <% end %>
     </div>
+    <div class="block bg-white p-8 rounded-xl shadow-md">
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Importar Clientes desde Excel</h2>
+      <p class="font-montserrat text-negro-onix mt-2">
+        Sube un archivo .xlsx o .xls con las columnas: <code>phone, created_at, name, last_name, address, state, note_date, note_hour, note_text_* (ej. note_text_howa, note_text_adriana, note_text_nazareth), status</code>.
+        Se admiten múltiples hojas dentro del mismo archivo.
+      </p>
+      <div class="mt-4">
+        <%= form_with url: settings_import_clients_path, method: :post, local: true, html: { multipart: true, class: "space-y-4" } do |f| %>
+          <div>
+            <label class="font-poppins text-negro-onix block mb-2">Archivo Excel</label>
+            <%= file_field_tag :file, accept: ".xlsx,.xls", class: "block w-full border rounded p-2" %>
+          </div>
+          <div>
+            <%= submit_tag "Importar", class: "bg-green-600 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90" %>
+          </div>
+        <% end %>
+      </div>
+      <p class="font-montserrat text-xs text-gray-500 mt-2">Las notas se asociarán al usuario de telemarketing detectado por el sufijo de <code>note_text_*</code>. Si no se encuentra, se usará un usuario placeholder.</p>
+    </div>
   </div>
 </div>
