@@ -1,15 +1,16 @@
 <div class="kanban-column" 
      data-status="<%= status %>" 
      data-sales-flow-target="column"
-     data-sortable="true">
+     data-sortable="true"
+     data-total-count="<%= (@total_counts_by_status || {})[status] %>">
   <!-- Header de la columna -->
   <div class="p-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
       <h3 class="font-poppins font-semibold text-gray-800">
         <%= status.humanize %>
       </h3>
-      <span class="bg-<%= status_color(status) %>-100 text-<%= status_color(status) %>-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-        <%= clients.count %>
+      <span data-count-badge class="bg-<%= status_color(status) %>-100 text-<%= status_color(status) %>-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+        <%= clients.count %>/<%= (@total_counts_by_status || {})[status] || clients.count %>
       </span>
     </div>
   </div>
@@ -26,5 +27,8 @@
         <span class="text-sm font-montserrat">Sin clientes</span>
       </div>
     <% end %>
+  </div>
+  <div class="load-more-sentinel h-8 flex items-center justify-center text-gray-400 text-xs" data-sales-flow-target="loadMoreTrigger" data-status="<%= status %>">
+    <!-- Se usa como indicador para cargar más al hacer scroll -->
   </div>
 </div>

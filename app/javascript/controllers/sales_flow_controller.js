@@ -3,7 +3,7 @@ import { createConsumer } from "@rails/actioncable";
 import Sortable from "sortablejs";
 
 export default class extends Controller {
-  static targets = ["board", "column", "clientList"];
+  static targets = ["board", "column", "clientList", "loadMoreTrigger"];
   static values = { userId: Number };
 
   // =============================================
@@ -14,6 +14,7 @@ export default class extends Controller {
     console.log("SalesFlow controller connected");
     this.initializeDragAndDrop();
     this.connectWebSocket();
+    this.setupInfiniteScroll();
   }
 
   disconnect() {
@@ -29,6 +30,7 @@ export default class extends Controller {
     // Pequeño delay para asegurar que el DOM esté completamente renderizado
     setTimeout(() => {
       this.initializeDragAndDrop();
+      this.setupInfiniteScroll();
     }, 100);
   }
 
@@ -295,6 +297,9 @@ export default class extends Controller {
 
   // Actualizar contadores de las columnas
   updateColumnCounts() {
+    // Asegurar estructura para controlar el fin del infinite scroll
+    this.doneStatus = this.doneStatus || {};
+
     this.columnTargets.forEach((column) => {
       const status = column.dataset.status;
       const clientList = column.querySelector(
@@ -322,12 +327,21 @@ export default class extends Controller {
       });
 
       const count = uniqueClientIds.size;
+      const totalRaw = column.dataset.totalCount;
+      const total = totalRaw ? parseInt(totalRaw, 10) : NaN;
 
       // Actualizar el badge - método más robusto
       this.updateColumnBadge(column, status, count);
 
       // Mostrar/ocultar mensaje "Sin clientes" según el conteo
       this.updateEmptyStateMessage(column, count);
+
+      // Si alcanzamos el total, ocultar el sentinel y marcar como terminado
+      if (Number.isFinite(total) && count >= total) {
+        this.doneStatus[status] = true;
+        const sentinel = column.querySelector('[data-sales-flow-target="loadMoreTrigger"]');
+        if (sentinel) sentinel.classList.add('hidden');
+      }
     });
   }
 
@@ -341,15 +355,18 @@ export default class extends Controller {
       column.querySelector(".badge") ||
       column.querySelector(".count-badge");
 
+    const totalRaw = column.dataset.totalCount;
+    const total = totalRaw ? parseInt(totalRaw, 10) : null;
+
     if (badge) {
-      badge.textContent = count;
+      badge.textContent = total ? `${count}/${total}` : String(count);
     } else {
       // Si no encuentra el badge, buscar por texto que contenga números
       const allElements = column.querySelectorAll("*");
       for (let element of allElements) {
         const text = element.textContent.trim();
         if (/^\d+$/.test(text) && element.children.length === 0) {
-          element.textContent = count;
+          element.textContent = total ? `${count}/${total}` : String(count);
           break;
         }
       }
@@ -497,12 +514,67 @@ export default class extends Controller {
     console.log("Received broadcast:", data);
     if (data.action === "client_moved") {
       this.handleRemoteClientMove(data);
+      this.refreshTotals();
     } else if (data.action === "new_lead_created") {
       this.handleNewLead(data);
+      this.refreshTotals();
     } else if (data.action === "assigned_seller_updated") {
       this.handleSellerUpdate(data);
+      // No cambia el status, normalmente no afecta los totales
     } else if (data.action === "reason_updated") {
       this.handleReasonUpdate(data);
+      // No cambia el status, normalmente no afecta los totales
+    }
+  }
+
+  // Refrescar totales desde servidor aplicando filtros actuales
+  async refreshTotals() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const res = await fetch(`/sales_flow/counts?${params.toString()}`);
+      if (!res.ok) return;
+      const totals = await res.json();
+      if (!totals || typeof totals !== 'object') return;
+
+      // Actualizar data-total-count de cada columna y ajustar sentinel según nuevo total
+      this.columnTargets.forEach((column) => {
+        const status = column.dataset.status;
+        if (!(status in totals)) return;
+
+        const newTotal = parseInt(totals[status], 10);
+        column.dataset.totalCount = String(isNaN(newTotal) ? '' : newTotal);
+
+        const list = column.querySelector('[data-sales-flow-target="clientList"]');
+        if (!list) return;
+
+        // Calcular cargados únicos
+        const uniqueClientIds = new Set();
+        const clientCards = list.querySelectorAll(
+          "[data-client-id], .client-card[data-client-id], a[data-client-id]"
+        );
+        clientCards.forEach((card) => {
+          const clientId = card.dataset.clientId || card.querySelector('[data-client-id]')?.dataset.clientId;
+          if (clientId) uniqueClientIds.add(clientId);
+        });
+        const loaded = uniqueClientIds.size;
+
+        const sentinel = column.querySelector('[data-sales-flow-target="loadMoreTrigger"]');
+        if (Number.isFinite(newTotal)) {
+          if (loaded >= newTotal) {
+            this.doneStatus[status] = true;
+            if (sentinel) sentinel.classList.add('hidden');
+          } else {
+            this.doneStatus[status] = false;
+            if (sentinel) sentinel.classList.remove('hidden');
+          }
+        }
+
+        // Actualizar badge y mensajes
+        this.updateColumnBadge(column, status, loaded);
+        this.updateEmptyStateMessage(column, loaded);
+      });
+    } catch (e) {
+      console.warn('No se pudieron refrescar los totales:', e);
     }
   }
 
@@ -719,4 +791,86 @@ export default class extends Controller {
       }, 300);
     }, 4000);
   }
+// =============================================
+// MÉTODOS DE INFINITE SCROLL
+// =============================================
+setupInfiniteScroll() {
+  // Desconectar observador previo si existe
+  if (this.loadMoreObserver) this.loadMoreObserver.disconnect();
+
+  this.loadingStatus = this.loadingStatus || {};
+  this.doneStatus = this.doneStatus || {};
+
+  this.loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const status = entry.target.dataset.status;
+        if (!status) return;
+        if (this.loadingStatus[status] || this.doneStatus[status]) return;
+        this.loadMoreForStatus(status, entry.target);
+      });
+    },
+    { root: null, rootMargin: "300px", threshold: 0.1 }
+  );
+
+  // Observar el sentinel de cada columna
+  this.loadMoreTriggerTargets.forEach((el) => {
+    this.loadMoreObserver.observe(el);
+  });
+}
+
+loadMoreForStatus(status, triggerEl) {
+  const column = this.columnTargets.find((c) => c.dataset.status === status);
+  if (!column) return;
+  const list = column.querySelector('[data-sales-flow-target="clientList"]');
+  if (!list) return;
+
+  const currentCards = list.querySelectorAll(".client-card, a[data-client-id]").length;
+  const params = new URLSearchParams(window.location.search);
+  params.set("status", status);
+  params.set("offset", String(currentCards));
+
+  this.loadingStatus[status] = true;
+  if (triggerEl) {
+    triggerEl.classList.remove("text-gray-400");
+    triggerEl.classList.add("text-rojo-carmesi");
+    triggerEl.innerText = "Cargando...";
+  }
+
+  fetch(`/sales_flow/load_more?${params.toString()}`, {
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+      Accept: "text/html",
+    },
+  })
+    .then((r) => r.text())
+    .then((html) => {
+      const trimmed = html.trim();
+      if (!trimmed) {
+        this.doneStatus[status] = true;
+        if (triggerEl) {
+          triggerEl.classList.add("hidden");
+        }
+        return;
+      }
+      list.insertAdjacentHTML("beforeend", trimmed);
+      this.updateColumnCounts();
+      this.removeDuplicateClients(list);
+      setTimeout(() => {
+        this.reorganizeColumnsByDate();
+      }, 50);
+    })
+    .catch((err) => {
+      console.error("Error cargando más clientes:", err);
+    })
+    .finally(() => {
+      this.loadingStatus[status] = false;
+      if (triggerEl) {
+        triggerEl.innerText = "";
+        triggerEl.classList.add("text-gray-400");
+        triggerEl.classList.remove("text-rojo-carmesi");
+      }
+    });
+}
 }

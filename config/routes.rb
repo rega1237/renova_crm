@@ -35,6 +35,8 @@ Rails.application.routes.draw do
 
   # --- Ruta para Flujo de Ventas ---
   get "sales_flow", to: "sales_flow#index"
+  get "sales_flow/load_more", to: "sales_flow#load_more"
+  get "sales_flow/counts", to: "sales_flow#counts"
   get "calendar", to: "calendar#index"
   get "appointments_list", to: "appointments_list#index"
 
