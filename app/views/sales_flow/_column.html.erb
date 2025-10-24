@@ -1,4 +1,4 @@
-<div class="kanban-column" 
+<div class="kanban-column flex flex-col h-[75vh]" 
      data-status="<%= status %>" 
      data-sales-flow-target="column"
      data-sortable="true"
@@ -15,7 +15,7 @@
     </div>
   </div>
   <!-- Lista de clientes -->
-  <div class="p-3 space-y-3 min-h-96" data-sales-flow-target="clientList">
+  <div class="p-3 space-y-3 flex-1 overflow-y-auto" data-sales-flow-target="clientList">
     <% clients.each do |client| %>
       <%= render 'client_card', client: client %>
     <% end %>
