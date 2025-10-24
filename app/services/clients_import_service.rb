@@ -153,7 +153,7 @@ class ClientsImportService
     if client.new_record?
       # Para clientes nuevos, siempre establecer created_at
       client.created_at = created_at_client
-      
+
       # Si el estado no es 'lead', también establecer updated_status_at
       if status_mapped != "lead"
         client.updated_status_at = created_at_client

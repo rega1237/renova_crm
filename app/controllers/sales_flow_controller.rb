@@ -1,5 +1,5 @@
 class SalesFlowController < ApplicationController
-  before_action :set_filters, only: [:index, :load_more, :counts]
+  before_action :set_filters, only: [ :index, :load_more, :counts ]
 
   def index
     @clients_by_status = load_clients_by_status
