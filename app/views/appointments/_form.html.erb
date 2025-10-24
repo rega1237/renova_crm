@@ -42,6 +42,12 @@
         <%= form.label :seller_id, "Asignar Vendedor (Opcional)", class: "block text-sm font-medium text-gray-700" %>
         <%= form.collection_select :seller_id, Seller.all, :id, :name, { include_blank: "Sin asignar" }, { class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" } %>
       </div>
+
+      <!-- Selector de Usuario que agenda la cita -->
+      <div>
+        <%= form.label :created_by_id, "Agendado por", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.collection_select :created_by_id, User.order(:name), :id, :name, { include_blank: false, selected: (form.object.created_by_id || Current.user&.id) }, { class: "mt-1 px-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 sm:text-sm" } %>
+      </div>
     </div>
 
     <div class="mt-6 flex items-center justify-end gap-x-4">
