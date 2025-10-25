@@ -261,8 +261,8 @@
             </button>
           </div>
           <div id="client_source_display" data-client-inline-edit-target="display" data-field="source">
-            <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat mt-1">
-              <%= client.source.humanize.gsub('_', ' ') %>
+            <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full font-montserrat mt-1 <%= source_badge_classes(client.source) %>">
+              <%= source_display_name(client.source) %>
             </span>
           </div>
           <div data-client-inline-edit-target="editForm" data-field="source" class="hidden mt-1">

@@ -140,8 +140,8 @@
                   <%= status_display_name(client.status) %>
                 </span>
                 <p class="font-montserrat text-sm mt-1">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat">
-                    <%= client.source.humanize.gsub('_', ' ') %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full font-montserrat <%= source_badge_classes(client.source) %>">
+                    <%= source_display_name(client.source) %>
                   </span>
                 </p>
               </div>
