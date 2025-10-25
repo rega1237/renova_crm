@@ -14,7 +14,7 @@
         </div>
         <!-- Filtros de selección -->
         <div class="w-full lg:w-auto">
-          <%= select_tag :status, options_for_select(Client.statuses.keys.map { |s| [s.humanize, s] }, params[:status]), include_blank: 'Todos los Estados del Cliente', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+          <%= select_tag :status, options_for_select(Client.statuses.keys.map { |s| [status_display_name(s), s] }, params[:status]), include_blank: 'Todos los Estados del Cliente', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
         <div class="w-full lg:w-auto">
           <%= select_tag :source, options_for_select(Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, params[:source]), include_blank: 'Todas las Fuentes', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
@@ -132,14 +132,16 @@
                     bg-red-100 text-red-800
                   <% when 'no_cerro' %>
                     bg-red-100 text-red-800
+                  <% when 'no_aplica_no_interesado' %>
+                    bg-red-100 text-red-800
                   <% else %>
-                    bg-green-100 text-green-800
+                    bg-gray-100 text-gray-800
                   <% end %>">
-                  <%= client.status.humanize %>
+                  <%= status_display_name(client.status) %>
                 </span>
                 <p class="font-montserrat text-sm mt-1">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat">
-                    <%= client.source.humanize.gsub('_', ' ') %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full font-montserrat <%= source_badge_classes(client.source) %>">
+                    <%= source_display_name(client.source) %>
                   </span>
                 </p>
               </div>

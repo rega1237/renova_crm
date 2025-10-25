@@ -24,15 +24,15 @@ export default class extends Controller {
   ];
 
   connect() {
-    this.chartInstance = null;
+    this.chartInstances = [];
     this.setupMonthSubfilters();
     this.fetchAndRender();
   }
 
   disconnect() {
-    if (this.chartInstance) {
-      this.chartInstance.destroy();
-      this.chartInstance = null;
+    if (this.chartInstances && this.chartInstances.length) {
+      this.chartInstances.forEach((inst) => inst.destroy());
+      this.chartInstances = [];
     }
   }
 
@@ -115,7 +115,7 @@ export default class extends Controller {
         headers: { "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content }
       });
       const data = await response.json();
-      this.renderChart(data);
+      this.renderPieCharts(data);
       this.updateKpis(data);
     } catch (e) {
       console.error("Error cargando métricas de telemarketing", e);
@@ -123,56 +123,130 @@ export default class extends Controller {
   }
 
   updateKpis(data) {
-    const series = data.series || [];
-    const totalsByName = {};
-    for (const s of series) {
-      const total = (s.data || []).reduce((acc, val) => acc + (Number(val) || 0), 0);
-      totalsByName[s.name] = total;
-    }
-    // Map series names (humanized) to KPI targets
-    const setKpi = (targetName, seriesName) => {
-      const value = totalsByName[seriesName] || 0;
-      const hasTargetProp = `has${targetName.charAt(0).toUpperCase()}${targetName.slice(1)}Target`;
-      const targetProp = `${targetName}Target`;
-      if (this[hasTargetProp] && this[targetProp]) {
-        this[targetProp].textContent = value;
-      }
+    const totals = data.totals_by_status || {};
+    const nameMap = {
+      "No contesto": "kpiNoContesto",
+      "Seguimiento": "kpiSeguimiento", 
+      "Cita agendada": "kpiCitaAgendada",
+      "Reprogramar": "kpiReprogramar",
+      "Vendido": "kpiVendido",
+      "No cerro": "kpiNoCerro",
+      "Mal credito": "kpiMalCredito"
     };
 
-    setKpi("kpiNoContesto", "No contesto");
-    setKpi("kpiSeguimiento", "Seguimiento");
-    setKpi("kpiCitaAgendada", "Cita agendada");
-    setKpi("kpiReprogramar", "Reprogramar");
-    setKpi("kpiVendido", "Vendido");
-    setKpi("kpiNoCerro", "No cerro");
-    setKpi("kpiMalCredito", "Mal credito");
+    const setText = (targetName, value) => {
+      const hasProp = this[`has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}Target`];
+      const el = this[`${targetName}Target`];
+      if (hasProp && el) el.textContent = value;
+    };
+
+    Object.entries(nameMap).forEach(([human, target]) => {
+      const val = Number(totals[human] || 0);
+      setText(target, val);
+    });
   }
 
-  renderChart(data) {
-    const categories = data.categories || [];
-    const series = data.series || [];
+  renderPieCharts(data) {
+    const pieByAgent = data.pie_by_agent || [];
 
-    const options = {
-      chart: { type: "bar", height: 320, toolbar: { show: false }, animations: { enabled: true } },
-      theme: { mode: "light" },
-      colors: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#9333ea", "#6366f1", "#14b8a6"],
-      plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: "45%" } },
-      dataLabels: { enabled: false },
-      stroke: { show: true, width: 2, colors: ["transparent"] },
-      xaxis: { categories, labels: { style: { colors: "#111827", fontFamily: "Montserrat" } } },
-      yaxis: { labels: { style: { colors: "#111827", fontFamily: "Montserrat" } } },
-      legend: { position: "top", fontFamily: "Poppins" },
-      grid: { strokeDashArray: 4 },
-      series,
-      noData: { text: "Sin datos", align: "center" }
+    // Limpiar contenedor y destruir instancias previas
+    if (this.chartInstances && this.chartInstances.length) {
+      this.chartInstances.forEach((inst) => inst.destroy());
+      this.chartInstances = [];
+    }
+    if (this.hasChartTarget) {
+      this.chartTarget.innerHTML = "";
+    }
+
+    if (!pieByAgent.length) {
+      // Mostrar mensaje sin datos
+      const empty = document.createElement("div");
+      empty.className = "w-full text-center text-gray-500 py-12";
+      empty.textContent = "Sin datos";
+      this.chartTarget.appendChild(empty);
+      return;
+    }
+
+    // Colores por estado para consistencia
+    const colorMap = {
+      "No contesto": "#ef4444", // red
+      "Seguimiento": "#f59e0b", // amber
+      "Cita agendada": "#10b981", // green
+      "Reprogramar": "#3b82f6", // blue
+      "Vendido": "#9333ea", // purple
+      "No cerro": "#6366f1", // indigo
+      "Mal credito": "#14b8a6" // teal
     };
 
-    if (this.chartInstance) {
-      this.chartInstance.updateOptions(options);
-      this.chartInstance.updateSeries(series);
-    } else {
-      this.chartInstance = new ApexCharts(this.chartTarget, options);
-      this.chartInstance.render();
-    }
+    // Renderizar un pie por agente de telemarketing
+    pieByAgent.forEach((entry, idx) => {
+      const labels = entry.data.map((d) => d.label);
+      const series = entry.data.map((d) => Number(d.value || 0));
+      const colors = labels.map((l) => colorMap[l] || "#64748b");
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "bg-white rounded-xl p-4 shadow-sm border border-gray-100";
+
+      const title = document.createElement("div");
+      title.className = "text-sm font-semibold text-gray-700 mb-2";
+      title.textContent = entry.agent_name;
+      wrapper.appendChild(title);
+
+      const chartEl = document.createElement("div");
+      chartEl.style.width = "100%";
+      chartEl.style.height = "320px";
+      wrapper.appendChild(chartEl);
+
+      this.chartTarget.appendChild(wrapper);
+
+      const totalSeries = series.reduce((a, b) => a + b, 0);
+      const options = {
+        chart: { type: "pie", height: 320, toolbar: { show: false } },
+        labels,
+        series,
+        colors,
+        dataLabels: {
+          enabled: true,
+          formatter: function (val, opts) {
+            const idx = opts && typeof opts.seriesIndex === "number" ? opts.seriesIndex : -1;
+            const num = idx >= 0 ? (series[idx] || 0) : 0;
+            const pct = totalSeries > 0 ? Math.round((num / totalSeries) * 100) : 0;
+            return `${num} (${pct}%)`;
+          }
+        },
+        legend: {
+          position: "bottom",
+          fontFamily: "Poppins",
+          formatter: function (seriesName, opts) {
+            const idx = opts && typeof opts.seriesIndex === "number" ? opts.seriesIndex : -1;
+            const num = idx >= 0 ? (series[idx] || 0) : 0;
+            const pct = totalSeries > 0 ? Math.round((num / totalSeries) * 100) : 0;
+            return `${seriesName} (${num}, ${pct}%)`;
+          }
+        },
+        tooltip: {
+          y: {
+            formatter: function (value, opts) {
+              const idx = opts && typeof opts.seriesIndex === "number" ? opts.seriesIndex : -1;
+              const num = idx >= 0 ? (series[idx] || 0) : value;
+              const pct = totalSeries > 0 ? Math.round(((idx >= 0 ? (series[idx] || 0) : value) / totalSeries) * 100) : 0;
+              return `${num} (${pct}%)`;
+            }
+          }
+        },
+        responsive: [{
+          breakpoint: 480,
+          options: {
+            chart: { height: 240 },
+            legend: { position: "bottom" }
+          }
+        }],
+        noData: { text: "Sin datos", align: "center" }
+      };
+
+      const chart = new ApexCharts(chartEl, options);
+      chart.render();
+      this.chartInstances.push(chart);
+    });
   }
 }

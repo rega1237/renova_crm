@@ -19,6 +19,16 @@ gem "tailwindcss-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
 
+# Excel import (for reading .xlsx/.xls)
+gem "roo"
+gem "roo-xls"
+# Ruby 3.4 no incluye csv por defecto y roo lo requiere
+gem "csv"
+
+# Excel export (for writing .xlsx)
+# caxlsx es el fork mantenido de axlsx
+gem "caxlsx"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 

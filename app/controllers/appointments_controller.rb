@@ -7,7 +7,7 @@ class AppointmentsController < ApplicationController
     parsed_start_time = Time.find_zone(@client.timezone).parse(appointment_params[:start_time])
 
     @appointment = @client.appointments.new(appointment_params.except(:start_time).merge(start_time: parsed_start_time))
-    @appointment.created_by = Current.user
+    @appointment.created_by ||= Current.user
     @appointment.end_time = @appointment.start_time + 1.hour if @appointment.start_time
 
     if @appointment.save
@@ -206,7 +206,7 @@ class AppointmentsController < ApplicationController
   end
 
   def appointment_params
-    params.require(:appointment).permit(:title, :description, :start_time, :seller_id, :address)
+    params.require(:appointment).permit(:title, :description, :start_time, :seller_id, :address, :created_by_id)
   end
 
   def broadcast_calendar_update

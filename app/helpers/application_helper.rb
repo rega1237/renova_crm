@@ -17,7 +17,7 @@ module ApplicationHelper
       "orange"
     when "vendido"
       "green"
-    when "mal_credito", "no_cerro"
+    when "mal_credito", "no_cerro", "no_aplica_no_interesado"
       "red"
     else
       "gray"
@@ -38,8 +38,51 @@ module ApplicationHelper
       "bg-orange-100 text-orange-800"
     when "vendido"
       "bg-green-100 text-green-800"
-    when "mal_credito", "no_cerro"
+    when "mal_credito", "no_cerro", "no_aplica_no_interesado"
       "bg-red-100 text-red-800"
+    else
+      "bg-gray-100 text-gray-800"
+    end
+  end
+
+  def status_display_name(status)
+    case status.to_s
+    when "no_aplica_no_interesado"
+      "No aplica / no interesado"
+    else
+      status.to_s.humanize
+    end
+  end
+
+  def source_display_name(source)
+    case source.to_s
+    when "base_de_datos"
+      "Base de datos"
+    when "meta"
+      "Meta"
+    when "referencia"
+      "Referencia"
+    when "prospectacion"
+      "Prospección"
+    when "otro"
+      "Otro"
+    else
+      source.to_s.humanize
+    end
+  end
+
+  def source_badge_classes(source)
+    case source.to_s
+    when "base_de_datos"
+      "bg-orange-100 text-orange-800"
+    when "meta"
+      "bg-blue-100 text-blue-800"
+    when "referencia"
+      "bg-green-100 text-green-800"
+    when "prospectacion"
+      "bg-yellow-100 text-yellow-800"
+    when "otro"
+      "bg-gray-100 text-gray-800"
     else
       "bg-gray-100 text-gray-800"
     end

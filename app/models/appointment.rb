@@ -5,5 +5,9 @@ class Appointment < ApplicationRecord
 
   enum :status, { scheduled: 0, completed: 1, canceled: 2 }
 
+  # Validaciones del lado del servidor (requeridos)
+  validates :title, :description, :address, :start_time, presence: true
+  validates :created_by, presence: true
+
   validates :google_event_id, uniqueness: true, allow_nil: true
 end

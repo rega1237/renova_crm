@@ -20,6 +20,8 @@ Rails.application.routes.draw do
     resources :states
     # La página principal del menú de configuración
     root to: "dashboard#index"
+    post "import_clients", to: "dashboard#import_clients"
+    get  "export_clients", to: "dashboard#export_clients"
   end
 
   # --- Rutas de Clientes ---
@@ -34,6 +36,8 @@ Rails.application.routes.draw do
 
   # --- Ruta para Flujo de Ventas ---
   get "sales_flow", to: "sales_flow#index"
+  get "sales_flow/load_more", to: "sales_flow#load_more"
+  get "sales_flow/counts", to: "sales_flow#counts"
   get "calendar", to: "calendar#index"
   get "appointments_list", to: "appointments_list#index"
 

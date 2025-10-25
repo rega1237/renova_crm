@@ -146,6 +146,9 @@ class DashboardController < ApplicationController
     # Estados a graficar (excluye lead) y se atribuyen por la cita creada
     status_keys = [ "no_contesto", "seguimiento", "cita_agendada", "reprogramar", "vendido", "mal_credito", "no_cerro" ]
 
+    # Get all telemarketers for pie charts
+    telemarketers = agent_id.present? ? User.telemarketing.where(id: agent_id) : User.telemarketing.order(:name)
+
     case grouping
     when :day
       category = date_from.to_date.strftime("%Y-%m-%d")
@@ -162,7 +165,7 @@ class DashboardController < ApplicationController
         { name: st.humanize, data: [ count ] }
       end
 
-      render json: { categories: [ category ], series: series }
+      categories = [ category ]
     when :month_single
       category = date_from.to_date.strftime("%Y-%m")
       # Citas del rango (subrango dentro del mes si aplica)
@@ -177,7 +180,7 @@ class DashboardController < ApplicationController
         { name: st.humanize, data: [ count ] }
       end
 
-      render json: { categories: [ category ], series: series }
+      categories = [ category ]
     when :months
       start_month = date_from.to_date.beginning_of_month
       end_month = date_to.to_date.beginning_of_month
@@ -206,8 +209,40 @@ class DashboardController < ApplicationController
         end
       end
 
-      render json: { categories: months_range, series: series }
+      categories = months_range
     end
+
+    # Calculate totals for KPIs
+    all_client_ids = appointment_scope.distinct.pluck(:client_id)
+    totals_by_status = {}
+    totals_by_status["No contesto"] = Client.where(id: all_client_ids, status: Client.statuses["no_contesto"]).count
+    totals_by_status["Seguimiento"] = Client.where(id: all_client_ids, status: Client.statuses["seguimiento"]).count
+    totals_by_status["Cita agendada"] = appointment_scope.count
+    totals_by_status["Reprogramar"] = Client.where(id: all_client_ids, status: Client.statuses["reprogramar"]).count
+    totals_by_status["Vendido"] = Client.where(id: all_client_ids, status: Client.statuses["vendido"]).count
+    totals_by_status["No cerro"] = Client.where(id: all_client_ids, status: Client.statuses["no_cerro"]).count
+    totals_by_status["Mal credito"] = Client.where(id: all_client_ids, status: Client.statuses["mal_credito"]).count
+
+    # Build pie charts data by agent
+    pie_by_agent = telemarketers.map do |telemarketer|
+      agent_scope = appointment_scope.where(created_by_id: telemarketer.id)
+      agent_client_ids = agent_scope.distinct.pluck(:client_id)
+      {
+        agent_id: telemarketer.id,
+        agent_name: telemarketer.name,
+        data: [
+          { label: "No contesto", value: Client.where(id: agent_client_ids, status: Client.statuses["no_contesto"]).count },
+          { label: "Seguimiento", value: Client.where(id: agent_client_ids, status: Client.statuses["seguimiento"]).count },
+          { label: "Cita agendada", value: agent_scope.count },
+          { label: "Reprogramar", value: Client.where(id: agent_client_ids, status: Client.statuses["reprogramar"]).count },
+          { label: "Vendido", value: Client.where(id: agent_client_ids, status: Client.statuses["vendido"]).count },
+          { label: "No cerro", value: Client.where(id: agent_client_ids, status: Client.statuses["no_cerro"]).count },
+          { label: "Mal credito", value: Client.where(id: agent_client_ids, status: Client.statuses["mal_credito"]).count }
+        ]
+      }
+    end
+
+    render json: { categories: categories, series: series, totals_by_status: totals_by_status, pie_by_agent: pie_by_agent }
   end
 
   def sellers_metrics

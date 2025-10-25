@@ -69,27 +69,10 @@
 <style>
   .kanban-board {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1rem;
     min-height: 70vh;
-  }
-
-  @media (min-width: 768px) {
-    .kanban-board {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .kanban-board {
-      grid-template-columns: repeat(6, 1fr);
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .kanban-board {
-      grid-template-columns: repeat(8, 1fr);
-    }
+    grid-auto-flow: column;
+    grid-auto-columns: 280px; 
   }
 
   .kanban-column {

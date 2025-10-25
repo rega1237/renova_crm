@@ -73,7 +73,7 @@
                     <% else %>
                       bg-gray-100 text-gray-800
                     <% end %>">
-                    <%= appointment.status.humanize %>
+                    <%= status_display_name(appointment.status) %>
                   </span>
                 </div>
                 

@@ -34,8 +34,8 @@
   <div class="space-y-2">
     <!-- Estado y fuente -->
     <div class="flex items-center justify-between">
-      <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat">
-        <%= client.source.humanize.gsub('_', ' ') %>
+      <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full <%= source_badge_classes(client.source) %> font-montserrat">
+        <%= source_display_name(client.source) %>
       </span>
       <% if client.state.present? %>
         <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">

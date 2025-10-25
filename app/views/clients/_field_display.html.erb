@@ -62,10 +62,12 @@
       bg-red-100 text-red-800
     <% when 'no_cerro' %>
       bg-red-100 text-red-800
+    <% when 'no_aplica_no_interesado' %>
+      bg-red-100 text-red-800
     <% else %>
       bg-gray-100 text-gray-800
     <% end %>">
-    <%= client.status.humanize %>
+    <%= status_display_name(client.status) %>
   </span>
 <% when 'source' %>
   <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 font-montserrat mt-1">
