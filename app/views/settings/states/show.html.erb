@@ -2,7 +2,6 @@
   <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-8">
     Detalles del Estado
   </h1>
-  
   <div class="bg-white p-8 rounded-xl shadow-md mb-8">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -18,15 +17,12 @@
         </p>
       </div>
     </div>
-    
     <hr class="my-8">
-    
     <div class="flex items-center justify-end space-x-6">
       <%= link_to "Volver a la lista", settings_states_path, class: "font-poppins text-negro-onix hover:underline" %>
       <%= link_to "Editar Estado", edit_settings_state_path(@state), class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
     </div>
   </div>
-
   <!-- Sección de clientes asociados -->
   <div class="bg-white rounded-xl shadow-md overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
@@ -34,7 +30,6 @@
         Clientes en <%= @state.name %> (<%= @state.clients.count %>)
       </h3>
     </div>
-    
     <% if @state.clients.any? %>
       <div class="overflow-x-auto">
         <table class="min-w-full">
