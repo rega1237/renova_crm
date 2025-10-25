@@ -53,4 +53,21 @@ module ApplicationHelper
       status.to_s.humanize
     end
   end
+
+  def source_display_name(source)
+    case source.to_s
+    when "base_de_datos"
+      "Base de datos"
+    when "meta"
+      "Meta"
+    when "referencia"
+      "Referencia"
+    when "prospectacion"
+      "Prospección"
+    when "otro"
+      "Otro"
+    else
+      source.to_s.humanize
+    end
+  end
 end

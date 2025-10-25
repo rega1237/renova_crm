@@ -21,6 +21,7 @@ Rails.application.routes.draw do
     # La página principal del menú de configuración
     root to: "dashboard#index"
     post "import_clients", to: "dashboard#import_clients"
+    get  "export_clients", to: "dashboard#export_clients"
   end
 
   # --- Rutas de Clientes ---
