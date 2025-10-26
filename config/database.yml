@@ -83,7 +83,7 @@ production:
     <<: *default
     database: renova_crm_production
     username: renova_crm
-    host: <%= ENV.fetch("DB_HOST") %>
+    host: <%= ENV["DB_HOST"] || ENV["PGHOST"] || "renova_crm-postgres" %>
     password: <%= ENV["RENOVA_CRM_DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production
