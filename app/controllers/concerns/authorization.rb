@@ -2,10 +2,11 @@ module Authorization
   extend ActiveSupport::Concern
 
   private
-    def forbid_telemarketing!(message: "Acceso no autorizado")
+    def forbid_telemarketing!(message: "")
       if Current.user&.telemarketing?
-        log_unauthorized_attempt(message: message)
-        redirect_to clients_path, alert: message
+        # Registro sin mostrar alerta al usuario (UX sin fricción para roles válidos)
+        log_unauthorized_attempt(message: message.presence || "Telemarketing bloqueado en Dashboard")
+        redirect_to clients_path
         false
       else
         true

@@ -13,7 +13,7 @@ class CreateUnauthorizedAccessAttempts < ActiveRecord::Migration[7.1]
       t.timestamps
     end
 
-    add_index :unauthorized_access_attempts, [:controller_name, :action_name]
+    add_index :unauthorized_access_attempts, [ :controller_name, :action_name ]
     add_index :unauthorized_access_attempts, :created_at
   end
 end

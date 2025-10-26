@@ -12,14 +12,14 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "telemarketing should be redirected from dashboard index with alert and logged" do
+  test "telemarketing should be redirected from dashboard index without alert and logged" do
     post session_url, params: { email: @tele.email, password: "password" }
     assert_difference("UnauthorizedAccessAttempt.count", +1) do
       get root_url
       assert_response :redirect
     end
     follow_redirect!
-    assert_equal "Acceso no autorizado", flash[:alert]
+    assert_nil flash[:alert]
   end
 
   test "telemarketing should be blocked from metrics endpoints" do

@@ -40,7 +40,24 @@ module Authentication
     end
 
     def after_authentication_url
-      session.delete(:return_to_after_authenticating) || root_url
+      rt = session.delete(:return_to_after_authenticating)
+
+      # Admin: respeta return_to, o dashboard
+      if Current.user&.admin?
+        rt.presence || root_url
+      else
+        # No-admin (telemarketing/asistente): permitir return_to solo si no apunta a dashboard ni settings.
+        if rt.present?
+          path = rt.include?("://") ? rt.sub(/\Ahttps?:\/\/[^\/]+/, "") : rt
+          if path == root_path || path.start_with?("/dashboard") || path.start_with?("/settings")
+            clients_url
+          else
+            rt
+          end
+        else
+          clients_url
+        end
+      end
     end
 
     def start_new_session_for(user)

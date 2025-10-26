@@ -62,5 +62,4 @@ class Settings::DashboardController < ApplicationController
   end
 
   private
-
 end

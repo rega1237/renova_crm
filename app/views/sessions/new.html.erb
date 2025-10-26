@@ -15,7 +15,7 @@
       <p class="py-3 px-4 bg-green-50 text-green-700 font-montserrat font-medium rounded-lg text-center" id="notice"><%= notice %></p>
     <% end %>
 
-    <%= form_with url: session_url, class: "mt-8 space-y-6" do |form| %>
+    <%= form_with url: session_url, class: "mt-8 space-y-6", data: { controller: "login", action: "submit->login#disable" } do |form| %>
       <div class="rounded-md shadow-sm -space-y-px">
         
         <div>
@@ -30,7 +30,8 @@
       </div>
 
       <div>
-        <%= form.submit "Ingresar", class: "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-poppins font-semibold rounded-md text-white bg-rojo-carmesi hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rojo-carmesi cursor-pointer" %>
+        <%= form.submit "Ingresar", data: { login_target: "submit" }, class: "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-poppins font-semibold rounded-md text-white bg-rojo-carmesi hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rojo-carmesi cursor-pointer" %>
+        <p data-login-target="loading" class="hidden mt-2 text-center text-sm text-negro-onix">Redirigiendo...</p>
       </div>
     <% end %>
   </div>
