@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_26_163000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -121,6 +121,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
     t.index ["name"], name: "index_states_on_name"
   end
 
+  create_table "unauthorized_access_attempts", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "role_name"
+    t.string "controller_name", null: false
+    t.string "action_name", null: false
+    t.string "path", null: false
+    t.string "ip_address"
+    t.string "user_agent"
+    t.string "message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["controller_name", "action_name"], name: "idx_on_controller_name_action_name_fc8f7b95ec"
+    t.index ["created_at"], name: "index_unauthorized_access_attempts_on_created_at"
+    t.index ["user_id"], name: "index_unauthorized_access_attempts_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
     t.string "password_digest", null: false
@@ -142,4 +158,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
   add_foreign_key "notes", "clients"
   add_foreign_key "notes", "users", column: "created_by_id"
   add_foreign_key "sessions", "users"
+  add_foreign_key "unauthorized_access_attempts", "users"
 end

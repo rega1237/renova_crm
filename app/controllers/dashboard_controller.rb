@@ -1,4 +1,7 @@
 class DashboardController < ApplicationController
+  include Authorization
+  before_action -> { forbid_telemarketing! }, only: [ :index, :leads_metrics, :telemarketing_metrics, :sellers_metrics ]
+
   def index
     @states = State.ordered
     @telemarketers = User.telemarketing

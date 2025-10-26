@@ -42,6 +42,7 @@
         <!-- Navigation Items -->
         <nav class="flex-1 flex flex-col space-y-4">
           <!-- Dashboard -->
+          <% unless current_user&.telemarketing? %>
           <div class="group relative">
             <%= link_to root_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
               <!-- Dashboard Icon -->
@@ -55,13 +56,14 @@
               </div>
             <% end %>
           </div>
+          <% end %>
 
           <!-- Clientes -->
           <div class="group relative">
             <%= link_to clients_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
               <!-- Clientes Icon -->
               <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 009.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
               </svg>
               <!-- Tooltip -->
               <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
@@ -117,6 +119,7 @@
           </div>
 
           <!-- Configuración -->
+          <% if current_user&.admin? %>
           <div class="group relative">
             <%= link_to settings_root_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
               <svg class="w-6 h-6 <%= settings_section_active? ? 'text-rojo-carmesi' : 'text-negro-onix' %> group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,6 +132,7 @@
               </div>
             <% end %>
           </div>
+          <% end %>
         </nav>
 
         <!-- User Profile (optional) -->
