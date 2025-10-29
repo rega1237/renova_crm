@@ -37,6 +37,8 @@ env:
     - RAILS_MASTER_KEY
     # Provide libpq password as a fallback for tasks using default PG* envs
     - PGPASSWORD
+    # Rails uses this variable in config/database.yml for production password
+    - RENOVA_CRM_DATABASE_PASSWORD
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
