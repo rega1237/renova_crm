@@ -37,11 +37,18 @@
       <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full <%= source_badge_classes(client.source) %> font-montserrat">
         <%= source_display_name(client.source) %>
       </span>
-      <% if client.state.present? %>
-        <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">
-          <%= client.state.abbreviation %>
-        </span>
-      <% end %>
+      <div class="flex items-center space-x-1">
+        <% if client.state.present? %>
+          <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">
+            <%= client.state.abbreviation %>
+          </span>
+        <% end %>
+        <% if client.city.present? %>
+          <span class="inline-flex px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">
+            <%= client.city.name %>
+          </span>
+        <% end %>
+      </div>
     </div>
     <!-- Vendedores (mostrar el relevante según el contexto) -->
     <% if client.assigned_seller.present? %>
