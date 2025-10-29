@@ -18,6 +18,7 @@ Rails.application.routes.draw do
     resources :sellers
     resources :installers
     resources :states
+    resources :cities
     # La página principal del menú de configuración
     root to: "dashboard#index"
     post "import_clients", to: "dashboard#import_clients"
@@ -60,6 +61,7 @@ Rails.application.routes.draw do
 
   # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
   namespace :api do
+    resources :cities, only: [:index]
     namespace :facebook do
       get "webhooks", to: "webhooks#verify"
       post "webhooks", to: "webhooks#receive"

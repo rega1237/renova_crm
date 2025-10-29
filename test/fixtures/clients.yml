@@ -11,6 +11,7 @@ one:
   prospecting_seller: one
   assigned_seller: one
   state: texas  # <--- Usa la etiqueta del fixture de states
+  city: monterrey
 
 two:
   name: Les Robel
@@ -23,3 +24,4 @@ two:
   prospecting_seller: two
   assigned_seller: two
   state: florida
+  # city intentionally omitted to represent 'Sin ciudad'

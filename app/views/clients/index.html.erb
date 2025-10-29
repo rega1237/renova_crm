@@ -19,8 +19,21 @@
         <div class="w-full lg:w-auto">
           <%= select_tag :source, options_for_select(Client.sources.keys.map { |s| [s.humanize.gsub('_', ' '), s] }, params[:source]), include_blank: 'Todas las Fuentes', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
+        <div class="w-full lg:w-auto" data-controller="cities-filter" data-cities-filter-url-value="/api/cities">
+          <%= select_tag :state_id,
+            options_from_collection_for_select(State.ordered, :id, :display_name_with_abbreviation, params[:state_id]),
+            include_blank: 'Todos los Estados',
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat",
+            data: { cities_filter_target: 'stateSelect', action: 'change->cities-filter#changeState' } %>
+        </div>
         <div class="w-full lg:w-auto">
-          <%= select_tag :state_id, options_from_collection_for_select(State.ordered, :id, :display_name_with_abbreviation, params[:state_id]), include_blank: 'Todos los Estados', class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+          <% cities = params[:state_id].present? ? City.where(state_id: params[:state_id]).ordered : City.ordered %>
+          <% city_options = [['Todas las Ciudades', ''], ['Sin ciudad', 'none']] + cities.map { |c| [c.name, c.id] } %>
+          <%= select_tag :city_id,
+            options_for_select(city_options, params[:city_id]),
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat",
+            data: { cities_filter_target: 'citySelect' } %>
+          <span data-cities-filter-target="loadingIndicator" class="text-xs text-gray-500 ml-2 hidden">Cargando ciudades...</span>
         </div>
         <!-- Filtro campos de fecha -->
         <div class="w-full lg:w-auto">

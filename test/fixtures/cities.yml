@@ -1,0 +1,18 @@
+monterrey:
+  name: Monterrey
+  abbreviation: MTY
+  state: texas
+
+guadalupe:
+  name: Guadalupe
+  state: texas
+
+phoenix:
+  name: Phoenix
+  abbreviation: PHX
+  state: arizona
+
+miami:
+  name: Miami
+  abbreviation: MIA
+  state: florida
