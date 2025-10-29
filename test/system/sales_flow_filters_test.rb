@@ -12,7 +12,7 @@ class SalesFlowFiltersTest < ApplicationSystemTestCase
 
   test "filtrar por ciudad en flujo de ventas" do
     visit sales_flow_path
-    within "form" do
+    within page.find("form[action='#{sales_flow_path}']") do
       select "Monterrey", from: "city_id"
       click_on "Filtrar"
     end
@@ -22,7 +22,7 @@ class SalesFlowFiltersTest < ApplicationSystemTestCase
 
   test "filtrar por 'Sin ciudad' en estado Florida en flujo de ventas" do
     visit sales_flow_path
-    within "form" do
+    within page.find("form[action='#{sales_flow_path}']") do
       select @florida.name, from: "state_id"
       select "Sin ciudad", from: "city_id"
       click_on "Filtrar"

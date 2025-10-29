@@ -19,7 +19,10 @@ class CitiesTest < ApplicationSystemTestCase
     click_on "Crear Ciudad"
 
     assert_text "Ciudad creada exitosamente."
-    click_on "Editar Ciudad"
+    # En el índice, localizar la fila de la ciudad recién creada y hacer clic en "Editar"
+    within find("tr", text: "Test City") do
+      find("a[title='Editar']").click
+    end
     fill_in "Nombre de la Ciudad", with: "Test City Updated"
     click_on "Actualizar Ciudad"
     assert_text "Ciudad actualizada exitosamente."
@@ -27,9 +30,10 @@ class CitiesTest < ApplicationSystemTestCase
     click_on "Volver a la lista"
     assert_text "Test City Updated"
 
-    # Eliminar la ciudad (envío del formulario de eliminación)
-    # Selecciona el último formulario de eliminación en la tabla y lo envía
-    all("form[method='post'][action*='/settings/cities']").last.find("input[type='submit']").click
+    # Eliminar la ciudad usando el botón "Eliminar" dentro de la fila correspondiente
+    within find("tr", text: "Test City Updated") do
+      find("button[title='Eliminar']").click
+    end
     assert_text "Ciudad eliminada exitosamente."
     refute_text "Test City Updated"
   end

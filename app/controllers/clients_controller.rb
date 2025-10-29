@@ -27,7 +27,7 @@ class ClientsController < ApplicationController
 
     # Filtro por ciudad (incluye opción especial 'Sin ciudad')
     if params[:city_id].present?
-      if params[:city_id] == 'none'
+      if params[:city_id] == "none"
         @clients = @clients.where(city_id: nil)
       else
         @clients = @clients.where(city_id: params[:city_id])

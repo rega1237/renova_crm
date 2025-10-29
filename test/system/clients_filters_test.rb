@@ -13,7 +13,7 @@ class ClientsFiltersTest < ApplicationSystemTestCase
   test "filtrar por ciudad sin estado seleccionado muestra todas las ciudades" do
     visit clients_path
     assert_selector "select[name='city_id']"
-    within "form" do
+    within page.find("form[action='#{clients_path}']") do
       select "Monterrey", from: "city_id"
       click_on "Filtrar"
     end
@@ -23,7 +23,7 @@ class ClientsFiltersTest < ApplicationSystemTestCase
 
   test "filtrar por estado limita ciudades y aplica 'Sin ciudad'" do
     visit clients_path
-    within "form" do
+    within page.find("form[action='#{clients_path}']") do
       select @florida.name, from: "state_id"
       # Al seleccionar estado, el controlador stimulus carga ciudades; 'Sin ciudad' siempre está disponible
       select "Sin ciudad", from: "city_id"
@@ -35,7 +35,7 @@ class ClientsFiltersTest < ApplicationSystemTestCase
 
   test "combinar estado y ciudad específica" do
     visit clients_path
-    within "form" do
+    within page.find("form[action='#{clients_path}']") do
       select @texas.display_name_with_abbreviation, from: "state_id"
       select "Monterrey", from: "city_id"
       click_on "Filtrar"

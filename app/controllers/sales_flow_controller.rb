@@ -74,7 +74,7 @@ class SalesFlowController < ApplicationController
 
     # Filtro por ciudad (incluye opción especial 'Sin ciudad')
     if @city_filter.present?
-      if @city_filter == 'none'
+      if @city_filter == "none"
         scope = scope.where(city_id: nil)
       else
         scope = scope.where(city_id: @city_filter)
