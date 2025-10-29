@@ -28,7 +28,7 @@ class ClientsImportServiceTest < ActiveSupport::TestCase
 
     Class.new do
       define_method(:sheets) do
-        ["Hoja1"]
+        [ "Hoja1" ]
       end
 
       define_method(:sheet) do |name|
@@ -38,8 +38,8 @@ class ClientsImportServiceTest < ActiveSupport::TestCase
   end
 
   test "asigna estado 'Otro' cuando el estado viene vacío y registra warning" do
-    headers = ["phone", "name", "state", "status", "source", "created_at"]
-    rows = [["1111111", "Juan", "", "lead", "base_de_datos", Time.current]]
+    headers = [ "phone", "name", "state", "status", "source", "created_at" ]
+    rows = [ [ "1111111", "Juan", "", "lead", "base_de_datos", Time.current ] ]
     fake_xls = build_fake_xls(headers: headers, rows: rows)
 
     service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))
@@ -63,8 +63,8 @@ class ClientsImportServiceTest < ActiveSupport::TestCase
   end
 
   test "asigna estado 'Otro' cuando el estado es desconocido y registra warning con el valor original" do
-    headers = ["phone", "name", "state", "status", "source", "created_at"]
-    rows = [["2222222", "Ana", "Ficticio", "lead", "base_de_datos", Time.current]]
+    headers = [ "phone", "name", "state", "status", "source", "created_at" ]
+    rows = [ [ "2222222", "Ana", "Ficticio", "lead", "base_de_datos", Time.current ] ]
     fake_xls = build_fake_xls(headers: headers, rows: rows)
 
     service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))
@@ -86,8 +86,8 @@ class ClientsImportServiceTest < ActiveSupport::TestCase
   test "no duplica el estado 'Otro' si existe en minúsculas (búsqueda case-insensitive)" do
     existing = State.create!(name: "otro", abbreviation: "OT")
 
-    headers = ["phone", "name", "state", "status", "source", "created_at"]
-    rows = [["3333333", "Luis", "", "lead", "base_de_datos", Time.current]]
+    headers = [ "phone", "name", "state", "status", "source", "created_at" ]
+    rows = [ [ "3333333", "Luis", "", "lead", "base_de_datos", Time.current ] ]
     fake_xls = build_fake_xls(headers: headers, rows: rows)
 
     service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))

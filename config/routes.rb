@@ -61,7 +61,7 @@ Rails.application.routes.draw do
 
   # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
   namespace :api do
-    resources :cities, only: [:index]
+    resources :cities, only: [ :index ]
     namespace :facebook do
       get "webhooks", to: "webhooks#verify"
       post "webhooks", to: "webhooks#receive"

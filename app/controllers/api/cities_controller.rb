@@ -3,9 +3,9 @@ module Api
     def index
       cities = if params[:state_id].present?
                  City.where(state_id: params[:state_id]).ordered
-               else
+      else
                  City.ordered
-               end
+      end
 
       render json: cities.select(:id, :name, :state_id)
     end
