@@ -115,7 +115,15 @@ class ClientsImportService
     address = row["address"].to_s.strip
     state_value = row["state"].to_s.strip
     state = find_state(state_value)
-    @result.warnings << "Estado no encontrado: '#{state_value}' (tel #{phone})" if state_value.present? && state.nil?
+    if state.nil?
+      if state_value.blank?
+        @result.warnings << "Estado vacío, se asigna 'Otro' (tel #{phone})"
+      else
+        @result.warnings << "Estado no encontrado: '#{state_value}' (tel #{phone}), se asigna 'Otro'"
+      end
+      # Asegurar estado 'Otro' y asignarlo cuando no se proporcionó o no se encontró
+      state = ensure_other_state
+    end
 
     status_value = row["status"].to_s
     status_mapped = map_status(status_value)
@@ -190,6 +198,17 @@ class ClientsImportService
 
     # Buscar por abreviación (TX, IL) o por nombre (Texas, Illinois) - case-insensitive
     State.where("LOWER(abbreviation) = ?", v.downcase).first || State.where("LOWER(name) = ?", v.downcase).first
+  end
+
+  # Busca o crea (de forma segura) el estado "Otro" y lo retorna
+  def ensure_other_state
+    State.where("LOWER(name) = ?", "otro").first || State.find_or_create_by(name: "Otro") do |s|
+      # Abreviación requerida por validaciones del modelo State
+      s.abbreviation = "OTRO"
+    end
+  rescue => e
+    @result.errors << "No se pudo asegurar estado 'Otro': #{e.message}"
+    nil
   end
 
   def map_status(value)
