@@ -47,6 +47,15 @@
       <%= form.text_field :zip_code, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
     </div>
   </div>
+  <div>
+    <%= form.label :city_id, "Ciudad", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.collection_select :city_id,
+        City.order(:name),
+        :id,
+        :name,
+        { include_blank: 'Sin ciudad' },
+        { class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" } %>
+  </div>
   <hr>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div>

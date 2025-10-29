@@ -43,6 +43,14 @@
       <span class="text-gray-400 italic">No especificado</span>
     <% end %>
   </div>
+<% when 'city_id' %>
+  <div class="font-montserrat text-lg text-negro-onix mt-1">
+    <% if client.city.present? %>
+      <%= client.city.name %>
+    <% else %>
+      <span class="text-gray-400 italic">No asignado</span>
+    <% end %>
+  </div>
 <% when 'status' %>
   <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full font-montserrat mt-1
     <% case client.status %>

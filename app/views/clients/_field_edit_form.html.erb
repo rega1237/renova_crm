@@ -23,6 +23,11 @@
         options_from_collection_for_select(State.ordered, 'id', 'display_name_with_abbreviation', client.state_id),
         { include_blank: 'Seleccionar estado...', 
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
+  <% when 'city_id' %>
+    <%= select_tag field,
+        options_from_collection_for_select(City.order(:name), 'id', 'name', client.city_id),
+        { include_blank: 'Sin ciudad',
+          class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
   <% when 'status' %>
     <%= select_tag field,
         options_for_select(Client.statuses.keys.map { |s| [status_display_name(s), s] }, client.status),
