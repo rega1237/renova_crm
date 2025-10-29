@@ -1,0 +1,40 @@
+<%= form_with(model: [:settings, city], class: "space-y-6") do |form| %>
+  <% if city.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            Se encontraron <%= pluralize(city.errors.count, "error") %>:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc pl-5 space-y-1">
+              <% city.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :name, "Nombre de la Ciudad", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.text_field :name, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div>
+    <%= form.label :abbreviation, "Abreviación", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.text_field :abbreviation, placeholder: "Ej: CDMX, MTY", class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div>
+    <%= form.label :state_id, "Estado", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.collection_select :state_id, State.ordered, :id, :name, { prompt: "Selecciona un estado" }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="flex items-center justify-end space-x-4">
+    <%= link_to "Cancelar", settings_cities_path, class: "font-poppins text-negro-onix hover:underline" %>
+    <%= form.submit button_text, class: "cursor-pointer bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+<% end %>

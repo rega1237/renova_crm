@@ -2,12 +2,12 @@
 service: renova_crm
 
 # Name of the container image.
-image: your-user/renova_crm
+image: rega1237/renova_crm
 
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - 138.197.39.44
   # job:
   #   hosts:
   #     - 192.168.0.1
@@ -19,13 +19,13 @@ servers:
 # Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
 proxy:
   ssl: true
-  host: app.example.com
+  host: renovacrm.ddns.net
 
 # Credentials for your image host.
 registry:
   # Specify the registry server, if you're not using Docker Hub
   # server: registry.digitalocean.com / ghcr.io / ...
-  username: your-user
+  username: rega1237
 
   # Always use an access token rather than real password when possible.
   password:
@@ -35,6 +35,8 @@ registry:
 env:
   secret:
     - RAILS_MASTER_KEY
+    # Provide libpq password as a fallback for tasks using default PG* envs
+    - PGPASSWORD
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
@@ -46,9 +48,12 @@ env:
     # Set number of cores available to the application on each server (default: 1).
     # WEB_CONCURRENCY: 2
 
-    # Match this to any external database server to configure Active Record correctly
-    # Use renova_crm-db for a db accessory server on same machine via local kamal docker network.
-    # DB_HOST: 192.168.0.2
+    # Active Record database host inside Kamal docker network (accessory: postgres)
+    DB_HOST: renova_crm-postgres
+    # libpq host fallback to ensure PG connects over TCP if Rails config isn't picked up
+    PGHOST: renova_crm-postgres
+    # PGUSER for libpq fallback (matches Rails username)
+    PGUSER: renova_crm
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
@@ -88,29 +93,22 @@ builder:
   #   - RAILS_MASTER_KEY
 
 # Use a different ssh user than root
-# ssh:
-#   user: app
+ssh:
+  user: root
 
 # Use accessory services (secrets come from .kamal/secrets).
-# accessories:
-#   db:
-#     image: mysql:8.0
-#     host: 192.168.0.2
-#     # Change to 3306 to expose port to the world instead of just local network.
-#     port: "127.0.0.1:3306:3306"
-#     env:
-#       clear:
-#         MYSQL_ROOT_HOST: '%'
-#       secret:
-#         - MYSQL_ROOT_PASSWORD
-#     files:
-#       - config/mysql/production.cnf:/etc/mysql/my.cnf
-#       - db/production.sql:/docker-entrypoint-initdb.d/setup.sql
-#     directories:
-#       - data:/var/lib/mysql
-#   redis:
-#     image: redis:7.0
-#     host: 192.168.0.2
-#     port: 6379
-#     directories:
-#       - data:/data
+accessories:
+  postgres:
+    image: postgres:16-alpine
+    host: 138.197.39.44
+    # If you need local-only debug access, you can expose to localhost:
+    # port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_USER: renova_crm
+      secret:
+        - POSTGRES_PASSWORD
+    files:
+      - config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    directories:
+      - data:/var/lib/postgresql/data

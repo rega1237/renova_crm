@@ -1,5 +1,6 @@
 class Settings::DashboardController < ApplicationController
-  before_action :require_admin
+  include Authorization
+  before_action -> { require_admin!(message: "Acceso no autorizado") }
 
   def index
     @facebook_integration = FacebookIntegration.first
@@ -61,10 +62,4 @@ class Settings::DashboardController < ApplicationController
   end
 
   private
-
-  def require_admin
-    unless Current.user&.admin?
-      redirect_to root_path, alert: "No autorizado."
-    end
-  end
 end

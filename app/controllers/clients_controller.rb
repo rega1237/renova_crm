@@ -3,7 +3,7 @@ class ClientsController < ApplicationController
   before_action :set_client, only: %i[ show edit update destroy ]
 
   def index
-    @clients = Client.includes(:state, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
+    @clients = Client.includes(:state, :city, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
 
     # Filtro por búsqueda de nombre
     if params[:query].present?
@@ -23,6 +23,15 @@ class ClientsController < ApplicationController
     # Filtro por estado
     if params[:state_id].present?
       @clients = @clients.where(state_id: params[:state_id])
+    end
+
+    # Filtro por ciudad (incluye opción especial 'Sin ciudad')
+    if params[:city_id].present?
+      if params[:city_id] == "none"
+        @clients = @clients.where(city_id: nil)
+      else
+        @clients = @clients.where(city_id: params[:city_id])
+      end
     end
 
     # Filtro por vendedor (busca en ambos campos)
@@ -86,7 +95,7 @@ class ClientsController < ApplicationController
     @client = Client.find(params[:id])
     field = params[:field]
     value = params[field] || params[:value] || (params[:client] && params[:client][field])
-    allowed_fields = %w[name phone email address zip_code status source state_id prospecting_seller_id reasons]
+    allowed_fields = %w[name phone email address zip_code status source state_id city_id prospecting_seller_id reasons]
     unless allowed_fields.include?(field)
       return render turbo_stream: turbo_stream.update(
         "client_#{field}_display",
@@ -309,7 +318,7 @@ class ClientsController < ApplicationController
 
     def client_params
       params.require(:client).permit(
-        :name, :phone, :email, :address, :zip_code, :state_id,
+        :name, :phone, :email, :address, :zip_code, :state_id, :city_id,
         :status, :source, :prospecting_seller_id, :assigned_seller_id, :reasons
       )
     end

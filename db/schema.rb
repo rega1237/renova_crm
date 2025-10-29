@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_29_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -33,6 +33,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
     t.index ["seller_id"], name: "index_appointments_on_seller_id"
   end
 
+  create_table "cities", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "abbreviation"
+    t.bigint "state_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["state_id", "name"], name: "index_cities_on_state_id_and_name", unique: true
+    t.index ["state_id"], name: "index_cities_on_state_id"
+  end
+
   create_table "clients", force: :cascade do |t|
     t.string "name"
     t.string "phone"
@@ -50,8 +60,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
     t.bigint "assigned_seller_id"
     t.integer "cancellations_count", default: 0, null: false
     t.string "reasons"
+    t.bigint "city_id"
     t.index ["assigned_seller_id"], name: "index_clients_on_assigned_seller_id"
+    t.index ["city_id"], name: "index_clients_on_city_id"
     t.index ["prospecting_seller_id"], name: "index_clients_on_prospecting_seller_id"
+    t.index ["state_id", "city_id"], name: "index_clients_on_state_id_and_city_id"
     t.index ["state_id"], name: "index_clients_on_state_id"
     t.index ["updated_by_id"], name: "index_clients_on_updated_by_id"
     t.index ["updated_status_at"], name: "index_clients_on_updated_status_at"
@@ -121,6 +134,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
     t.index ["name"], name: "index_states_on_name"
   end
 
+  create_table "unauthorized_access_attempts", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "role_name"
+    t.string "controller_name", null: false
+    t.string "action_name", null: false
+    t.string "path", null: false
+    t.string "ip_address"
+    t.string "user_agent"
+    t.string "message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["controller_name", "action_name"], name: "idx_on_controller_name_action_name_fc8f7b95ec"
+    t.index ["created_at"], name: "index_unauthorized_access_attempts_on_created_at"
+    t.index ["user_id"], name: "index_unauthorized_access_attempts_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
     t.string "password_digest", null: false
@@ -134,6 +163,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
   add_foreign_key "appointments", "clients"
   add_foreign_key "appointments", "sellers"
   add_foreign_key "appointments", "users", column: "created_by_id"
+  add_foreign_key "cities", "states"
+  add_foreign_key "clients", "cities"
   add_foreign_key "clients", "sellers", column: "assigned_seller_id"
   add_foreign_key "clients", "sellers", column: "prospecting_seller_id"
   add_foreign_key "clients", "states"
@@ -142,4 +173,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_232159) do
   add_foreign_key "notes", "clients"
   add_foreign_key "notes", "users", column: "created_by_id"
   add_foreign_key "sessions", "users"
+  add_foreign_key "unauthorized_access_attempts", "users"
 end

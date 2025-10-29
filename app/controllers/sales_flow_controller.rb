@@ -38,6 +38,7 @@ class SalesFlowController < ApplicationController
     @status_filter = params[:status]
     @source_filter = params[:source]
     @state_filter = params[:state_id]
+    @city_filter = params[:city_id]
     @date_from = params[:date_from]
     @date_to = params[:date_to]
   end
@@ -61,7 +62,7 @@ class SalesFlowController < ApplicationController
 
   # Alcance base por status con includes necesarios
   def base_scope_for_status(status)
-    Client.includes(:state, :prospecting_seller, :assigned_seller, :notes, :updated_by)
+    Client.includes(:state, :city, :prospecting_seller, :assigned_seller, :notes, :updated_by)
           .where(status: status)
   end
 
@@ -70,6 +71,15 @@ class SalesFlowController < ApplicationController
     scope = scope.where("name ILIKE ?", "%#{@query}%") if @query.present?
     scope = scope.where(source: @source_filter) if @source_filter.present?
     scope = scope.where(state_id: @state_filter) if @state_filter.present?
+
+    # Filtro por ciudad (incluye opción especial 'Sin ciudad')
+    if @city_filter.present?
+      if @city_filter == "none"
+        scope = scope.where(city_id: nil)
+      else
+        scope = scope.where(city_id: @city_filter)
+      end
+    end
 
     # Filtro por rango de fechas
     if @date_from.present? || @date_to.present?

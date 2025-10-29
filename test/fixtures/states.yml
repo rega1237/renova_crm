@@ -5,3 +5,7 @@ texas:
 florida:
   name: Florida
   abbreviation: FL
+
+arizona:
+  name: Arizona
+  abbreviation: AZ

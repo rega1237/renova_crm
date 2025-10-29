@@ -204,6 +204,31 @@
         </div>
       </div>
       
+      <!-- Ciudad -->
+      <div>
+        <div class="flex items-center justify-between">
+          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Ciudad</h3>
+          <button type="button" 
+                  data-action="click->client-inline-edit#toggleEdit"
+                  data-field="city_id"
+                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            Editar
+          </button>
+        </div>
+        <div id="client_city_id_display" data-client-inline-edit-target="display" data-field="city_id">
+          <p class="font-montserrat text-lg text-negro-onix mt-1">
+            <% if client.city.present? %>
+              <%= client.city.name %>
+            <% else %>
+              <span class="text-gray-400 italic">No asignado</span>
+            <% end %>
+          </p>
+        </div>
+        <div data-client-inline-edit-target="editForm" data-field="city_id" class="hidden mt-1">
+          <%= render 'field_edit_form', client: client, field: 'city_id' %>
+        </div>
+      </div>
+
       <!-- Estado del Cliente y Fuente -->
       <div class="grid grid-cols-2 gap-4">
         <!-- Estado del Cliente -->
