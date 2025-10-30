@@ -180,6 +180,7 @@ export default class extends Controller {
 
     // Inicializar dispositivo (reutiliza si ya existe)
     if (!this.device) {
+      // Crear el Device y esperar a que esté listo antes de conectar.
       this.device = new window.Twilio.Device(data.token, {
         logLevel: "error",
         codecPreferences: ["opus", "pcmu"],
@@ -191,6 +192,18 @@ export default class extends Controller {
       this.device.on("offline", () => this.setStatus("Desconectado", "text-red-700"))
       this.device.on("connect", () => this.setStatus("Conectado", "text-green-700"))
       this.device.on("disconnect", () => this.setStatus("Llamada finalizada", "text-gray-700"))
+
+      try {
+        await this.waitForDeviceReady(this.device)
+      } catch (e) {
+        this.setStatus(`No se pudo inicializar el dispositivo: ${e.message || e}`, "text-red-700")
+        return
+      }
+    } else {
+      // Actualiza el token para sesiones previas y continúa.
+      if (typeof this.device.updateToken === "function") {
+        this.device.updateToken(data.token)
+      }
     }
 
     // Conectar: los parámetros se enviarán al webhook /twilio/voice/connect
@@ -203,5 +216,33 @@ export default class extends Controller {
     conn.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
     conn.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
     conn.on("error", (e) => this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700"))
+  }
+
+  // Espera a que Twilio.Device emita "ready" antes de intentar conectar.
+  async waitForDeviceReady(device) {
+    return new Promise((resolve, reject) => {
+      let settled = false
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true
+          reject(new Error("El SDK no se inicializó a tiempo"))
+        }
+      }, 8000)
+
+      device.once("ready", () => {
+        if (!settled) {
+          settled = true
+          clearTimeout(timeout)
+          resolve()
+        }
+      })
+      device.once("error", (e) => {
+        if (!settled) {
+          settled = true
+          clearTimeout(timeout)
+          reject(e)
+        }
+      })
+    })
   }
 }
