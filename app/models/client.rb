@@ -76,6 +76,9 @@ class Client < ApplicationRecord
   validates :status, presence: true
   validates :source, presence: true
 
+  # Normalización de teléfono del cliente a E.164 (US) para facilitar llamadas salientes
+  before_validation :normalize_phone_us!
+
   # Validación: si source es prospectacion o referencia, debe tener prospecting_seller
   validates :prospecting_seller_id, presence: true, if: :requires_prospecting_seller?
 
@@ -143,5 +146,13 @@ class Client < ApplicationRecord
     # No sobrescribir updated_by_id con nil si no hay usuario actual
     attrs[:updated_by_id] = Current.user.id if Current.user
     self.update_columns(attrs)
+  end
+
+  def normalize_phone_us!
+    return if phone.blank?
+    normalized = PhonyRails.normalize_number(phone, country_code: 'US')
+    self.phone = normalized if normalized.present?
+  rescue StandardError
+    # Mantener el valor original si falla la normalización
   end
 end

@@ -19,6 +19,7 @@ Rails.application.routes.draw do
     resources :installers
     resources :states
     resources :cities
+    resources :numbers
     # La página principal del menú de configuración
     root to: "dashboard#index"
     post "import_clients", to: "dashboard#import_clients"

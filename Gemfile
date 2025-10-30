@@ -58,6 +58,9 @@ gem "omniauth-google-oauth2"
 # Twilio SDK for voice calls
 gem "twilio-ruby", "~> 6.0"
 
+# Normalización y validación de teléfonos (E.164) con soporte por país
+gem "phony_rails"
+
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 

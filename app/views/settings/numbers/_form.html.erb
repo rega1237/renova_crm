@@ -1,0 +1,37 @@
+<%= form_with(model: [:settings, @number], class: "space-y-6") do |f| %>
+  <% if @number.errors.any? %>
+    <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded">
+      <p class="font-semibold mb-2">Corrige los siguientes errores:</p>
+      <ul class="list-disc ml-5">
+        <% @number.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :phone_number, "Número (E.164)", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.text_field :phone_number, placeholder: "+14155550123", class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :state, "Estado (geográfico)", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.select :state, @states.map { |st| [st.name, st.name] }, { include_blank: "Selecciona estado" }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :user_id, "Asignado a (usuario)", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.select :user_id, @users.map { |u| [u.name.presence || u.email, u.id] }, { include_blank: "Selecciona usuario" }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.select :status, Number.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2" %>
+  </div>
+
+  <div class="flex gap-2">
+    <%= f.submit class: "bg-rojo-carmesi text-white font-semibold py-2 px-4 rounded hover:bg-rojo-carmesi-dark" %>
+    <%= link_to "Cancelar", settings_numbers_path, class: "bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded hover:bg-gray-300" %>
+  </div>
+<% end %>

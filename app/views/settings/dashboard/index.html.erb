@@ -48,6 +48,15 @@
       </p>
     <% end %>
 
+    <%= link_to settings_numbers_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
+        Gestionar Números (Twilio)
+      </h2>
+      <p class="font-montserrat text-negro-onix mt-2">
+        Administra los números telefónicos asociados (crear, editar, ver y eliminar).
+      </p>
+    <% end %>
+
     <div class="block bg-white p-8 rounded-xl shadow-md">
       <% if @facebook_integration&.persisted? %>
         <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">Conectado a Facebook</h2>

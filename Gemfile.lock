@@ -278,6 +278,10 @@ GEM
     pg (1.6.2-x86_64-darwin)
     pg (1.6.2-x86_64-linux)
     pg (1.6.2-x86_64-linux-musl)
+    phony (2.22.5)
+    phony_rails (0.15.0)
+      activesupport (>= 3.0)
+      phony (>= 2.18.12)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -505,6 +509,7 @@ DEPENDENCIES
   koala (~> 3.0)
   omniauth-google-oauth2
   pg (~> 1.1)
+  phony_rails
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.2)
