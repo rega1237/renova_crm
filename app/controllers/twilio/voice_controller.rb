@@ -8,6 +8,8 @@ module Twilio
 
     # Twilio hará una petición GET/POST a esta acción para obtener TwiML
     def connect
+      # Log de diagnóstico: parámetros recibidos por el webhook
+      Rails.logger.info("Twilio Voice connect params: #{params.to_unsafe_h.inspect}")
       # Este endpoint es llamado por Twilio cuando el navegador inicia una llamada
       # mediante el Voice SDK (outgoing_application_sid). Los parámetros incluidos
       # en Device.connect se reciben aquí (por ejemplo: To y From).
@@ -16,6 +18,7 @@ module Twilio
       from_number = params[:From] || params[:from] || params[:caller_id]
 
       unless to_number.present? && from_number.present?
+        Rails.logger.warn("Parámetros incompletos en /twilio/voice/connect: To=#{to_number.inspect}, From=#{from_number.inspect}")
         return render xml: empty_twiml_with_say("Parámetros incompletos"), status: :ok
       end
 

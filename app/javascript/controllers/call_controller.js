@@ -246,20 +246,35 @@ export default class extends Controller {
       this.connection = null
     }
 
-    const conn = this.device.connect({
+    // En SDK v2, Device.connect no garantiza devolver el objeto de llamada.
+    // En su lugar, escuchamos el evento 'connect' del Device y recibimos el Call.
+    const handleConnect = (call) => {
+      this.connection = call
+      // Eventos de la llamada (Call)
+      if (typeof call.on === "function") {
+        call.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
+        call.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
+        call.on("disconnect", () => this.setStatus("Llamada finalizada", "text-gray-700"))
+        call.on("error", (e) => {
+          console.error("Twilio.Call error", e?.info || e)
+          this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700")
+          try { call.disconnect?.() } catch (_) {}
+          this.teardownDevice()
+        })
+      } else {
+        // Si no hay API de eventos, nos limitamos a actualizar estado.
+        this.setStatus("Llamando…", "text-yellow-700")
+      }
+    }
+
+    // Asegura que capturamos el próximo connect.
+    this.device.once?.("connect", handleConnect)
+
+    // Iniciar la llamada; los parámetros se enviarán al webhook /twilio/voice/connect
+    this.device.connect({
       To: to,
       From: from,
       client_id: clientId
-    })
-
-    this.connection = conn
-    conn.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
-    conn.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
-    conn.on("error", (e) => {
-      console.error("Twilio.Call error", e?.info || e)
-      this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700")
-      try { conn.disconnect() } catch (_) {}
-      this.teardownDevice()
     })
   }
 
