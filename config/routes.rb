@@ -64,6 +64,13 @@ Rails.application.routes.draw do
   namespace :api do
     resources :cities, only: [ :index ]
     resources :calls, only: [ :create ]
+    # WebRTC: preparar llamada (selección de número de origen) sin iniciar llamada server-side
+    post "voice/prepare", to: "voice_calls#prepare"
+
+    # WebRTC: emisión de token para Twilio Voice SDK en el navegador
+    namespace :twilio do
+      post "voice/token", to: "voice_tokens#create"
+    end
     namespace :facebook do
       get "webhooks", to: "webhooks#verify"
       post "webhooks", to: "webhooks#receive"
@@ -76,4 +83,9 @@ Rails.application.routes.draw do
   get "dashboard/telemarketing_metrics", to: "dashboard#telemarketing_metrics"
   get "dashboard/sellers_metrics", to: "dashboard#sellers_metrics"
   root "dashboard#index"
+  # TwiML endpoint para instruir llamadas salientes desde Twilio (usado por WebRTC)
+  namespace :twilio do
+    get "voice/connect", to: "voice#connect"
+    post "voice/connect", to: "voice#connect"
+  end
 end

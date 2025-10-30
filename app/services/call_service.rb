@@ -24,11 +24,14 @@ class CallService
 
     twilio = @twilio_client || Twilio::REST::Client.new(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
+    # Generar URL de TwiML que conectará al cliente con el usuario (agente) mediante <Dial>
+    connect_url = build_connect_url(@client_record, @user, @from_number)
+
     response = twilio.calls.create(
       from: @from_number,
       to: @to_number,
-      # Mensaje básico; para flujos avanzados conviene usar un webhook con TwiML personalizado
-      twiml: "<Response><Say language=\"es-MX\" voice=\"alice\">Llamada iniciada desde Renova CRM</Say></Response>"
+      url: connect_url,
+      method: 'GET'
     )
 
     log_note!("Llamada iniciada a #{@to_number} desde #{@from_number}. SID: #{response.sid}. Estado: #{response.status}.")
@@ -61,3 +64,13 @@ class CallService
     Rails.logger.error("Failed to record call note: #{e.message}")
   end
 end
+  def build_connect_url(client, user, caller_id)
+    # Twilio necesita una URL pública y completa. Usamos APP_HOST para construirla.
+    host = ENV['APP_HOST'] || Rails.application.routes.default_url_options[:host]
+    Rails.application.routes.url_helpers.twilio_voice_connect_url(
+      host: host,
+      client_id: client.id,
+      user_id: user.id,
+      caller_id: caller_id
+    )
+  end

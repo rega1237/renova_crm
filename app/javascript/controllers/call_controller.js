@@ -22,115 +22,102 @@ export default class extends Controller {
     }
   }
 
-  start(event) {
+  async start(event) {
     event.preventDefault()
     const btn = this.buttonTarget || this.element
     this.setLoading(btn, true)
-    this.setStatus("Llamando…", "text-yellow-700")
+    this.setStatus("Preparando llamada…", "text-yellow-700")
 
-    fetch("/api/calls", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": this.csrfToken()
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        client_id: this.clientIdValue,
-        to_number: this.toNumberValue
+    try {
+      const r = await fetch("/api/voice/prepare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-Token": this.csrfToken()
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          client_id: this.clientIdValue,
+          to_number: this.toNumberValue
+        })
       })
-    })
-      .then(r => this.parseResponse(r))
-      .then(({ ok, data, status, isJson }) => {
-        if (!ok) {
-          if (status === 401) {
-            this.setStatus("No autorizado. Inicia sesión para realizar llamadas.", "text-red-700")
-          } else {
-            this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
-          }
-          return
-        }
-        if (ok && data.need_selection) {
-          this.renderSelection(data.alternatives, data.client_state)
-          this.setLoading(btn, false)
-          this.setStatus("Selecciona un número de origen", "text-blue-700")
-          return
-        }
-
-        if (data.success) {
-          let statusMessage = `Llamada encolada (SID: ${data.sid})`
-          if (data.auto_selected_number) {
-            statusMessage += ` - Número auto-seleccionado: ${data.auto_selected_number} (${data.number_state})`
-          } else if (data.selected_number) {
-            statusMessage += ` - Usando: ${data.selected_number} (${data.number_state})`
-          }
-          this.setStatus(statusMessage, "text-green-700")
-          // Hide selection UI if it was visible
-          if (this.hasSelectionTarget) {
-            this.selectionTarget.innerHTML = ""
-            this.selectionTarget.classList.add("hidden")
-          }
+      const { ok, data, status, isJson } = await this.parseResponse(r)
+      if (!ok) {
+        if (status === 401) {
+          this.setStatus("No autorizado. Inicia sesión para realizar llamadas.", "text-red-700")
         } else {
           this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
         }
-      })
-      .catch(err => {
-        console.error(err)
-        this.setStatus("Error de red al iniciar la llamada", "text-red-700")
-      })
-      .finally(() => {
+        return
+      }
+      if (data.need_selection) {
+        this.renderSelection(data.alternatives, data.client_state)
         this.setLoading(btn, false)
+        this.setStatus("Selecciona un número de origen", "text-blue-700")
+        return
+      }
+
+      // WebRTC: conectar navegador ↔ cliente
+      await this.connectViaWebrtc({
+        from: data.selected_number,
+        to: data.to_number || this.toNumberValue,
+        clientId: this.clientIdValue
       })
+    } catch (err) {
+      console.error(err)
+      this.setStatus("Error de red al preparar la llamada", "text-red-700")
+    } finally {
+      this.setLoading(btn, false)
+    }
   }
 
-  selectNumber(event) {
+  async selectNumber(event) {
     const fromNumber = event.params.phone
     const btn = this.buttonTarget || this.element
     this.setLoading(btn, true)
-    this.setStatus("Llamando…", "text-yellow-700")
-
-    fetch("/api/calls", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": this.csrfToken()
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        client_id: this.clientIdValue,
-        to_number: this.toNumberValue,
-        from_number: fromNumber
+    this.setStatus("Preparando…", "text-yellow-700")
+    try {
+      const r = await fetch("/api/voice/prepare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-Token": this.csrfToken()
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          client_id: this.clientIdValue,
+          to_number: this.toNumberValue,
+          from_number: fromNumber
+        })
       })
-    })
-      .then(r => this.parseResponse(r))
-      .then(({ ok, data, status, isJson }) => {
-        if (!ok) {
-          if (status === 401) {
-            this.setStatus("No autorizado. Inicia sesión para realizar llamadas.", "text-red-700")
-          } else {
-            this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
-          }
-          return
-        }
-        if (data.success) {
-          let statusMessage = `Llamada encolada (SID: ${data.sid})`
-          if (data.selected_number) {
-            statusMessage += ` - Usando: ${data.selected_number} (${data.number_state})`
-          }
-          this.setStatus(statusMessage, "text-green-700")
-          this.selectionTarget.innerHTML = ""
-          this.selectionTarget.classList.add("hidden")
+      const { ok, data, status, isJson } = await this.parseResponse(r)
+      if (!ok) {
+        if (status === 401) {
+          this.setStatus("No autorizado. Inicia sesión para realizar llamadas.", "text-red-700")
         } else {
           this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
         }
-      })
-      .catch(err => {
-        console.error(err)
-        this.setStatus("Error de red al iniciar la llamada", "text-red-700")
-      })
-      .finally(() => this.setLoading(btn, false))
+        return
+      }
+      if (data.success) {
+        this.selectionTarget.innerHTML = ""
+        this.selectionTarget.classList.add("hidden")
+        await this.connectViaWebrtc({
+          from: data.selected_number,
+          to: data.to_number || this.toNumberValue,
+          clientId: this.clientIdValue
+        })
+      } else {
+        this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
+      }
+    } catch (err) {
+      console.error(err)
+      this.setStatus("Error de red al preparar la llamada", "text-red-700")
+    } finally {
+      this.setLoading(btn, false)
+    }
   }
 
   renderSelection(alternatives, clientState = null) {
@@ -166,5 +153,55 @@ export default class extends Controller {
     if (!this.statusTarget) return
     this.statusTarget.textContent = text
     this.statusTarget.className = `text-xs font-poppins ${colorClass}`
+  }
+
+  async connectViaWebrtc({ from, to, clientId }) {
+    if (!window.Twilio || !window.Twilio.Device) {
+      this.setStatus("SDK de Twilio no cargado", "text-red-700")
+      return
+    }
+
+    this.setStatus("Conectando…", "text-yellow-700")
+
+    // Obtener token
+    const r = await fetch("/api/twilio/voice/token", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "X-CSRF-Token": this.csrfToken()
+      },
+      credentials: "same-origin"
+    })
+    const { ok, data } = await this.parseResponse(r)
+    if (!ok || !data?.token) {
+      this.setStatus((data && data.error) ? data.error : "No se pudo obtener el token", "text-red-700")
+      return
+    }
+
+    // Inicializar dispositivo (reutiliza si ya existe)
+    if (!this.device) {
+      this.device = new window.Twilio.Device(data.token, {
+        logLevel: "error",
+        codecPreferences: ["opus", "pcmu"],
+        enableRingingState: true
+      })
+
+      this.device.on("ready", () => this.setStatus("Listo para llamar", "text-green-700"))
+      this.device.on("error", (e) => this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700"))
+      this.device.on("offline", () => this.setStatus("Desconectado", "text-red-700"))
+      this.device.on("connect", () => this.setStatus("Conectado", "text-green-700"))
+      this.device.on("disconnect", () => this.setStatus("Llamada finalizada", "text-gray-700"))
+    }
+
+    // Conectar: los parámetros se enviarán al webhook /twilio/voice/connect
+    const conn = this.device.connect({
+      To: to,
+      From: from,
+      client_id: clientId
+    })
+
+    conn.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
+    conn.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
+    conn.on("error", (e) => this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700"))
   }
 }
