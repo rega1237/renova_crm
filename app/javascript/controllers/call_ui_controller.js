@@ -65,6 +65,8 @@ export default class extends Controller {
       if (conn && typeof conn.disconnect === "function") {
         conn.disconnect()
       }
+      // Si por algún motivo no tenemos la conexión, colgamos a nivel de Device
+      try { window.twilioDevice?.disconnectAll?.() } catch (_) {}
       window.CallState = Object.assign({}, window.CallState, { inCall: false })
       window.dispatchEvent(new CustomEvent("call:ui:hide"))
 
