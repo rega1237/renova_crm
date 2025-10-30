@@ -119,6 +119,23 @@ class Client < ApplicationRecord
     end
   end
 
+  # Selección automática del número Twilio a usar como caller ID
+  # Retorna un hash con:
+  #  - :number => Number (cuando hay coincidencia por estado y propiedad)
+  #  - :alternatives => [Number] (lista de números activos del usuario para selección manual si no hubo coincidencia)
+  def select_outbound_number_for(user)
+    user_numbers = Number.active.owned_by(user)
+    client_state_abbr = state&.abbreviation
+
+    if client_state_abbr.present?
+      match = user_numbers.for_state(client_state_abbr).first
+      return { number: match, alternatives: [] } if match
+    end
+
+    # No hubo match por estado: devolver alternativas para selección manual
+    { number: nil, alternatives: user_numbers.order(:state) }
+  end
+
   private
 
   def update_status_tracking

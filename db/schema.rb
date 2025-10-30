@@ -108,6 +108,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_130000) do
     t.index ["created_by_id"], name: "index_notes_on_created_by_id"
   end
 
+  create_table "numbers", force: :cascade do |t|
+    t.string "phone_number", null: false
+    t.bigint "user_id", null: false
+    t.string "state", null: false
+    t.integer "status", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["phone_number"], name: "index_numbers_on_phone_number", unique: true
+    t.index ["status"], name: "index_numbers_on_status"
+    t.index ["user_id", "state"], name: "index_numbers_on_user_id_and_state"
+    t.index ["user_id"], name: "index_numbers_on_user_id"
+  end
+
   create_table "sellers", force: :cascade do |t|
     t.string "name"
     t.string "phone"
@@ -172,6 +185,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_130000) do
   add_foreign_key "google_integrations", "users"
   add_foreign_key "notes", "clients"
   add_foreign_key "notes", "users", column: "created_by_id"
+  add_foreign_key "numbers", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "unauthorized_access_attempts", "users"
 end
