@@ -267,14 +267,23 @@ export default class extends Controller {
       }
     }
 
+    // Validación de parámetros antes de iniciar la llamada
+    if (!to) {
+      this.setStatus("Parámetro 'To' vacío: selecciona el número del cliente.", "text-red-700")
+      return
+    }
+
     // Asegura que capturamos el próximo connect.
     this.device.once?.("connect", handleConnect)
 
-    // Iniciar la llamada; los parámetros se enviarán al webhook /twilio/voice/connect
+    // Iniciar la llamada; en SDK v2 los parámetros personalizados deben ir en 'params'
+    // Serán reenviados a /twilio/voice/connect
     this.device.connect({
-      To: to,
-      From: from,
-      client_id: clientId
+      params: {
+        To: to,
+        caller_id: from,
+        client_id: clientId
+      }
     })
   }
 
