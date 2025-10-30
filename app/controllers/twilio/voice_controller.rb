@@ -5,6 +5,7 @@ require "twilio-ruby"
 module Twilio
   class VoiceController < ActionController::Base
     protect_from_forgery with: :null_session
+    before_action :verify_twilio_signature, only: [:connect]
 
     # Twilio hará una petición GET/POST a esta acción para obtener TwiML
     def connect
@@ -48,6 +49,32 @@ module Twilio
       ::Twilio::TwiML::VoiceResponse.new do |r|
         r.say(message: message, language: "es-MX", voice: "alice")
       end.to_xml
+    end
+
+    # Verificación de firma de Twilio para asegurar que la petición proviene de Twilio
+    def verify_twilio_signature
+      begin
+        signature = request.headers["X-Twilio-Signature"]
+        auth_token = TWILIO_AUTH_TOKEN
+        if auth_token.blank? || signature.blank?
+          Rails.logger.warn("Saltando verificación de firma de Twilio: faltan TWILIO_AUTH_TOKEN o X-Twilio-Signature")
+          return true
+        end
+
+        validator = ::Twilio::Security::RequestValidator.new(auth_token)
+        # Twilio firma con la URL original y los parámetros del request (POST + query)
+        url = request.original_url
+        params = request.request_parameters.merge(request.query_parameters)
+        valid = validator.validate(url, params, signature)
+        unless valid
+          Rails.logger.warn("Firma Twilio inválida para #{url}")
+          render xml: empty_twiml_with_say("Solicitud no autorizada"), status: :forbidden
+        end
+      rescue StandardError => e
+        Rails.logger.error("Error verificando firma de Twilio: #{e.class} - #{e.message}")
+        # En caso de error inesperado, no bloquear la llamada pero registrar.
+        true
+      end
     end
   end
 end

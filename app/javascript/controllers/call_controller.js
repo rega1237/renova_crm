@@ -196,7 +196,7 @@ export default class extends Controller {
       // Crear el Device y esperar a que esté listo antes de conectar.
       // Twilio Voice SDK v2
       this.device = new window.Twilio.Device(data.token, {
-        logLevel: "debug",
+        logLevel: "info",
         enableRingingState: true
         // Nota: a partir de v2.15 se usa setCodecPreferences en el objeto Call.
         // Evitamos codecPreferences aquí para compatibilidad futura.
