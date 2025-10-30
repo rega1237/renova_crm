@@ -18,9 +18,9 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
-    <!-- Twilio Voice JS SDK 2.x (recomendado por Twilio): servimos el archivo local -->
-    <!-- Colocaremos twilio-voice.min.js en vendor/javascript mediante npm -->
-    <script src="/vendor/javascript/twilio-voice.min.js"></script>
+    <!-- Twilio Voice JS SDK 2.x (recomendado por Twilio): ahora servido desde /public -->
+    <!-- El archivo twilio-voice.min.js está ubicado en /public/twilio-voice.min.js -->
+    <script src="/twilio-voice.min.js"></script>
   </head>
   <body class="bg-humo min-h-screen">
     <div id="notifications-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm space-y-3">
