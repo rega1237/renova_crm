@@ -165,9 +165,11 @@ export default class extends Controller {
 
     // Pre-solicitar permiso de micrófono para evitar fallos del primer intento.
     try {
-      await navigator.mediaDevices.getUserMedia({
+      const gumStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true }
       })
+      // Cerramos inmediatamente las pistas para no dejar el micro abierto.
+      gumStream.getTracks().forEach(t => t.stop())
     } catch (e) {
       this.setStatus(`Permiso de micrófono requerido: ${e.message || e}`, "text-red-700")
       return
@@ -198,11 +200,17 @@ export default class extends Controller {
       })
 
       this.device.on("ready", () => this.setStatus("Listo para llamar", "text-green-700"))
-      this.device.on("error", (e) => this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700"))
+      this.device.on("error", (e) => {
+        console.error("Twilio.Device error", e)
+        this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700")
+      })
       this.device.on("warning", (e) => this.setStatus(`Advertencia del dispositivo: ${e.message || e}`, "text-yellow-700"))
       this.device.on("offline", () => this.setStatus("Desconectado", "text-red-700"))
       this.device.on("connect", () => this.setStatus("Conectado", "text-green-700"))
-      this.device.on("disconnect", () => this.setStatus("Llamada finalizada", "text-gray-700"))
+      this.device.on("disconnect", () => {
+        this.setStatus("Llamada finalizada", "text-gray-700")
+        this.teardownDevice()
+      })
 
       try {
         await this.waitForDeviceReady(this.device)
@@ -218,15 +226,27 @@ export default class extends Controller {
     }
 
     // Conectar: los parámetros se enviarán al webhook /twilio/voice/connect
+    // Si hay una conexión previa, asegúrate de cerrarla antes de iniciar otra.
+    if (this.connection && typeof this.connection.disconnect === "function") {
+      try { this.connection.disconnect() } catch (_) {}
+      this.connection = null
+    }
+
     const conn = this.device.connect({
       To: to,
       From: from,
       client_id: clientId
     })
 
+    this.connection = conn
     conn.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
     conn.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
-    conn.on("error", (e) => this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700"))
+    conn.on("error", (e) => {
+      console.error("Twilio.Connection error", e?.info || e)
+      this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700")
+      try { conn.disconnect() } catch (_) {}
+      this.teardownDevice()
+    })
   }
 
   // Espera a que Twilio.Device emita "ready" antes de intentar conectar.
@@ -255,5 +275,13 @@ export default class extends Controller {
         }
       })
     })
+  }
+
+  teardownDevice() {
+    // Cierra conexiones y destruye el Device para liberar el micrófono/estado.
+    try { this.device?.disconnectAll?.() } catch (_) {}
+    try { this.device?.destroy?.() } catch (_) {}
+    this.device = null
+    this.connection = null
   }
 }
