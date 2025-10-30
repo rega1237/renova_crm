@@ -255,14 +255,9 @@ export default class extends Controller {
       // Actualizar estado global
       window.CallState = Object.assign({
         inCall: true,
-        muted: false,
-        outputMode: (window.CallState && window.CallState.outputMode) || "default",
-        sinkId: (window.CallState && window.CallState.sinkId) || "default",
         clientName: this.clientNameValue || null,
         phone: to
       }, window.CallState || {})
-      // Notificar a la UI
-      window.dispatchEvent(new CustomEvent("call:ui:update", { detail: window.CallState }))
       // Eventos de la llamada (Call)
       if (typeof call.on === "function") {
         call.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
@@ -307,7 +302,7 @@ export default class extends Controller {
     // Mostrar inmediatamente la UI de llamada y ocultar el botón original
     this.hideCallButton()
     const uiDetail = { name: this.clientNameValue || "", phone: to }
-    window.CallState = Object.assign({ inCall: true, muted: false, clientName: uiDetail.name, phone: uiDetail.phone }, window.CallState || {})
+    window.CallState = Object.assign({ inCall: true, clientName: uiDetail.name, phone: uiDetail.phone }, window.CallState || {})
     window.dispatchEvent(new CustomEvent("call:ui:show", { detail: uiDetail }))
 
     this.device.connect({

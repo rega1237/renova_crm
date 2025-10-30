@@ -24,36 +24,16 @@
 
       <!-- Controls -->
       <div class="flex items-center gap-2 ml-auto">
-        <!-- Mute/Unmute -->
+        <!-- Hangup/Close (primary and prominent) -->
         <button type="button" 
-                class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                title="Mute/Unmute"
-                data-call-ui-target="muteButton"
-                data-action="click->call-ui#toggleMute">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a3 3 0 016 0v13m-9-6a9 9 0 009 9 9 9 0 009-9" />
-          </svg>
-        </button>
-
-        <!-- Speaker/Headphones toggle -->
-        <button type="button" 
-                class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                title="Altavoz/Audífonos"
-                data-call-ui-target="speakerButton"
-                data-action="click->call-ui#toggleOutput">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10a4 4 0 014-4h1a4 4 0 014 4v7a3 3 0 01-3 3H7a3 3 0 01-3-3v-7zm13-4h1a4 4 0 014 4v7a3 3 0 01-3 3h-2a3 3 0 01-3-3v-7a4 4 0 014-4z" />
-          </svg>
-        </button>
-
-        <!-- Hangup/Close -->
-        <button type="button" 
-                class="p-2 rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                class="px-3 py-2 rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                 title="Colgar"
+                aria-label="Colgar llamada"
                 data-call-ui-target="hangupButton"
                 data-action="click->call-ui#hangup">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12c4-4 12-4 16 0l-3 3a2 2 0 01-2 0l-2-2a2 2 0 00-2 0l-2 2a2 2 0 01-2 0l-3-3z" />
+          <!-- Phone hangup icon -->
+          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M2.003 5.884a2 2 0 01.51-1.127l.384-.45A12.042 12.042 0 0110 1c2.886 0 5.52 1.048 7.103 2.307l.384.45c.3.352.49.786.51 1.245.02.458-.128.91-.41 1.27l-1.66 2.11a1.5 1.5 0 01-1.72.5l-2.24-.84a1.5 1.5 0 00-1.23.1l-.97.54a1.5 1.5 0 01-1.46 0l-.97-.54a1.5 1.5 0 00-1.23-.1l-2.24.84a1.5 1.5 0 01-1.72-.5L2.413 7.27a2 2 0 01-.41-1.386z" />
           </svg>
         </button>
       </div>
