@@ -15,11 +15,19 @@ module Twilio
       # en Device.connect se reciben aquí (por ejemplo: To y From).
 
       to_number = params[:To] || params[:to]
-      from_number = params[:From] || params[:from] || params[:caller_id]
+      # Priorizar el caller_id numérico (E.164) enviado desde el cliente.
+      # Twilio incluye From/Caller="client:<identity>", que NO es válido como callerId para <Dial> a PSTN.
+      from_number = params[:caller_id] || params[:From] || params[:from]
 
       unless to_number.present? && from_number.present?
         Rails.logger.warn("Parámetros incompletos en /twilio/voice/connect: To=#{to_number.inspect}, From=#{from_number.inspect}")
         return render xml: empty_twiml_with_say("Parámetros incompletos"), status: :ok
+      end
+
+      # Validar callerId en formato E.164 (+E.164) requerido por Twilio
+      unless from_number.present? && from_number.to_s.match?(/\A\+\d{8,15}\z/)
+        Rails.logger.warn("callerId inválido en /twilio/voice/connect: caller_id=#{from_number.inspect}")
+        return render xml: empty_twiml_with_say("callerId inválido para la llamada"), status: :ok
       end
 
       response = ::Twilio::TwiML::VoiceResponse.new
