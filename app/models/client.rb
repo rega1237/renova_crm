@@ -128,10 +128,17 @@ class Client < ApplicationRecord
   #  - :alternatives => [Number] (lista de números activos del usuario para selección manual si no hubo coincidencia)
   def select_outbound_number_for(user)
     user_numbers = Number.active.owned_by(user)
-    client_state_abbr = state&.abbreviation
 
-    if client_state_abbr.present?
-      match = user_numbers.for_state(client_state_abbr).first
+    # Algunos registros de Number guardan el estado como nombre ("Texas") y otros como abreviatura ("TX").
+    # Para evitar que falle la auto-asignación por discrepancias, intentamos match por ambos, de forma
+    # insensible a mayúsculas/minúsculas y eliminando espacios.
+    client_state_abbr = state&.abbreviation.to_s.strip
+    client_state_name = state&.name.to_s.strip
+
+    if client_state_abbr.present? || client_state_name.present?
+      # Buscar primero por abreviatura, luego por nombre completo
+      match = user_numbers.where("LOWER(state) = ?", client_state_abbr.downcase).first if client_state_abbr.present?
+      match ||= user_numbers.where("LOWER(state) = ?", client_state_name.downcase).first if client_state_name.present?
       return { number: match, alternatives: [] } if match
     end
 
