@@ -12,16 +12,9 @@ TWILIO_ACCOUNT_SID = Rails.application.credentials.dig(:twilio, :account_sid) ||
 TWILIO_AUTH_TOKEN  = Rails.application.credentials.dig(:twilio, :auth_token)  || ENV["TWILIO_AUTH_TOKEN"]  unless defined?(TWILIO_AUTH_TOKEN)
 
 # Detect if we're running asset precompilation (skip fail-fast in this case)
-skip_fail_fast = ENV["SECRET_KEY_BASE_DUMMY"].present? ||
-                 (defined?(ARGV) && ARGV.any? { |a| a.to_s.start_with?("assets:") })
-should_fail_fast = Rails.env.production? && !skip_fail_fast
-
-if should_fail_fast
-  if TWILIO_ACCOUNT_SID.blank? || TWILIO_AUTH_TOKEN.blank?
-    Rails.logger.error("Missing Twilio credentials (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN)")
-    raise "Missing Twilio credentials (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN)"
-  end
-end
+# We do not fail-fast here to avoid breaking Docker asset precompilation.
+# Service objects (e.g., CallService) should validate credentials at runtime
+# when Twilio functionality is actually invoked.
 
 # Note: We do not instantiate Twilio::REST::Client here to keep boot times
 # and tests uncomplicated. The service objects (e.g., CallService) should
