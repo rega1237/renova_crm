@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 // Handles click-to-call flow with Twilio via API
 export default class extends Controller {
   static targets = ["button", "status", "selection"]
-  static values = { clientId: Number, toNumber: String }
+  static values = { clientId: Number, toNumber: String, clientName: String }
 
   csrfToken() {
     const el = document.querySelector('meta[name="csrf-token"]')
@@ -250,16 +250,39 @@ export default class extends Controller {
     // En su lugar, escuchamos el evento 'connect' del Device y recibimos el Call.
     const handleConnect = (call) => {
       this.connection = call
+      // Exponer conexión global para la UI de llamada
+      window.activeConnection = call
+      // Actualizar estado global
+      window.CallState = Object.assign({
+        inCall: true,
+        muted: false,
+        outputMode: (window.CallState && window.CallState.outputMode) || "default",
+        sinkId: (window.CallState && window.CallState.sinkId) || "default",
+        clientName: this.clientNameValue || null,
+        phone: to
+      }, window.CallState || {})
+      // Notificar a la UI
+      window.dispatchEvent(new CustomEvent("call:ui:update", { detail: window.CallState }))
       // Eventos de la llamada (Call)
       if (typeof call.on === "function") {
         call.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
         call.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
-        call.on("disconnect", () => this.setStatus("Llamada finalizada", "text-gray-700"))
+        call.on("disconnect", () => {
+          this.setStatus("Llamada finalizada", "text-gray-700")
+          // Restaurar UI/botón
+          this.restoreCallButton()
+          window.CallState = Object.assign({}, window.CallState, { inCall: false })
+          window.dispatchEvent(new CustomEvent("call:ui:hide"))
+        })
         call.on("error", (e) => {
           console.error("Twilio.Call error", e?.info || e)
           this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700")
           try { call.disconnect?.() } catch (_) {}
           this.teardownDevice()
+          // Restaurar UI/botón en caso de error
+          this.restoreCallButton()
+          window.CallState = Object.assign({}, window.CallState, { inCall: false })
+          window.dispatchEvent(new CustomEvent("call:ui:hide"))
         })
       } else {
         // Si no hay API de eventos, nos limitamos a actualizar estado.
@@ -278,6 +301,15 @@ export default class extends Controller {
 
     // Iniciar la llamada; en SDK v2 los parámetros personalizados deben ir en 'params'
     // Serán reenviados a /twilio/voice/connect
+    // Guardar referencia global al Device para el controlador de UI
+    window.twilioDevice = this.device
+
+    // Mostrar inmediatamente la UI de llamada y ocultar el botón original
+    this.hideCallButton()
+    const uiDetail = { name: this.clientNameValue || "", phone: to }
+    window.CallState = Object.assign({ inCall: true, muted: false, clientName: uiDetail.name, phone: uiDetail.phone }, window.CallState || {})
+    window.dispatchEvent(new CustomEvent("call:ui:show", { detail: uiDetail }))
+
     this.device.connect({
       params: {
         To: to,
@@ -333,5 +365,21 @@ export default class extends Controller {
     try { this.device?.destroy?.() } catch (_) {}
     this.device = null
     this.connection = null
+  }
+
+  hideCallButton() {
+    try {
+      const btn = this.buttonTarget || this.element
+      if (btn) btn.classList.add("hidden")
+    } catch (_) {}
+  }
+
+  restoreCallButton() {
+    try {
+      const btn = this.buttonTarget || this.element
+      if (btn) btn.classList.remove("hidden")
+    } catch (_) {}
+    // También intentar restaurar cualquier otro botón de llamada presente en la vista actual
+    document.querySelectorAll('[data-controller="call"] [data-call-target="button"]').forEach((el) => el.classList.remove('hidden'))
   }
 }

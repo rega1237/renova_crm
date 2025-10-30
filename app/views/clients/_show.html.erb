@@ -17,7 +17,8 @@
           <!-- Icono de teléfono / Click-to-Call -->
           <div data-controller="call"
                data-call-client-id-value="<%= client.id %>"
-               data-call-to-number-value="<%= client.phone %>">
+               data-call-to-number-value="<%= client.phone %>"
+               data-call-client-name-value="<%= client.name %>">
             <button data-call-target="button" data-action="click->call#start"
               class="p-2 rounded-md bg-green-500 hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-300"
               title="Llamar cliente">
