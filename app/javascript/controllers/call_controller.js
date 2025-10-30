@@ -234,8 +234,71 @@ export default class extends Controller {
       }
     } else {
       // Actualiza el token para sesiones previas y continúa.
+      // Si el dispositivo está destruido o updateToken falla, lo recreamos.
       if (typeof this.device.updateToken === "function") {
-        this.device.updateToken(data.token)
+        try {
+          this.device.updateToken(data.token)
+        } catch (e) {
+          console.warn("updateToken falló; recreando Twilio.Device", e)
+          try { this.device?.destroy?.() } catch (_) {}
+          this.device = new window.Twilio.Device(data.token, {
+            logLevel: "info",
+            enableRingingState: true
+          })
+          if (typeof this.device.register === "function") {
+            try { this.device.register() } catch (_) {}
+          }
+          this.device.on("ready", () => this.setStatus("SDK inicializado", "text-green-700"))
+          this.device.on("registered", () => this.setStatus("Registrado con Twilio", "text-green-700"))
+          this.device.on("unregistered", () => this.setStatus("No registrado", "text-red-700"))
+          this.device.on("error", (e) => {
+            console.error("Twilio.Device error", e)
+            this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700")
+          })
+          this.device.on("warning", (e) => this.setStatus(`Advertencia del dispositivo: ${e.message || e}`, "text-yellow-700"))
+          this.device.on("offline", () => this.setStatus("Desconectado", "text-red-700"))
+          this.device.on("connect", () => this.setStatus("Conectado", "text-green-700"))
+          this.device.on("disconnect", () => {
+            this.setStatus("Llamada finalizada", "text-gray-700")
+            this.teardownDevice()
+          })
+          try {
+            await this.waitForDeviceReady(this.device)
+          } catch (e2) {
+            console.warn("Twilio.Device tardó en inicializarse tras recreación: continuando", e2)
+            this.setStatus(`Inicializando lentamente (continuando): ${e2.message || e2}`, "text-yellow-700")
+          }
+        }
+      } else {
+        // Si no existe updateToken, recreamos por seguridad.
+        try { this.device?.destroy?.() } catch (_) {}
+        this.device = new window.Twilio.Device(data.token, {
+          logLevel: "info",
+          enableRingingState: true
+        })
+        if (typeof this.device.register === "function") {
+          try { this.device.register() } catch (_) {}
+        }
+        this.device.on("ready", () => this.setStatus("SDK inicializado", "text-green-700"))
+        this.device.on("registered", () => this.setStatus("Registrado con Twilio", "text-green-700"))
+        this.device.on("unregistered", () => this.setStatus("No registrado", "text-red-700"))
+        this.device.on("error", (e) => {
+          console.error("Twilio.Device error", e)
+          this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700")
+        })
+        this.device.on("warning", (e) => this.setStatus(`Advertencia del dispositivo: ${e.message || e}`, "text-yellow-700"))
+        this.device.on("offline", () => this.setStatus("Desconectado", "text-red-700"))
+        this.device.on("connect", () => this.setStatus("Conectado", "text-green-700"))
+        this.device.on("disconnect", () => {
+          this.setStatus("Llamada finalizada", "text-gray-700")
+          this.teardownDevice()
+        })
+        try {
+          await this.waitForDeviceReady(this.device)
+        } catch (e2) {
+          console.warn("Twilio.Device tardó en inicializarse tras recreación: continuando", e2)
+          this.setStatus(`Inicializando lentamente (continuando): ${e2.message || e2}`, "text-yellow-700")
+        }
       }
     }
 

@@ -65,9 +65,6 @@ export default class extends Controller {
       if (conn && typeof conn.disconnect === "function") {
         conn.disconnect()
       }
-      // Teardown del Device para liberar recursos
-      try { window.twilioDevice?.disconnectAll?.() } catch (_) {}
-      try { window.twilioDevice?.destroy?.() } catch (_) {}
       window.CallState = Object.assign({}, window.CallState, { inCall: false })
       window.dispatchEvent(new CustomEvent("call:ui:hide"))
 
