@@ -202,7 +202,16 @@ export default class extends Controller {
         // Evitamos codecPreferences aquí para compatibilidad futura.
       })
 
-      this.device.on("ready", () => this.setStatus("Listo para llamar", "text-green-700"))
+      // SDK v2: muchas integraciones usan registro explícito.
+      // Esto ayuda a establecer conectividad con los servicios de Twilio y dispara eventos de estado.
+      if (typeof this.device.register === "function") {
+        try { this.device.register() } catch (_) {}
+      }
+
+      // Eventos de estado (v2)
+      this.device.on("ready", () => this.setStatus("SDK inicializado", "text-green-700"))
+      this.device.on("registered", () => this.setStatus("Registrado con Twilio", "text-green-700"))
+      this.device.on("unregistered", () => this.setStatus("No registrado", "text-red-700"))
       this.device.on("error", (e) => {
         console.error("Twilio.Device error", e)
         this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700")
@@ -218,8 +227,10 @@ export default class extends Controller {
       try {
         await this.waitForDeviceReady(this.device)
       } catch (e) {
-        this.setStatus(`No se pudo inicializar el dispositivo: ${e.message || e}`, "text-red-700")
-        return
+        // En v2, algunos entornos no emiten "ready"/"registered" a tiempo.
+        // No bloqueamos la conexión: continuamos e intentamos conectar.
+        console.warn("Twilio.Device tardó en inicializarse: continuando con connect", e)
+        this.setStatus(`Inicializando lentamente (continuando): ${e.message || e}`, "text-yellow-700")
       }
     } else {
       // Actualiza el token para sesiones previas y continúa.
@@ -259,24 +270,36 @@ export default class extends Controller {
       const timeout = setTimeout(() => {
         if (!settled) {
           settled = true
-          reject(new Error("El SDK no se inicializó a tiempo"))
+          // En SDK v2 el evento "ready" puede no dispararse en algunos flujos.
+          // Si se agota el tiempo, seguimos adelante: el connect suele funcionar igualmente.
+          // Aun así, informamos del retraso.
+          reject(new Error("El SDK no se inicializó a tiempo (esperando ready/registered)"))
         }
-      }, 8000)
+      }, 12000)
 
-      device.once("ready", () => {
+      const onReady = () => {
         if (!settled) {
           settled = true
           clearTimeout(timeout)
           resolve()
         }
-      })
-      device.once("error", (e) => {
-        if (!settled) {
-          settled = true
-          clearTimeout(timeout)
-          reject(e)
-        }
-      })
+      }
+
+      // Aceptamos tanto "ready" como "registered" como señal de inicialización.
+      if (typeof device.once === "function") {
+        device.once("ready", onReady)
+        device.once("registered", onReady)
+        device.once("error", (e) => {
+          if (!settled) {
+            settled = true
+            clearTimeout(timeout)
+            reject(e)
+          }
+        })
+      } else {
+        // Fallback: si el SDK no tiene once, resolvemos de inmediato.
+        try { resolve() } catch (_) {}
+      }
     })
   }
 
