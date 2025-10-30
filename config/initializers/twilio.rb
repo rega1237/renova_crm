@@ -12,7 +12,9 @@ TWILIO_ACCOUNT_SID = Rails.application.credentials.dig(:twilio, :account_sid) ||
 TWILIO_AUTH_TOKEN  = Rails.application.credentials.dig(:twilio, :auth_token)  || ENV["TWILIO_AUTH_TOKEN"]  unless defined?(TWILIO_AUTH_TOKEN)
 
 # Detect if we're running asset precompilation (skip fail-fast in this case)
-should_fail_fast = Rails.env.production? && defined?(Rails::Server)
+skip_fail_fast = ENV["SECRET_KEY_BASE_DUMMY"].present? ||
+                 (defined?(ARGV) && ARGV.any? { |a| a.to_s.start_with?("assets:") })
+should_fail_fast = Rails.env.production? && !skip_fail_fast
 
 if should_fail_fast
   if TWILIO_ACCOUNT_SID.blank? || TWILIO_AUTH_TOKEN.blank?
