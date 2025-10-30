@@ -1,5 +1,32 @@
 # frozen_string_literal: true
 
+# Twilio initializer
+#
+# Loads Twilio credentials from Rails credentials or environment variables.
+# In production, we fail fast if credentials are missing — except during
+# asset precompilation in the Docker build stage, where Rails master key
+# isn’t available and we intentionally skip the check.
+
+require "active_support/core_ext/object/blank"
+
+TWILIO_ACCOUNT_SID = Rails.application.credentials.dig(:twilio, :account_sid) || ENV["TWILIO_ACCOUNT_SID"]
+TWILIO_AUTH_TOKEN  = Rails.application.credentials.dig(:twilio, :auth_token)  || ENV["TWILIO_AUTH_TOKEN"]
+
+# Detect if we're running asset precompilation (skip fail-fast in this case)
+skip_fail_fast = ENV["SECRET_KEY_BASE_DUMMY"].present? ||
+                 (defined?(Rake) && Rake.application.respond_to?(:top_level_tasks) && Rake.application.top_level_tasks.any? { |t| t.to_s.start_with?("assets:") })
+
+if Rails.env.production? && !skip_fail_fast
+  if TWILIO_ACCOUNT_SID.blank? || TWILIO_AUTH_TOKEN.blank?
+    Rails.logger.error("Missing Twilio credentials (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN)")
+    raise "Missing Twilio credentials (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN)"
+  end
+end
+
+# Note: We do not instantiate Twilio::REST::Client here to keep boot times
+# and tests uncomplicated. The service objects (e.g., CallService) should
+# instantiate the client as needed, using these credentials.
+
 # Configuración de credenciales para Twilio.
 # Preferimos Rails credentials y, como fallback, variables de entorno.
 
