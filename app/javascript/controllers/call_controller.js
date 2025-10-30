@@ -156,8 +156,9 @@ export default class extends Controller {
   }
 
   async connectViaWebrtc({ from, to, clientId }) {
+    // SDK v2: el archivo twilio-voice.min.js expone Twilio.Device en window
     if (!window.Twilio || !window.Twilio.Device) {
-      this.setStatus("SDK de Twilio no cargado", "text-red-700")
+      this.setStatus("SDK de Twilio (v2) no cargado", "text-red-700")
       return
     }
 
@@ -193,10 +194,12 @@ export default class extends Controller {
     // Inicializar dispositivo (reutiliza si ya existe)
     if (!this.device) {
       // Crear el Device y esperar a que esté listo antes de conectar.
+      // Twilio Voice SDK v2
       this.device = new window.Twilio.Device(data.token, {
         logLevel: "debug",
-        codecPreferences: ["opus", "pcmu"],
         enableRingingState: true
+        // Nota: a partir de v2.15 se usa setCodecPreferences en el objeto Call.
+        // Evitamos codecPreferences aquí para compatibilidad futura.
       })
 
       this.device.on("ready", () => this.setStatus("Listo para llamar", "text-green-700"))
@@ -242,7 +245,7 @@ export default class extends Controller {
     conn.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
     conn.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
     conn.on("error", (e) => {
-      console.error("Twilio.Connection error", e?.info || e)
+      console.error("Twilio.Call error", e?.info || e)
       this.setStatus(`Error de llamada: ${e.message || e}`, "text-red-700")
       try { conn.disconnect() } catch (_) {}
       this.teardownDevice()

@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "sortablejs": "^1.15.6"
+  },
+  "devDependencies": {
+    "@twilio/voice-sdk": "^2.16.0"
   }
 }
