@@ -24,15 +24,15 @@
 
       <!-- Controls -->
       <div class="flex items-center gap-2 ml-auto">
-        <!-- Hangup/Close (primary and prominent) -->
-        <button type="button" 
-                class="px-3 py-2 rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
+        <!-- Botón de colgar (círculo perfecto, icono centrado) -->
+        <button type="button"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                 title="Colgar"
                 aria-label="Colgar llamada"
                 data-call-ui-target="hangupButton"
                 data-action="click->call-ui#hangup">
-          <!-- Phone hangup icon -->
-          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <!-- Ícono teléfono (blanco, centrado) -->
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path d="M2.003 5.884a2 2 0 01.51-1.127l.384-.45A12.042 12.042 0 0110 1c2.886 0 5.52 1.048 7.103 2.307l.384.45c.3.352.49.786.51 1.245.02.458-.128.91-.41 1.27l-1.66 2.11a1.5 1.5 0 01-1.72.5l-2.24-.84a1.5 1.5 0 00-1.23.1l-.97.54a1.5 1.5 0 01-1.46 0l-.97-.54a1.5 1.5 0 00-1.23-.1l-2.24.84a1.5 1.5 0 01-1.72-.5L2.413 7.27a2 2 0 01-.41-1.386z" />
           </svg>
         </button>
