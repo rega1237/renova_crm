@@ -19,8 +19,9 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
     <!-- Twilio Client JS (WebRTC en navegador) -->
+    <!-- Actualizado a v1.14 para evitar error 31007 (Client version not supported) -->
     <!-- Nota: sin atributo integrity para evitar bloqueos por SRI si Twilio actualiza el hash -->
-    <script src="https://sdk.twilio.com/js/client/v1.13/twilio.min.js"></script>
+    <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
   </head>
   <body class="bg-humo min-h-screen">
     <div id="notifications-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm space-y-3">
