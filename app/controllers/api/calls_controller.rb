@@ -13,37 +13,72 @@ module Api
 
     def create
       client = Client.find(params[:client_id])
+      
+      # Validate client has required data
+      unless client.phone.present?
+        return render json: { error: "El cliente no tiene teléfono registrado" }, status: :unprocessable_entity
+      end
+      
+      # Get number selection for this client and user
       selection = client.select_outbound_number_for(Current.user)
 
       from_number_param = params[:from_number]
       from_number_record = nil
+      auto_selected = false
 
       if selection[:number]
+        # Automatic selection based on client state matching user's number state
         from_number_record = selection[:number]
+        auto_selected = true
       elsif from_number_param.present?
+        # Manual selection provided by user - validate it's active and owned
         candidate = Number.active.owned_by(Current.user).find_by(phone_number: from_number_param)
+        unless candidate
+          return render json: { 
+            error: "El número seleccionado no es válido, no está activo o no te pertenece" 
+          }, status: :unprocessable_entity
+        end
         from_number_record = candidate
       else
-        # No match by state and no manual selection provided
+        # No automatic match and no manual selection - show alternatives
+        if selection[:alternatives].empty?
+          return render json: { 
+            error: "No tienes números activos disponibles para realizar llamadas" 
+          }, status: :unprocessable_entity
+        end
+
         return render json: {
           need_selection: true,
-          alternatives: selection[:alternatives].map { |n| { phone_number: n.phone_number, state: n.state } }
+          client_state: client.state&.abbreviation,
+          alternatives: selection[:alternatives].map { |n| 
+            { 
+              phone_number: n.phone_number, 
+              state: n.state,
+              formatted: "#{n.phone_number} (#{n.state})"
+            } 
+          }
         }, status: :ok
       end
 
+      # At this point from_number_record should be set (either auto-selected or manually selected)
       unless from_number_record
-        return render json: { error: "Número de origen no válido o no disponible" }, status: :unprocessable_entity
+        return render json: { error: "Error interno: no se pudo determinar el número de origen" }, status: :internal_server_error
       end
 
       to_number = params[:to_number] || client.phone
-      if to_number.blank?
-        return render json: { error: "El cliente no tiene teléfono registrado" }, status: :unprocessable_entity
-      end
 
       result = CallService.new(client: client, to_number: to_number, from_number: from_number_record.phone_number, user: Current.user).call!
 
       if result.success
-        render json: { success: true, sid: result.sid, status: result.status }
+        render json: { 
+          success: true, 
+          sid: result.sid, 
+          status: result.status,
+          auto_selected_number: auto_selected ? from_number_record.phone_number : nil,
+          selected_number: from_number_record.phone_number,
+          client_state: client.state&.abbreviation,
+          number_state: from_number_record.state
+        }
       else
         render json: { error: result.error }, status: :bad_gateway
       end

@@ -52,14 +52,25 @@ export default class extends Controller {
           return
         }
         if (ok && data.need_selection) {
-          this.renderSelection(data.alternatives)
+          this.renderSelection(data.alternatives, data.client_state)
           this.setLoading(btn, false)
           this.setStatus("Selecciona un número de origen", "text-blue-700")
           return
         }
 
         if (data.success) {
-          this.setStatus(`Llamada encolada (SID: ${data.sid})`, "text-green-700")
+          let statusMessage = `Llamada encolada (SID: ${data.sid})`
+          if (data.auto_selected_number) {
+            statusMessage += ` - Número auto-seleccionado: ${data.auto_selected_number} (${data.number_state})`
+          } else if (data.selected_number) {
+            statusMessage += ` - Usando: ${data.selected_number} (${data.number_state})`
+          }
+          this.setStatus(statusMessage, "text-green-700")
+          // Hide selection UI if it was visible
+          if (this.hasSelectionTarget) {
+            this.selectionTarget.innerHTML = ""
+            this.selectionTarget.classList.add("hidden")
+          }
         } else {
           this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
         }
@@ -104,7 +115,11 @@ export default class extends Controller {
           return
         }
         if (data.success) {
-          this.setStatus(`Llamada encolada (SID: ${data.sid})`, "text-green-700")
+          let statusMessage = `Llamada encolada (SID: ${data.sid})`
+          if (data.selected_number) {
+            statusMessage += ` - Usando: ${data.selected_number} (${data.number_state})`
+          }
+          this.setStatus(statusMessage, "text-green-700")
           this.selectionTarget.innerHTML = ""
           this.selectionTarget.classList.add("hidden")
         } else {
@@ -118,16 +133,22 @@ export default class extends Controller {
       .finally(() => this.setLoading(btn, false))
   }
 
-  renderSelection(alternatives) {
+  renderSelection(alternatives, clientState = null) {
     const container = this.selectionTarget
     container.classList.remove("hidden")
+    
+    let headerText = "Selecciona el número de origen:"
+    if (clientState) {
+      headerText += ` Cliente en ${clientState}, no hay números coincidentes.`
+    }
+    
     container.innerHTML = `
       <div class="mt-2 p-2 border rounded-md bg-gray-50">
-        <p class="text-xs text-gray-600 mb-1">Selecciona el número de origen:</p>
+        <p class="text-xs text-gray-600 mb-1">${headerText}</p>
         <div class="flex flex-wrap gap-2">
           ${alternatives.map(a => `
             <button data-action="click->call#selectNumber" data-call-phone-param="${a.phone_number}" class="px-2 py-1 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700">
-              ${a.phone_number} (${a.state})
+              ${a.formatted || `${a.phone_number} (${a.state})`}
             </button>
           `).join('')}
         </div>
