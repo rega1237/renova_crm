@@ -163,6 +163,16 @@ export default class extends Controller {
 
     this.setStatus("Conectando…", "text-yellow-700")
 
+    // Pre-solicitar permiso de micrófono para evitar fallos del primer intento.
+    try {
+      await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true }
+      })
+    } catch (e) {
+      this.setStatus(`Permiso de micrófono requerido: ${e.message || e}`, "text-red-700")
+      return
+    }
+
     // Obtener token
     const r = await fetch("/api/twilio/voice/token", {
       method: "POST",
@@ -182,13 +192,14 @@ export default class extends Controller {
     if (!this.device) {
       // Crear el Device y esperar a que esté listo antes de conectar.
       this.device = new window.Twilio.Device(data.token, {
-        logLevel: "error",
+        logLevel: "debug",
         codecPreferences: ["opus", "pcmu"],
         enableRingingState: true
       })
 
       this.device.on("ready", () => this.setStatus("Listo para llamar", "text-green-700"))
       this.device.on("error", (e) => this.setStatus(`Error de dispositivo: ${e.message || e}`, "text-red-700"))
+      this.device.on("warning", (e) => this.setStatus(`Advertencia del dispositivo: ${e.message || e}`, "text-yellow-700"))
       this.device.on("offline", () => this.setStatus("Desconectado", "text-red-700"))
       this.device.on("connect", () => this.setStatus("Conectado", "text-green-700"))
       this.device.on("disconnect", () => this.setStatus("Llamada finalizada", "text-gray-700"))
