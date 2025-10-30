@@ -24,16 +24,18 @@
 
       <!-- Controls -->
       <div class="flex items-center gap-2 ml-auto">
-        <!-- Botón de colgar (círculo perfecto, icono centrado) -->
+        <!-- Botón de colgar -->
         <button type="button"
                 class="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                 title="Colgar"
                 aria-label="Colgar llamada"
                 data-call-ui-target="hangupButton"
                 data-action="click->call-ui#hangup">
-          <!-- Ícono teléfono (blanco, centrado) -->
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path d="M2.003 5.884a2 2 0 01.51-1.127l.384-.45A12.042 12.042 0 0110 1c2.886 0 5.52 1.048 7.103 2.307l.384.45c.3.352.49.786.51 1.245.02.458-.128.91-.41 1.27l-1.66 2.11a1.5 1.5 0 01-1.72.5l-2.24-.84a1.5 1.5 0 00-1.23.1l-.97.54a1.5 1.5 0 01-1.46 0l-.97-.54a1.5 1.5 0 00-1.23-.1l-2.24.84a1.5 1.5 0 01-1.72-.5L2.413 7.27a2 2 0 01-.41-1.386z" />
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <!-- Teléfono -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5.5A2.5 2.5 0 015.5 3H8a2 2 0 011.414.586l2.5 2.5a1.5 1.5 0 010 2.121l-1.414 1.414a12 12 0 006.293 6.293l1.414-1.414a1.5 1.5 0 012.121 0l2.5 2.5A2 2 0 0121 20h-2.5C12.5 20 4 11.5 4 6.5V5.5z" />
+            <!-- X de colgar -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l5 5M20 9l-5 5" />
           </svg>
         </button>
       </div>
