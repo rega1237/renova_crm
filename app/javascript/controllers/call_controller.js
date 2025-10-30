@@ -5,6 +5,23 @@ export default class extends Controller {
   static targets = ["button", "status", "selection"]
   static values = { clientId: Number, toNumber: String }
 
+  csrfToken() {
+    const el = document.querySelector('meta[name="csrf-token"]')
+    return el ? el.getAttribute('content') : null
+  }
+
+  async parseResponse(r) {
+    const contentType = r.headers.get('Content-Type') || ""
+    const isJson = contentType.includes('application/json')
+    try {
+      const data = isJson ? await r.json() : await r.text()
+      return { ok: r.ok, status: r.status, data, isJson }
+    } catch (e) {
+      // Evitar "Unexpected end of JSON input" cuando la respuesta no es JSON
+      return { ok: r.ok, status: r.status, data: null, isJson }
+    }
+  }
+
   start(event) {
     event.preventDefault()
     const btn = this.buttonTarget || this.element
@@ -15,15 +32,25 @@ export default class extends Controller {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "X-CSRF-Token": this.csrfToken()
       },
+      credentials: "same-origin",
       body: JSON.stringify({
         client_id: this.clientIdValue,
         to_number: this.toNumberValue
       })
     })
-      .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })))
-      .then(({ ok, data, status }) => {
+      .then(r => this.parseResponse(r))
+      .then(({ ok, data, status, isJson }) => {
+        if (!ok) {
+          if (status === 401) {
+            this.setStatus("No autorizado. Inicia sesión para realizar llamadas.", "text-red-700")
+          } else {
+            this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
+          }
+          return
+        }
         if (ok && data.need_selection) {
           this.renderSelection(data.alternatives)
           this.setLoading(btn, false)
@@ -31,10 +58,10 @@ export default class extends Controller {
           return
         }
 
-        if (ok && data.success) {
+        if (data.success) {
           this.setStatus(`Llamada encolada (SID: ${data.sid})`, "text-green-700")
         } else {
-          this.setStatus(data.error || `Error (${status})`, "text-red-700")
+          this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
         }
       })
       .catch(err => {
@@ -56,22 +83,32 @@ export default class extends Controller {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "X-CSRF-Token": this.csrfToken()
       },
+      credentials: "same-origin",
       body: JSON.stringify({
         client_id: this.clientIdValue,
         to_number: this.toNumberValue,
         from_number: fromNumber
       })
     })
-      .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })))
-      .then(({ ok, data, status }) => {
-        if (ok && data.success) {
+      .then(r => this.parseResponse(r))
+      .then(({ ok, data, status, isJson }) => {
+        if (!ok) {
+          if (status === 401) {
+            this.setStatus("No autorizado. Inicia sesión para realizar llamadas.", "text-red-700")
+          } else {
+            this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
+          }
+          return
+        }
+        if (data.success) {
           this.setStatus(`Llamada encolada (SID: ${data.sid})`, "text-green-700")
           this.selectionTarget.innerHTML = ""
           this.selectionTarget.classList.add("hidden")
         } else {
-          this.setStatus(data.error || `Error (${status})`, "text-red-700")
+          this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
         }
       })
       .catch(err => {

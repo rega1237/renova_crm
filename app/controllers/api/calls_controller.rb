@@ -52,7 +52,10 @@ module Api
     private
 
     def require_current_user!
-      head :unauthorized unless Current.user
+      unless Current.user
+        # Responder siempre en JSON para que el frontend pueda manejar el 401 sin romper
+        render json: { error: "No autorizado. Inicia sesión para realizar llamadas." }, status: :unauthorized
+      end
     end
 
     def rate_limit!
