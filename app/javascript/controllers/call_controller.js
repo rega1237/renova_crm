@@ -324,7 +324,21 @@ export default class extends Controller {
       // Eventos de la llamada (Call)
       if (typeof call.on === "function") {
         call.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
+        // Feedback auditivo: detener ringback al ser aceptada
+        call.on("accept", () => window.dispatchEvent(new CustomEvent("call:ui:accepted")))
+        // Ringback: indicar que la llamada está sonando
+        call.on("ringing", () => {
+          this.setStatus("Sonando…", "text-yellow-700")
+          window.dispatchEvent(new CustomEvent("call:ui:ringing"))
+        })
         call.on("cancel", () => this.setStatus("Llamada cancelada", "text-gray-700"))
+        // En cancel/error también detener audio y ocultar UI
+        call.on("cancel", () => {
+          window.dispatchEvent(new CustomEvent("call:ui:stop-audio"))
+          window.dispatchEvent(new CustomEvent("call:ui:hide"))
+          this.restoreCallButton()
+          window.CallState = Object.assign({}, window.CallState, { inCall: false })
+        })
         call.on("disconnect", () => {
           this.setStatus("Llamada finalizada", "text-gray-700")
           // Restaurar UI/botón
@@ -340,6 +354,7 @@ export default class extends Controller {
           // Restaurar UI/botón en caso de error
           this.restoreCallButton()
           window.CallState = Object.assign({}, window.CallState, { inCall: false })
+          window.dispatchEvent(new CustomEvent("call:ui:stop-audio"))
           window.dispatchEvent(new CustomEvent("call:ui:hide"))
         })
       } else {
