@@ -157,9 +157,18 @@ class Client < ApplicationRecord
 
   def normalize_phone_us!
     return if phone.blank?
-    normalized = PhonyRails.normalize_number(phone, country_code: 'US')
-    self.phone = normalized if normalized.present?
-  rescue StandardError
-    # Mantener el valor original si falla la normalización
+    begin
+      normalized = PhonyRails.normalize_number(phone, country_code: 'US')
+      # Solo aplicar si obtenemos un E.164 válido (con '+')
+      if normalized.present? && normalized.match(/\A\+\d{8,15}\z/)
+        self.phone = normalized
+      else
+        # Conservar versión solo dígitos para que las importaciones coincidan según el archivo
+        digits = phone.to_s.gsub(/[^0-9]/, "")
+        self.phone = digits if digits.present?
+      end
+    rescue StandardError
+      # Mantener el valor original si falla la normalización
+    end
   end
 end

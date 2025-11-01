@@ -175,6 +175,11 @@ class ClientsImportService
     end
 
     if client.save
+      begin
+        client.update_columns(phone: phone)
+      rescue StandardError
+        # No impedir el flujo si falla el ajuste de columnas sin validación
+      end
       if update_existing && !client.previous_changes.empty?
         @result.updated_clients_count += 1
       elsif client.previous_changes.key?("id")
