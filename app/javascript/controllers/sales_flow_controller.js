@@ -796,28 +796,25 @@ export default class extends Controller {
 // MÉTODOS DE INFINITE SCROLL
 // =============================================
 setupInfiniteScroll() {
-  // Desconectar observador previo si existe
-  if (this.loadMoreObserver) this.loadMoreObserver.disconnect();
-
   this.loadingStatus = this.loadingStatus || {};
   this.doneStatus = this.doneStatus || {};
 
-  this.loadMoreObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const status = entry.target.dataset.status;
-        if (!status) return;
-        if (this.loadingStatus[status] || this.doneStatus[status]) return;
-        this.loadMoreForStatus(status, entry.target);
-      });
-    },
-    { root: null, rootMargin: "300px", threshold: 0.1 }
-  );
+  this.clientListTargets.forEach(list => {
+    const status = list.closest('[data-status]').dataset.status;
 
-  // Observar el sentinel de cada columna
-  this.loadMoreTriggerTargets.forEach((el) => {
-    this.loadMoreObserver.observe(el);
+    list.onscroll = () => {
+      if (this.loadingStatus[status] || this.doneStatus[status]) {
+        return;
+      }
+
+      const { scrollTop, scrollHeight, clientHeight } = list;
+      
+      // Check if scrolled near the bottom (e.g., 400px threshold)
+      if (scrollHeight - scrollTop - clientHeight < 400) {
+        const trigger = list.querySelector('[data-sales-flow-target="loadMoreTrigger"]');
+        this.loadMoreForStatus(status, trigger);
+      }
+    };
   });
 }
 
@@ -855,7 +852,7 @@ loadMoreForStatus(status, triggerEl) {
         }
         return;
       }
-      list.insertAdjacentHTML("beforeend", trimmed);
+      triggerEl.insertAdjacentHTML("beforebegin", trimmed);
       this.updateColumnCounts();
       this.removeDuplicateClients(list);
       setTimeout(() => {
