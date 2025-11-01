@@ -24,14 +24,16 @@ class CallService
 
     twilio = @twilio_client || Twilio::REST::Client.new(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-    # Generar URL de TwiML que conectará al cliente con el usuario (agente) mediante <Dial>
-    connect_url = build_connect_url(@client_record, @user, @from_number)
+    # Construir TwiML que conecta al agente con el cliente usando <Dial>
+    voice_response = Twilio::TwiML::VoiceResponse.new
+    voice_response.dial(caller_id: @from_number) do |dial|
+      dial.number(@to_number)
+    end
 
     response = twilio.calls.create(
       from: @from_number,
       to: @to_number,
-      url: connect_url,
-      method: 'GET'
+      twiml: voice_response.to_s
     )
 
     log_note!("Llamada iniciada a #{@to_number} desde #{@from_number}. SID: #{response.sid}. Estado: #{response.status}.")
@@ -64,13 +66,3 @@ class CallService
     Rails.logger.error("Failed to record call note: #{e.message}")
   end
 end
-  def build_connect_url(client, user, caller_id)
-    # Twilio necesita una URL pública y completa. Usamos APP_HOST para construirla.
-    host = ENV['APP_HOST'] || Rails.application.routes.default_url_options[:host]
-    Rails.application.routes.url_helpers.twilio_voice_connect_url(
-      host: host,
-      client_id: client.id,
-      user_id: user.id,
-      caller_id: caller_id
-    )
-  end
