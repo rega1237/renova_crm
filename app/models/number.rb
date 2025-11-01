@@ -9,8 +9,8 @@ class Number < ApplicationRecord
   # Requerimos al menos 10 dígitos en total después del '+', y máximo 15.
   PHONE_REGEX = /\A\+[1-9]\d{9,14}\z/
 
-  # Normaliza el número a E.164 asumiendo país por defecto: US
-  before_validation :normalize_phone_number_us!
+  # Normaliza el número a E.164 usando país por defecto configurable
+  before_validation :normalize_phone_number_default!
 
   validates :phone_number, presence: true,
                            uniqueness: true,
@@ -23,9 +23,9 @@ class Number < ApplicationRecord
 
   private
 
-  def normalize_phone_number_us!
+  def normalize_phone_number_default!
     return if phone_number.blank?
-    normalized = PhonyRails.normalize_number(phone_number, country_code: 'US')
+    normalized = PhonyRails.normalize_number(phone_number, country_code: DEFAULT_PHONE_COUNTRY)
     self.phone_number = normalized if normalized.present?
   rescue StandardError
     # Si falla la normalización, la validación mostrará el error de formato

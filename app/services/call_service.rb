@@ -14,9 +14,9 @@ class CallService
   end
 
   def call!
-    # Normalizar ambos números asumiendo US
-    @to_number = normalize_us(@to_number)
-    @from_number = normalize_us(@from_number)
+    # Normalizar ambos números usando país por defecto
+    @to_number = normalize_default(@to_number)
+    @from_number = normalize_default(@from_number)
 
     unless valid_numbers?
       return Result.new(success: false, error: "Números inválidos. Use formato E.164 (+123456789)")
@@ -52,9 +52,12 @@ class CallService
     @to_number.to_s.match?(regex) && @from_number.to_s.match?(regex)
   end
 
-  def normalize_us(number)
+  def normalize_default(number)
     return number if number.nil?
-    PhonyRails.normalize_number(number, country_code: 'US')
+    str = number.to_s.strip
+    # Si ya viene en E.164 (empieza con '+'), no lo tocamos
+    return str if str.start_with?("+")
+    PhonyRails.normalize_number(str, country_code: DEFAULT_PHONE_COUNTRY)
   rescue StandardError
     number
   end
