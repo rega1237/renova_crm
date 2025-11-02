@@ -2,7 +2,17 @@ class Settings::CitiesController < ApplicationController
   before_action :set_city, only: [ :show, :edit, :update, :destroy ]
 
   def index
-    @cities = City.includes(:state).ordered
+    scope = City.includes(:state).ordered
+    @per_page = params[:per_page].presence&.to_i || 50
+    @page = params[:page].presence&.to_i || 1
+    @cities = scope.limit(@per_page).offset((@page - 1) * @per_page)
+    @has_more = scope.count > (@page * @per_page)
+
+    # Para peticiones de scroll infinito: devolver solo filas
+    if params[:only_rows].present?
+      render partial: "settings/cities/row", collection: @cities, as: :city, layout: false
+      return
+    end
   end
 
   def show

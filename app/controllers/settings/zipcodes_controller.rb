@@ -4,22 +4,27 @@ class Settings::ZipcodesController < ApplicationController
   before_action :set_zipcode, only: [:show, :edit, :update, :destroy]
 
   def index
-    @zipcodes = Zipcode.includes(city: :state).ordered
+    scope = Zipcode.includes(city: :state).ordered
     
     # Filtro por búsqueda de código postal
     if params[:query].present?
-      @zipcodes = @zipcodes.where("code ILIKE ?", "%#{params[:query]}%")
+      scope = scope.where("code ILIKE ?", "%#{params[:query]}%")
     end
 
     # Filtro por ciudad
     if params[:city_id].present?
-      @zipcodes = @zipcodes.where(city_id: params[:city_id])
+      scope = scope.where(city_id: params[:city_id])
     end
 
     # Filtro por estado
     if params[:state_id].present?
-      @zipcodes = @zipcodes.joins(city: :state).where(cities: { state_id: params[:state_id] })
+      scope = scope.joins(city: :state).where(cities: { state_id: params[:state_id] })
     end
+
+    @per_page = params[:per_page].presence&.to_i || 50
+    @page = params[:page].presence&.to_i || 1
+    @zipcodes = scope.limit(@per_page).offset((@page - 1) * @per_page)
+    @has_more = scope.count > (@page * @per_page)
 
     # Ciudades para el filtro dependiente: si hay estado seleccionado, limitar ciudades a ese estado
     @cities = if params[:state_id].present?
@@ -28,6 +33,12 @@ class Settings::ZipcodesController < ApplicationController
                 City.includes(:state).ordered
               end
     @states = State.ordered
+
+    # Para peticiones de scroll infinito: devolver solo filas
+    if params[:only_rows].present?
+      render partial: "settings/zipcodes/row", collection: @zipcodes, as: :zipcode, layout: false
+      return
+    end
   end
 
   def show
