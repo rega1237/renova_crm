@@ -76,8 +76,9 @@ class Client < ApplicationRecord
   validates :status, presence: true
   validates :source, presence: true
 
-  # Normalización de teléfono del cliente a E.164 (US) para facilitar llamadas salientes
-  before_validation :normalize_phone_us!
+  # Normalización de teléfono del cliente a E.164 usando país por defecto.
+  # Si el número ya viene en formato internacional (+), se preserva tal cual.
+  before_validation :normalize_phone_default!
 
   # Validación: si source es prospectacion o referencia, debe tener prospecting_seller
   validates :prospecting_seller_id, presence: true, if: :requires_prospecting_seller?
@@ -155,20 +156,35 @@ class Client < ApplicationRecord
     self.update_columns(attrs)
   end
 
-  def normalize_phone_us!
+  def normalize_phone_default!
     return if phone.blank?
+    str = phone.to_s.strip
+    # Si ya viene con '+' (E.164), no renormalizar; solo limpiar espacios
+    if str.start_with?("+")
+      self.phone = str.gsub(/\s+/, "")
+      return
+    end
     begin
-      normalized = PhonyRails.normalize_number(phone, country_code: 'US')
-      # Solo aplicar si obtenemos un E.164 válido (con '+')
-      if normalized.present? && normalized.match(/\A\+\d{8,15}\z/)
+      normalized = PhonyRails.normalize_number(str, country_code: DEFAULT_PHONE_COUNTRY)
+      # Aplicar solo si obtenemos un E.164 válido (con '+') y con longitud correcta
+      if normalized.present? && normalized.match(Number::PHONE_REGEX)
         self.phone = normalized
       else
-        # Conservar versión solo dígitos para que las importaciones coincidan según el archivo
-        digits = phone.to_s.gsub(/[^0-9]/, "")
+        # Conservar versión solo dígitos para compatibilidad con importaciones y evitar '+' inválidos
+        digits = str.gsub(/[^0-9]/, "")
         self.phone = digits if digits.present?
       end
     rescue StandardError
       # Mantener el valor original si falla la normalización
     end
   end
+
+  # Validación suave: si el teléfono comienza con '+', verificar que tenga estructura E.164
+  validates :phone,
+            format: {
+              with: Number::PHONE_REGEX,
+              message: "debe estar en formato E.164 (ej. +13125550123)"
+            },
+            allow_blank: true,
+            if: -> { phone.to_s.start_with?("+") }
 end

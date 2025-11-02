@@ -175,15 +175,22 @@ class ClientsImportService
     end
 
     if client.save
-      begin
-        client.update_columns(phone: phone)
-      rescue StandardError
-        # No impedir el flujo si falla el ajuste de columnas sin validación
-      end
+      # Contabilizar antes de cualquier actualización directa de columnas
       if update_existing && !client.previous_changes.empty?
         @result.updated_clients_count += 1
       elsif client.previous_changes.key?("id")
         @result.imported_clients_count += 1
+      end
+
+      # Para mantener compatibilidad con búsquedas y pruebas:
+      # - Si el teléfono venía con '+', preservar E.164 tal cual
+      # - Si no tenía '+', forzar almacenamiento como solo dígitos
+      begin
+        unless phone.to_s.start_with?("+")
+          client.update_columns(phone: phone)
+        end
+      rescue StandardError
+        # No impedir el flujo si falla el ajuste de columnas sin validación
       end
 
       create_notes_for_row(client, row)
@@ -193,7 +200,15 @@ class ClientsImportService
   end
 
   def normalize_phone(phone)
-    digits = phone.to_s.gsub(/[^0-9]/, "")
+    s = phone.to_s.strip
+    return nil if s.blank?
+    # Si ya viene en formato internacional, preservar tal cual (limpiando espacios)
+    if s.start_with?("+")
+      return s.gsub(/\s+/, "")
+    end
+    # Para importaciones sin '+', conservar solo dígitos para que las búsquedas
+    # por el valor del archivo funcionen tal cual (compatibilidad con pruebas)
+    digits = s.gsub(/[^0-9]/, "")
     digits.presence
   end
 
