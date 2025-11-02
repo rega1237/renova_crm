@@ -1,0 +1,36 @@
+<%= form_with(model: [:settings, zipcode], class: "space-y-6") do |form| %>
+  <% if zipcode.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            Se encontraron <%= pluralize(zipcode.errors.count, "error") %>:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc pl-5 space-y-1">
+              <% zipcode.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :code, "Código Postal", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.text_field :code, placeholder: "Ej: 64000, 01000, 11000", class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    <p class="mt-1 text-sm text-gray-500">Ingresa el código postal (3-10 caracteres, números, letras, guiones y espacios permitidos)</p>
+  </div>
+
+  <div>
+    <%= form.label :city_id, "Ciudad", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.collection_select :city_id, @cities, :id, :name, { prompt: "Selecciona una ciudad" }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="flex items-center justify-end space-x-4">
+    <%= link_to "Cancelar", settings_zipcodes_path, class: "font-poppins text-negro-onix hover:underline" %>
+    <%= form.submit button_text, class: "cursor-pointer bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+<% end %>

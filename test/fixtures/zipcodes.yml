@@ -1,0 +1,15 @@
+zip_mty_64000:
+  code: "64000"
+  city: monterrey
+
+zip_guadalupe_67100:
+  code: "67100"
+  city: guadalupe
+
+zip_phx_85001:
+  code: "85001"
+  city: phoenix
+
+zip_mia_33101:
+  code: "33101"
+  city: miami

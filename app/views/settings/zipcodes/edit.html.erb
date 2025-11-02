@@ -1,0 +1,14 @@
+<div class="p-8">
+  <div class="mb-8">
+    <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi">
+      Editar Código Postal
+    </h1>
+    <p class="mt-2 text-gray-600 font-montserrat">
+      Modifica la información del código postal <%= @zipcode.code %>
+    </p>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <%= render 'form', zipcode: @zipcode, button_text: 'Actualizar Código Postal' %>
+  </div>
+</div>

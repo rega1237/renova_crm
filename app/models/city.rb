@@ -1,5 +1,6 @@
 class City < ApplicationRecord
   belongs_to :state
+  has_many :zipcodes, dependent: :destroy
 
   validates :name, presence: true, uniqueness: { scope: :state_id, case_sensitive: false }
   validates :state_id, presence: true

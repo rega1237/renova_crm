@@ -1,0 +1,100 @@
+<div class="p-8">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi">
+      Códigos Postales
+    </h1>
+    <%= link_to "Nuevo Código Postal", new_settings_zipcode_path, class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+    <%= form_with url: settings_zipcodes_path, method: :get, local: true, class: "grid grid-cols-1 md:grid-cols-4 gap-4" do |form| %>
+      <div>
+        <%= form.label :query, "Buscar código", class: "block font-poppins text-sm font-medium text-negro-onix mb-1" %>
+        <%= form.text_field :query, value: params[:query], placeholder: "Ej: 64000, 01000", class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
+      </div>
+      
+      <div>
+        <%= form.label :state_id, "Estado", class: "block font-poppins text-sm font-medium text-negro-onix mb-1" %>
+        <%= form.collection_select :state_id, @states, :id, :name, { prompt: "Todos los estados", selected: params[:state_id] }, class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
+      </div>
+      
+      <div>
+        <%= form.label :city_id, "Ciudad", class: "block font-poppins text-sm font-medium text-negro-onix mb-1" %>
+        <%= form.collection_select :city_id, @cities, :id, :name, { prompt: "Todas las ciudades", selected: params[:city_id] }, class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
+      </div>
+      
+      <div class="flex items-end space-x-2">
+        <%= form.submit "Filtrar", class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity text-sm" %>
+        <%= link_to "Limpiar", settings_zipcodes_path, class: "bg-gray-500 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity text-sm" %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <table class="min-w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="p-4 text-left font-poppins text-sm font-semibold text-negro-onix uppercase tracking-wider">Código Postal</th>
+          <th class="p-4 text-left font-poppins text-sm font-semibold text-negro-onix uppercase tracking-wider">Ciudad</th>
+          <th class="p-4 text-left font-poppins text-sm font-semibold text-negro-onix uppercase tracking-wider">Estado</th>
+          <th class="p-4 text-left font-poppins text-sm font-semibold text-negro-onix uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <% @zipcodes.each do |zipcode| %>
+          <tr class="font-montserrat text-negro-onix hover:bg-gray-50 transition-colors">
+            <td class="p-4 whitespace-nowrap">
+              <span class="inline-flex px-3 py-1 text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                <%= zipcode.code %>
+              </span>
+            </td>
+            <td class="p-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900"><%= zipcode.city.name %></span>
+            </td>
+            <td class="p-4 whitespace-nowrap">
+              <span class="text-sm text-gray-700"><%= zipcode.city.state.name %></span>
+            </td>
+            <td class="p-4 whitespace-nowrap">
+              <div class="flex space-x-4">
+                <%= link_to settings_zipcode_path(zipcode), class: "text-gray-500 hover:text-rojo-carmesi transition-colors", title: "Ver detalles" do %>
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                <% end %>
+                <%= link_to edit_settings_zipcode_path(zipcode), class: "text-gray-500 hover:text-rojo-carmesi transition-colors", title: "Editar" do %>
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                <% end %>
+                <%= button_to settings_zipcode_path(zipcode),
+                    method: :delete,
+                    data: { turbo_confirm: '¿Estás seguro? Esta acción eliminará el código postal.' },
+                    class: "text-gray-500 hover:text-red-600 transition-colors",
+                    title: "Eliminar" do %>
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% if @zipcodes.empty? %>
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay códigos postales registrados</h3>
+        <p class="mt-1 text-sm text-gray-500">Comienza creando tu primer código postal.</p>
+        <div class="mt-6">
+          <%= link_to "Nuevo Código Postal", new_settings_zipcode_path, class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

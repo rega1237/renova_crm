@@ -19,6 +19,7 @@ Rails.application.routes.draw do
     resources :installers
     resources :states
     resources :cities
+    resources :zipcodes
     resources :numbers
     # La página principal del menú de configuración
     root to: "dashboard#index"

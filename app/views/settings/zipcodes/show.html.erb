@@ -1,0 +1,105 @@
+<div class="p-8">
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi">
+        Código Postal <%= @zipcode.code %>
+      </h1>
+      <p class="mt-2 text-gray-600 font-montserrat">
+        Información detallada del código postal
+      </p>
+    </div>
+    <div class="flex space-x-4">
+      <%= link_to "Editar", edit_settings_zipcode_path(@zipcode), class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+      <%= link_to "Volver", settings_zipcodes_path, class: "bg-gray-500 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Información del Código Postal -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h2 class="font-poppins text-xl font-semibold text-negro-onix mb-4">
+        Información del Código Postal
+      </h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Código Postal</label>
+          <div class="mt-1">
+            <span class="inline-flex px-4 py-2 text-lg leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+              <%= @zipcode.code %>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Ciudad</label>
+          <p class="mt-1 text-lg text-negro-onix font-montserrat"><%= @zipcode.city.name %></p>
+        </div>
+
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Abreviación de Ciudad</label>
+          <p class="mt-1 text-lg text-negro-onix font-montserrat"><%= @zipcode.city.abbreviation %></p>
+        </div>
+
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Estado</label>
+          <p class="mt-1 text-lg text-negro-onix font-montserrat"><%= @zipcode.city.state.name %></p>
+        </div>
+
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Abreviación de Estado</label>
+          <p class="mt-1 text-lg text-negro-onix font-montserrat"><%= @zipcode.city.state.abbreviation %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información de Fechas -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h2 class="font-poppins text-xl font-semibold text-negro-onix mb-4">
+        Información del Sistema
+      </h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Fecha de Creación</label>
+          <p class="mt-1 text-sm text-gray-600 font-montserrat">
+            <%= @zipcode.created_at.strftime("%d de %B de %Y a las %H:%M") %>
+          </p>
+        </div>
+
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Última Actualización</label>
+          <p class="mt-1 text-sm text-gray-600 font-montserrat">
+            <%= @zipcode.updated_at.strftime("%d de %B de %Y a las %H:%M") %>
+          </p>
+        </div>
+
+        <div>
+          <label class="block font-poppins text-sm font-medium text-gray-700">Descripción Completa</label>
+          <p class="mt-1 text-sm text-gray-600 font-montserrat">
+            <%= @zipcode.full_description %>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="mt-8 bg-white rounded-xl shadow-md p-6">
+    <h2 class="font-poppins text-xl font-semibold text-negro-onix mb-4">
+      Acciones
+    </h2>
+    
+    <div class="flex space-x-4">
+      <%= link_to "Editar Código Postal", edit_settings_zipcode_path(@zipcode), class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+      
+      <%= button_to "Eliminar Código Postal", 
+          settings_zipcode_path(@zipcode),
+          method: :delete,
+          data: { turbo_confirm: '¿Estás seguro? Esta acción eliminará permanentemente el código postal.' },
+          class: "bg-red-600 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+      
+      <%= link_to "Ver Todos los Códigos Postales", settings_zipcodes_path, class: "bg-gray-500 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+    </div>
+  </div>
+</div>

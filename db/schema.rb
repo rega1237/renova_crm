@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_29_130000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_02_121424) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -173,6 +173,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_130000) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  create_table "zipcodes", force: :cascade do |t|
+    t.string "code", null: false
+    t.bigint "city_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["city_id"], name: "index_zipcodes_on_city_id"
+    t.index ["code", "city_id"], name: "index_zipcodes_on_code_and_city_id", unique: true
+    t.index ["code"], name: "index_zipcodes_on_code"
+  end
+
+  create_table "zips", force: :cascade do |t|
+    t.string "code", null: false
+    t.bigint "city_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["city_id", "code"], name: "index_zips_on_city_id_and_code", unique: true
+    t.index ["city_id"], name: "index_zips_on_city_id"
+    t.index ["code"], name: "index_zips_on_code"
+  end
+
   add_foreign_key "appointments", "clients"
   add_foreign_key "appointments", "sellers"
   add_foreign_key "appointments", "users", column: "created_by_id"
@@ -188,4 +208,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_130000) do
   add_foreign_key "numbers", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "unauthorized_access_attempts", "users"
+  add_foreign_key "zipcodes", "cities"
+  add_foreign_key "zips", "cities"
 end
