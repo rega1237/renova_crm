@@ -113,10 +113,31 @@ class Facebook::LeadProcessor
       when "street_address" then mapped_attributes[:address] = field["values"].first
       when "zip_code" then mapped_attributes[:zip_code] = field["values"].first
       when "state"
-        state = State.find_by("abbreviation ILIKE ?", field["values"].first)
-        mapped_attributes[:state_id] = state&.id
+        mapped_attributes[:state_id] = find_state_for_facebook(field["values"].first)&.id
       end
     end
     mapped_attributes
+  end
+
+  # Buscar estado por valor proveniente de Facebook.
+  # Intenta por abreviación (TX), por nombre exacto (Texas) y finalmente por coincidencia de prefijo ("texa" -> "Texas").
+  def find_state_for_facebook(value)
+    v = value.to_s.strip
+    return nil if v.blank?
+
+    # Normalizar: eliminar acentos y espacios extras
+    v_norm = I18n.transliterate(v).strip
+    v_down = v_norm.downcase
+
+    # 1) Buscar por abreviación exacta (case-insensitive)
+    state = State.where("LOWER(abbreviation) = ?", v_down).first
+
+    # 2) Buscar por nombre exacto (case-insensitive)
+    state ||= State.where("LOWER(name) = ?", v_down).first
+
+    # 3) Fallback por prefijo en nombre (para typos frecuentes como "texa" -> "Texas")
+    state ||= State.where("LOWER(name) LIKE ?", "#{v_down}%").first
+
+    state
   end
 end
