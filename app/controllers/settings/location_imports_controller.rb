@@ -12,11 +12,18 @@ class Settings::LocationImportsController < ApplicationController
       render :new, status: :unprocessable_entity and return
     end
 
-    service = LocationImportService.new(file)
-    result = service.call
+    # Guardar archivo temporalmente para el job
+    tmp_dir = Rails.root.join("tmp", "imports")
+    FileUtils.mkdir_p(tmp_dir)
+    pid = SecureRandom.uuid
+    ext = File.extname(file.original_filename.to_s)
+    tmp_path = tmp_dir.join("location_#{pid}#{ext}")
+    File.open(tmp_path, "wb") { |f| f.write(file.read) }
 
-    @result = result
-    render :result
+    # Encolar job en segundo plano con progreso
+    LocationImportJob.perform_later(tmp_path.to_s, pid)
+
+    redirect_to settings_progress_path(pid: pid, title: "Importación de Ubicaciones")
   rescue => e
     Rails.logger.error("Location import failed: #{e.message}")
     flash.now[:alert] = "Error durante la importación: #{e.message}"

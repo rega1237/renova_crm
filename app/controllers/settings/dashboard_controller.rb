@@ -13,17 +13,18 @@ class Settings::DashboardController < ApplicationController
       redirect_to settings_root_path, alert: "Debes seleccionar un archivo Excel (.xlsx o .xls)." and return
     end
 
-    service = ClientsImportService.new(params[:file], current_user: Current.user)
-    update_existing = params[:update_existing] == "1"
-    result = service.call(update_existing: update_existing)
+    # Guardar archivo temporalmente para el job
+    tmp_dir = Rails.root.join("tmp", "imports")
+    FileUtils.mkdir_p(tmp_dir)
+    pid = SecureRandom.uuid
+    ext = File.extname(params[:file].original_filename.to_s)
+    tmp_path = tmp_dir.join("clients_#{pid}#{ext}")
+    File.open(tmp_path, "wb") { |f| f.write(params[:file].read) }
 
-    flash_message = "Importación completada: #{result.imported_clients_count} nuevos clientes, " \
-                    "#{result.updated_clients_count} actualizados, #{result.notes_created_count} notas. " \
-                    "#{result.warnings.count} advertencias, #{result.errors.count} errores."
-    if result.errors.any?
-      flash_message += " Errores: #{result.errors.take(5).join(' | ')}"
-    end
-    redirect_to settings_root_path, notice: flash_message
+    update_existing = params[:update_existing] == "1"
+    ClientsImportJob.perform_later(tmp_path.to_s, pid, Current.user.id, update_existing)
+
+    redirect_to settings_progress_path(pid: pid, title: "Importación de Clientes")
   rescue => e
     redirect_to settings_root_path, alert: "Error al procesar el archivo: #{e.message}"
   end
@@ -62,4 +63,16 @@ class Settings::DashboardController < ApplicationController
   end
 
   private
+  public
+
+  # Página genérica de progreso que suscribe al canal usando pid
+  def progress
+    @pid = params[:pid].to_s
+    @title = params[:title].to_s
+    if @pid.blank?
+      redirect_to settings_root_path, alert: "ID de progreso inválido" and return
+    end
+    render :progress
+  end
+
 end

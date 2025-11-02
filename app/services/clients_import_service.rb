@@ -57,6 +57,48 @@ class ClientsImportService
     @result
   end
 
+  # Versión con reporte de progreso en tiempo real.
+  # on_progress: ->(payload_hash) { ... }
+  def call_with_progress(update_existing: false, on_progress: nil)
+    unless valid_extension?(@file)
+      raise "Formato de archivo no soportado. Usa .xlsx o .xls"
+    end
+
+    xls = open_spreadsheet(@file)
+
+    # Calcular total de filas por adelantado
+    total_rows = 0
+    xls.sheets.each do |sheet_name|
+      sheet = xls.sheet(sheet_name)
+      last_row = sheet.last_row.to_i
+      total_rows += [last_row - 1, 0].max
+    end
+    on_progress&.call(event: "start", message: "Procesando #{total_rows} filas de clientes", total: total_rows, processed: 0, percent: 0)
+
+    processed = 0
+    xls.sheets.each do |sheet_name|
+      sheet = xls.sheet(sheet_name)
+      headers = normalize_headers(Array(sheet.row(1)))
+      last_row = sheet.last_row.to_i
+      next if last_row < 2
+
+      (2..last_row).each do |row_index|
+        row_values = Array(sheet.row(row_index))
+        row = headers.zip(row_values).to_h
+        @result.total_rows += 1
+        import_row(row, update_existing)
+        processed += 1
+        pct = total_rows > 0 ? (processed * 100 / total_rows) : 0
+        on_progress&.call(event: "tick", total: total_rows, processed: processed, percent: pct, message: "Fila #{processed}/#{total_rows}")
+      rescue => e
+        @result.errors << "Hoja #{sheet_name} fila #{row_index}: #{e.message}"
+        on_progress&.call(event: "error", message: "Hoja #{sheet_name} fila #{row_index}: #{e.message}")
+      end
+    end
+
+    @result
+  end
+
   private
 
   def ensure_placeholder_user

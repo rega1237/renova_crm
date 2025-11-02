@@ -26,6 +26,8 @@ Rails.application.routes.draw do
     root to: "dashboard#index"
     post "import_clients", to: "dashboard#import_clients"
     get  "export_clients", to: "dashboard#export_clients"
+    # Progreso en tiempo real (usado para importaciones)
+    get  "progress", to: "dashboard#progress", as: :progress
   end
 
   # --- Rutas de Clientes ---

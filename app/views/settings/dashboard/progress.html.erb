@@ -1,0 +1,24 @@
+<div class="p-8" data-controller="progress" data-progress-id="<%= @pid %>">
+  <h1 class="font-poppins text-2xl font-bold text-rojo-carmesi mb-6"><%= @title.presence || "Proceso en curso" %></h1>
+
+  <div class="bg-white p-6 rounded-xl shadow-md">
+    <div class="flex items-center justify-between mb-2">
+      <div data-progress-target="status" class="text-gray-700 font-montserrat">Preparando...</div>
+      <div data-progress-target="percent" class="text-gray-700 font-montserrat">0%</div>
+    </div>
+    <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+      <div data-progress-target="bar" class="h-4 bg-rojo-carmesi transition-all duration-300" style="width:0%"></div>
+    </div>
+
+    <div class="mt-4" data-progress-target="download"></div>
+
+    <div class="mt-6">
+      <h2 class="font-poppins text-xl font-semibold text-gray-800">Resumen</h2>
+      <div data-progress-target="details" class="mt-2 text-gray-700"></div>
+    </div>
+
+    <div class="mt-6">
+      <%= link_to "Volver al Dashboard", settings_root_path, class: "inline-flex items-center gap-2 bg-gray-600 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-gray-700" %>
+    </div>
+  </div>
+</div>

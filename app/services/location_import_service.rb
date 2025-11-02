@@ -55,6 +55,48 @@ class LocationImportService
     result
   end
 
+  # Igual que call, pero reportando progreso mediante un callback opcional.
+  # on_progress: ->(payload_hash) { ... }
+  def call_with_progress(on_progress: nil)
+    result = Result.new(
+      rows_processed: 0,
+      rows_failed: 0,
+      states_created: 0,
+      states_updated: 0,
+      cities_created: 0,
+      zipcodes_created: 0,
+      zipcodes_existing: 0,
+      errors: []
+    )
+
+    spreadsheet = open_spreadsheet(@file)
+    headers = read_headers(spreadsheet)
+    validate_headers!(headers)
+
+    total_rows = (spreadsheet.last_row - spreadsheet.first_row).to_i
+    on_progress&.call(event: "start", message: "Procesando #{total_rows} filas de ubicaciones", total: total_rows, processed: 0, percent: 0)
+
+    processed = 0
+    ((spreadsheet.first_row + 1)..spreadsheet.last_row).each do |row_index|
+      row = read_row(spreadsheet, headers, row_index)
+      begin
+        ActiveRecord::Base.transaction do
+          process_row(row, result)
+        end
+        result.rows_processed += 1
+        processed += 1
+        pct = total_rows > 0 ? (processed * 100 / total_rows) : 0
+        on_progress&.call(event: "tick", total: total_rows, processed: processed, percent: pct, message: "Fila #{processed}/#{total_rows}")
+      rescue => e
+        result.rows_failed += 1
+        result.errors << { row: row_index, message: e.message }
+        on_progress&.call(event: "error", message: "Error en fila #{row_index}: #{e.message}")
+      end
+    end
+
+    result
+  end
+
   private
 
   def open_spreadsheet(file)
