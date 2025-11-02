@@ -113,7 +113,9 @@ class Facebook::LeadProcessor
       when "street_address" then mapped_attributes[:address] = field["values"].first
       when "zip_code" then mapped_attributes[:zip_code] = field["values"].first
       when "state"
-        mapped_attributes[:state_id] = find_state_for_facebook(field["values"].first)&.id
+        input_state = field["values"].first
+        state_record = find_state_for_facebook(input_state)
+        mapped_attributes[:state_id] = (state_record || ensure_other_state)&.id
       end
     end
     mapped_attributes
@@ -139,5 +141,15 @@ class Facebook::LeadProcessor
     state ||= State.where("LOWER(name) LIKE ?", "#{v_down}%").first
 
     state
+  end
+
+  # Asegurar la existencia del estado 'Otro' y retornarlo
+  def ensure_other_state
+    State.where("LOWER(name) = ?", "otro").first || State.find_or_create_by(name: "Otro") do |s|
+      s.abbreviation = "OTRO"
+    end
+  rescue => e
+    # Si no se puede asegurar, no romper el flujo
+    nil
   end
 end
