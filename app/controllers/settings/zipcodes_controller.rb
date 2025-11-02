@@ -21,7 +21,12 @@ class Settings::ZipcodesController < ApplicationController
       @zipcodes = @zipcodes.joins(city: :state).where(cities: { state_id: params[:state_id] })
     end
 
-    @cities = City.includes(:state).ordered
+    # Ciudades para el filtro dependiente: si hay estado seleccionado, limitar ciudades a ese estado
+    @cities = if params[:state_id].present?
+                City.where(state_id: params[:state_id]).ordered
+              else
+                City.includes(:state).ordered
+              end
     @states = State.ordered
   end
 
@@ -72,7 +77,13 @@ class Settings::ZipcodesController < ApplicationController
   end
 
   def load_form_collections
-    @cities = City.includes(:state).ordered
     @states = State.ordered
+    # Para formularios nuevo/editar: si hay estado seleccionado (por params o por la ciudad del zipcode), limitar ciudades
+    @selected_state_id = params[:state_id].presence || @zipcode&.city&.state_id
+    @cities = if @selected_state_id.present?
+                City.where(state_id: @selected_state_id).ordered
+              else
+                City.includes(:state).ordered
+              end
   end
 end

@@ -7,7 +7,7 @@
   </div>
 
   <!-- Filtros -->
-  <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+  <div class="bg-white rounded-xl shadow-md p-6 mb-6" data-controller="zipcodes-filter" data-zipcodes-filter-url-value="/api/cities">
     <%= form_with url: settings_zipcodes_path, method: :get, local: true, class: "grid grid-cols-1 md:grid-cols-4 gap-4" do |form| %>
       <div>
         <%= form.label :query, "Buscar código", class: "block font-poppins text-sm font-medium text-negro-onix mb-1" %>
@@ -16,12 +16,13 @@
       
       <div>
         <%= form.label :state_id, "Estado", class: "block font-poppins text-sm font-medium text-negro-onix mb-1" %>
-        <%= form.collection_select :state_id, @states, :id, :name, { prompt: "Todos los estados", selected: params[:state_id] }, class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
+        <%= form.collection_select :state_id, @states, :id, :name, { prompt: "Todos los estados", selected: params[:state_id] }, class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm", data: { zipcodes_filter_target: "stateSelect", action: "change->zipcodes-filter#changeState" } %>
       </div>
       
       <div>
         <%= form.label :city_id, "Ciudad", class: "block font-poppins text-sm font-medium text-negro-onix mb-1" %>
-        <%= form.collection_select :city_id, @cities, :id, :name, { prompt: "Todas las ciudades", selected: params[:city_id] }, class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
+        <%= form.collection_select :city_id, @cities, :id, :name, { prompt: "Todas las ciudades", selected: params[:city_id] }, class: "w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm", data: { zipcodes_filter_target: "citySelect" } %>
+        <span class="hidden text-xs text-gray-500" data-zipcodes-filter-target="loadingIndicator">Cargando ciudades...</span>
       </div>
       
       <div class="flex items-end space-x-2">

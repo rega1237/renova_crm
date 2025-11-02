@@ -57,6 +57,15 @@
       </p>
     <% end %>
 
+    <%= link_to new_settings_location_import_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
+      <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
+        Importar Ubicaciones
+      </h2>
+      <p class="font-montserrat text-negro-onix mt-2">
+        Carga un Excel para poblar Estados, Ciudades y Códigos Postales.
+      </p>
+    <% end %>
+
     <%= link_to settings_numbers_path, class: "block bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300" do %>
       <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi">
         Gestionar Números (Twilio)

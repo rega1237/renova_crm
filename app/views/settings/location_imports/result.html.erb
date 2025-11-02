@@ -1,0 +1,40 @@
+<div class="p-8">
+  <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-8">
+    Resultado de Importación de Ubicaciones
+  </h1>
+
+  <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="font-montserrat text-negro-onix"><strong>Filas procesadas:</strong> <%= @result.rows_processed %></p>
+        <p class="font-montserrat text-negro-onix"><strong>Filas con error:</strong> <%= @result.rows_failed %></p>
+      </div>
+      <div>
+        <p class="font-montserrat text-negro-onix"><strong>Estados creados:</strong> <%= @result.states_created %></p>
+        <p class="font-montserrat text-negro-onix"><strong>Estados actualizados:</strong> <%= @result.states_updated %></p>
+      </div>
+      <div>
+        <p class="font-montserrat text-negro-onix"><strong>Ciudades creadas:</strong> <%= @result.cities_created %></p>
+      </div>
+      <div>
+        <p class="font-montserrat text-negro-onix"><strong>Códigos postales creados:</strong> <%= @result.zipcodes_created %></p>
+        <p class="font-montserrat text-negro-onix"><strong>Códigos postales existentes:</strong> <%= @result.zipcodes_existing %></p>
+      </div>
+    </div>
+
+    <% if @result.errors.present? %>
+      <div class="mt-6">
+        <h2 class="font-poppins text-xl font-semibold text-rojo-carmesi">Errores</h2>
+        <ul class="list-disc list-inside text-sm text-gray-700">
+          <% @result.errors.each do |err| %>
+            <li>Fila <%= err[:row] %>: <%= err[:message] %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mt-6">
+      <%= link_to "Volver al Dashboard", settings_dashboard_path, class: "inline-block bg-gray-600 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity" %>
+    </div>
+  </div>
+</div>

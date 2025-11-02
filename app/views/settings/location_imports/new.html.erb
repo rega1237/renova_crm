@@ -1,0 +1,32 @@
+<div class="p-8">
+  <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi mb-8">
+    Importar Ubicaciones (Estados, Ciudades y Códigos Postales)
+  </h1>
+
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="mb-4 text-sm text-gray-600">
+      <p class="font-bold">Especificaciones del archivo:</p>
+      <ul class="list-disc list-inside">
+        <li>Formato Excel: <code class="bg-gray-200 p-1 rounded">.xlsx</code> o <code class="bg-gray-200 p-1 rounded">.xls</code>.</li>
+        <li>Cabeceras requeridas: 
+          <code class="bg-gray-200 p-1 rounded">zip</code>,
+          <code class="bg-gray-200 p-1 rounded">primary_city</code>,
+          <code class="bg-gray-200 p-1 rounded">acceptable_cities</code>,
+          <code class="bg-gray-200 p-1 rounded">state_abbreviation</code>,
+          <code class="bg-gray-200 p-1 rounded">state_name</code>.
+        </li>
+      </ul>
+    </div>
+
+    <%= form_with url: settings_location_imports_path, method: :post, multipart: true, class: "space-y-4" do |form| %>
+      <div>
+        <%= form.label :file, "Archivo Excel", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.file_field :file, accept: ".xlsx, .xls", class: "mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rojo-carmesi file:text-white hover:file:bg-rojo-carmesi-dark" %>
+      </div>
+
+      <div>
+        <%= form.submit "Importar Ubicaciones", class: "w-full bg-rojo-carmesi text-white font-bold py-2 px-4 rounded-lg hover:bg-rojo-carmesi-dark transition-colors" %>
+      </div>
+    <% end %>
+  </div>
+</div>
