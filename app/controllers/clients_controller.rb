@@ -88,6 +88,21 @@ class ClientsController < ApplicationController
     end
 
     @zipcodes_for_filter = zips_scope.where("zip_code ~ ?", '^\\d{5}$').distinct.order(:zip_code).pluck(:zip_code)
+
+    # Estados disponibles: solo los que tienen clientes bajo los filtros actuales (excepto state/city/zip)
+    base_for_states = Client.where(nil)
+    base_for_states = base_for_states.where("name ILIKE ?", "%#{params[:query]}%") if params[:query].present?
+    base_for_states = base_for_states.where(status: params[:status]) if params[:status].present?
+    base_for_states = base_for_states.where(source: params[:source]) if params[:source].present?
+    base_for_states = base_for_states.where(
+      "prospecting_seller_id = :sid OR assigned_seller_id = :sid",
+      sid: params[:seller_id]
+    ) if params[:seller_id].present?
+    if params[:date_from].present? || params[:date_to].present?
+      base_for_states = base_for_states.by_date_range(params[:date_from], params[:date_to])
+    end
+    state_ids = base_for_states.where.not(state_id: nil).distinct.pluck(:state_id)
+    @states_for_filter = State.where(id: state_ids).ordered
   end
 
   def show

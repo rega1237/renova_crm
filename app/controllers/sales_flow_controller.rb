@@ -127,6 +127,7 @@ class SalesFlowController < ApplicationController
 
   # Construye colecciones auxiliares para los dropdowns de filtros (ciudades y zipcodes)
   def build_filter_collections
+    # Base para ciudades y ZIPs (incluye filtro por estado cuando aplique)
     base = Client.where(nil)
     base = base.where("name ILIKE ?", "%#{@query}%") if @query.present?
     base = base.where(source: @source_filter) if @source_filter.present?
@@ -141,7 +142,7 @@ class SalesFlowController < ApplicationController
                      else
                        City.where(id: city_ids).ordered
                      end
-    
+
     zips_scope = base.where.not(zip_code: [ nil, "" ])
     if @city_filter.present? && @city_filter != "none"
       zips_scope = zips_scope.where(city_id: @city_filter)
@@ -149,6 +150,16 @@ class SalesFlowController < ApplicationController
       zips_scope = zips_scope.where(state_id: @state_filter)
     end
     @zipcodes_for_filter = zips_scope.where("zip_code ~ ?", '^\\d{5}$').distinct.order(:zip_code).pluck(:zip_code)
+
+    # Base separada para estados: solo los estados con clientes bajo los demás filtros (excluyendo state/city/zip)
+    base_states = Client.where(nil)
+    base_states = base_states.where("name ILIKE ?", "%#{@query}%") if @query.present?
+    base_states = base_states.where(source: @source_filter) if @source_filter.present?
+    if @date_from.present? || @date_to.present?
+      base_states = base_states.by_date_range(@date_from, @date_to)
+    end
+    state_ids = base_states.where.not(state_id: nil).distinct.pluck(:state_id)
+    @states_for_filter = State.where(id: state_ids).order(:name)
   end
 
   

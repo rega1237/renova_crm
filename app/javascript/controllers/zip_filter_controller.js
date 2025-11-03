@@ -5,8 +5,10 @@ import { Controller } from "@hotwired/stimulus"
 // Valores:
 // - urlValue: endpoint para obtener zipcodes (por defecto /api/zipcodes)
 // - stateSelectorValue, citySelectorValue: selectores CSS para ubicar los selects de estado y ciudad
+// Targets opcionales:
+// - feedback: elemento donde mostrar el conteo y contexto de filtrado
 export default class extends Controller {
-  static targets = ["zipSelect"]
+  static targets = ["zipSelect", "feedback"]
   static values = { url: String, stateSelector: String, citySelector: String }
 
   connect() {
@@ -28,6 +30,7 @@ export default class extends Controller {
     if (cityId) url.searchParams.set("city_id", cityId)
 
     const currentValue = this.zipSelectTarget.value
+    this._filterContext = { stateId, cityId }
 
     try {
       const resp = await fetch(url.toString(), { headers: { Accept: "application/json" } })
@@ -59,6 +62,29 @@ export default class extends Controller {
       this.zipSelectTarget.value = currentValue
     } else {
       this.zipSelectTarget.value = ""
+    }
+
+    // Feedback visual
+    if (this.hasFeedbackTarget) {
+      const count = zipcodes.length
+      const { stateId, cityId } = this._filterContext || {}
+      if (count === 0) {
+        if (cityId) {
+          this.feedbackTarget.textContent = "No hay códigos postales con clientes para la ciudad seleccionada"
+        } else if (stateId) {
+          this.feedbackTarget.textContent = "No hay códigos postales con clientes para el estado seleccionado"
+        } else {
+          this.feedbackTarget.textContent = "No hay códigos postales con clientes disponibles"
+        }
+      } else {
+        if (cityId) {
+          this.feedbackTarget.textContent = `ZIPs disponibles: ${count} (filtrados por ciudad)`
+        } else if (stateId) {
+          this.feedbackTarget.textContent = `ZIPs disponibles: ${count} (filtrados por estado)`
+        } else {
+          this.feedbackTarget.textContent = `ZIPs disponibles: ${count}`
+        }
+      }
     }
   }
 }

@@ -21,7 +21,7 @@
         </div>
         <div class="w-full lg:w-auto">
           <%= select_tag :state_id,
-            options_from_collection_for_select(State.ordered, :id, :display_name_with_abbreviation, params[:state_id]),
+            options_from_collection_for_select(@states_for_filter || [], :id, :display_name_with_abbreviation, params[:state_id]),
             include_blank: 'Todos los Estados',
             class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
         </div>
@@ -30,15 +30,14 @@
       <!-- Los filtros de fecha van debajo de todos los filtros -->
 
       <div class="mt-3 flex flex-col sm:flex-row items-center gap-4">
-        <div class="w-full">
+        <div class="w-full" data-controller="cities-filter searchable-select" data-cities-filter-url-value="/api/cities" data-cities-filter-state-selector-value="select[name='state_id']">
           <% city_options = [['Todas las Ciudades', ''], ['Sin ciudad', 'none']] + (@cities_for_filter || []).map { |c| [c.name, c.id] } %>
-          <div data-controller="searchable-select">
-            <input type="text" placeholder="Buscar ciudad" class="mt-2 block w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-rojo-carmesi focus:ring-2 focus:ring-rojo-carmesi font-montserrat" data-searchable-select-target="search">
-            <%= select_tag :city_id,
-              options_for_select(city_options, params[:city_id]),
-              class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat",
-              data: { searchable_select_target: 'select' } %>
-          </div>
+          <input type="text" placeholder="Buscar ciudad" class="mt-2 block w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-rojo-carmesi focus:ring-2 focus:ring-rojo-carmesi font-montserrat" data-searchable-select-target="search">
+          <%= select_tag :city_id,
+            options_for_select(city_options, params[:city_id]),
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat",
+            data: { searchable_select_target: 'select', cities_filter_target: 'citySelect' } %>
+          <p class="mt-1 text-xs text-gray-500" data-cities-filter-target="feedback"></p>
         </div>
 
                 <!-- Filtro por código postal -->
@@ -49,6 +48,7 @@
             options_for_select(zip_options, params[:zip_code]),
             class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm",
             data: { zip_filter_target: 'zipSelect', searchable_select_target: 'select' } %> 
+          <p class="mt-1 text-xs text-gray-500" data-zip-filter-target="feedback"></p>
         </div>
       </div>
 
