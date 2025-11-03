@@ -370,7 +370,11 @@ class ClientsController < ApplicationController
 
   def destroy
     @client.destroy
-    redirect_to clients_url, notice: "Cliente eliminado exitosamente."
+    flash.now[:notice] = "Cliente eliminado exitosamente."
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to clients_url, notice: "Cliente eliminado exitosamente." }
+    end
   end
 
   # ==========================

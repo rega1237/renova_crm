@@ -1,0 +1,5 @@
+<%= turbo_stream.remove "client_#{@client.id}" %>
+<%= turbo_stream.update "slideover", "" %>
+<%= turbo_stream.prepend "notifications-container",
+  partial: "shared/flash_message",
+  locals: { type: "notice", message: flash.now[:notice] } %>

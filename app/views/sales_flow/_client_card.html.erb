@@ -8,6 +8,7 @@
       updated_at: (client.status == 'lead' ? client.created_at : (client.updated_status_at || client.updated_at)).iso8601,
       action: "click->sales-flow#onClientLinkClick"
     },
+    id: "client_#{client.id}",
     class: "block client-card bg-white border border-gray-200 rounded-lg p-3 relative group hover:shadow-lg transition-shadow #{active_class}" do %>
   <!-- Drag handle único (solo visible en hover) -->
   <div class="drag-handle absolute top-2 right-2 text-gray-400 group-hover:text-gray-600 z-10"
