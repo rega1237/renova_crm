@@ -15,6 +15,49 @@ class Facebook::LeadProcessor
     existing_client = Client.find_by(email: client_attributes[:email])
 
     if existing_client
+      # Intentar actualizar ubicación según nuevos datos del lead sin degradar información confiable
+      begin
+        new_state_id = client_attributes[:state_id]
+        new_city_id  = client_attributes[:city_id]
+        new_zip      = client_attributes[:zip_code]
+
+        update_attrs = {}
+
+        # Actualizar estado si viene y no es un downgrade a 'Otro' teniendo ya un estado específico
+        if new_state_id.present?
+          candidate_state = State.find_by(id: new_state_id)
+          keep_existing_state = existing_client.state && existing_client.state.name.to_s.downcase != "otro"
+          is_new_state_otro  = candidate_state && candidate_state.name.to_s.downcase == "otro"
+          if existing_client.state_id.blank? || (!is_new_state_otro || !keep_existing_state)
+            update_attrs[:state_id] = new_state_id if existing_client.state_id != new_state_id
+          end
+        end
+
+        # Actualizar ciudad si viene y no es un downgrade a 'Otro' teniendo ya una ciudad específica
+        if new_city_id.present?
+          candidate_city = City.find_by(id: new_city_id)
+          keep_existing_city = existing_client.city && existing_client.city.name.to_s.downcase != "otro"
+          is_new_city_otro   = candidate_city && candidate_city.name.to_s.downcase == "otro"
+          if existing_client.city_id.blank? || (!is_new_city_otro || !keep_existing_city)
+            update_attrs[:city_id] = new_city_id if existing_client.city_id != new_city_id
+          end
+        end
+
+        # Actualizar ZIP solo si viene y es válido para la ciudad final (nueva o existente)
+        if new_zip.present?
+          target_city_id = update_attrs[:city_id] || existing_client.city_id
+          if target_city_id.present?
+            if Zipcode.where(city_id: target_city_id).where("code LIKE ?", "#{new_zip}%").exists?
+              update_attrs[:zip_code] = new_zip if existing_client.zip_code != new_zip
+            end
+          end
+        end
+
+        existing_client.update!(update_attrs) if update_attrs.any?
+      rescue => e
+        # No romper el flujo si algo falla al ajustar ubicación
+      end
+
       reentry_time_val = lead_data["created_time"]
       reentry_time =
         case reentry_time_val
@@ -105,19 +148,29 @@ class Facebook::LeadProcessor
     # El valor por defecto para un nuevo lead de Meta debe ser 'lead'
     mapped_attributes = { source: :meta, status: :lead }
 
+    # Capturar entradas crudas para resolver ubicación jerárquica al final
+    input_state = nil
+    input_city = nil
+    input_zip = nil
+
     fields.each do |field|
       case field["name"]
       when "full_name" then mapped_attributes[:name] = field["values"].first
       when "email" then mapped_attributes[:email] = field["values"].first
       when "phone_number" then mapped_attributes[:phone] = field["values"].first
       when "street_address" then mapped_attributes[:address] = field["values"].first
-      when "zip_code" then mapped_attributes[:zip_code] = field["values"].first
-      when "state"
-        input_state = field["values"].first
-        state_record = find_state_for_facebook(input_state)
-        mapped_attributes[:state_id] = (state_record || ensure_other_state)&.id
+      when "zip_code" then input_zip = field["values"].first
+      when "state" then input_state = field["values"].first
+      when "city" then input_city = field["values"].first
       end
     end
+
+    # Resolver state -> city -> zipcode según reglas definidas
+    resolved = resolve_location_with_hierarchy(state_input: input_state, city_input: input_city, zip_input: input_zip)
+    mapped_attributes[:state_id] = resolved[:state]&.id
+    mapped_attributes[:city_id]  = resolved[:city]&.id
+    mapped_attributes[:zip_code] = resolved[:zip]
+
     mapped_attributes
   end
 
@@ -151,5 +204,144 @@ class Facebook::LeadProcessor
   rescue => e
     # Si no se puede asegurar, no romper el flujo
     nil
+  end
+
+  # Garantiza o retorna la City 'Otro' asociada al estado dado
+  def ensure_other_city(state)
+    return nil if state.nil?
+    City.where(state: state).where("LOWER(name) = ?", "otro").first || City.find_or_create_by(state: state, name: "Otro")
+  rescue => e
+    nil
+  end
+
+  # Buscar ciudad por nombre dentro de un estado (case-insensitive)
+  def find_city_by_name_and_state(name, state)
+    n = name.to_s.strip
+    return nil if n.blank? || state.nil?
+    City.where(state: state).where("LOWER(name) = ?", n.downcase).first
+  end
+
+  # Buscar ciudad por nombre sin importar el estado (case-insensitive)
+  def find_city_global(name)
+    n = name.to_s.strip
+    return nil if n.blank?
+    City.where("LOWER(name) = ?", n.downcase).first
+  end
+
+  # Normaliza zip_code a formato de 5 dígitos (US). Acepta ZIP+4 (ej. 12345-6789) y devuelve 12345.
+  def normalize_zip_code(value)
+    v = value.to_s.strip
+    return nil if v.blank?
+    if v =~ /(\d{5})(?:-\d{4})?/
+      $1
+    else
+      m = v.scan(/\d{5}/).last
+      m
+    end
+  end
+
+  # Busca un Zipcode por code; acepta 5 dígitos y ZIP+4 (se usa 5 dígitos base para la búsqueda)
+  def find_zipcode_by_code(code)
+    five = normalize_zip_code(code)
+    return nil if five.blank?
+    Zipcode.where(code: five).first || Zipcode.where("code LIKE ?", "#{five}%").first
+  end
+
+  # Resuelve la ubicación completa aplicando reglas jerárquicas y de consistencia
+  # Retorna hash: { state: State|nil, city: City|nil, zip: String|nil }
+  def resolve_location_with_hierarchy(state_input:, city_input:, zip_input:)
+    zip_norm = normalize_zip_code(zip_input)
+    state = nil
+    city = nil
+    zip_str = nil
+
+    if state_input.present?
+      state = find_state_for_facebook(state_input) || ensure_other_state
+      if city_input.present?
+        candidate_city = find_city_by_name_and_state(city_input, state)
+        if candidate_city
+          city = candidate_city
+          if zip_norm.present?
+            zr = find_zipcode_by_code(zip_norm)
+            if zr && zr.city_id == city.id
+              zip_str = normalize_zip_code(zr.code)
+            else
+              # Mismatch: mantener city existente bajo el estado y dejar zip en blanco
+              zip_str = nil
+            end
+          end
+        else
+          # City no existe bajo el estado
+          if zip_norm.present?
+            zr = find_zipcode_by_code(zip_norm)
+            if zr && zr.city.state_id == state.id
+              city = zr.city
+              zip_str = normalize_zip_code(zr.code)
+            else
+              city = ensure_other_city(state)
+              zip_str = nil
+            end
+          else
+            city = ensure_other_city(state)
+          end
+        end
+      else
+        # Sin city, intentar por ZIP
+        if zip_norm.present?
+          zr = find_zipcode_by_code(zip_norm)
+          if zr && zr.city.state_id == state.id
+            city = zr.city
+            zip_str = normalize_zip_code(zr.code)
+          else
+            city = ensure_other_city(state)
+            zip_str = nil
+          end
+        else
+          city = ensure_other_city(state)
+        end
+      end
+    elsif city_input.present?
+      # Derivar state por city
+      cg = find_city_global(city_input)
+      if cg
+        city = cg
+        state = cg.state
+        if zip_norm.present?
+          zr = find_zipcode_by_code(zip_norm)
+          if zr && zr.city_id == city.id
+            zip_str = normalize_zip_code(zr.code)
+          else
+            # Mismatch: mantener city derivada y dejar zip en blanco
+            zip_str = nil
+          end
+        end
+      else
+        # City no existe; intentar derivar por ZIP
+        if zip_norm.present?
+          zr = find_zipcode_by_code(zip_norm)
+          if zr
+            city = zr.city
+            state = city.state
+            zip_str = normalize_zip_code(zr.code)
+          end
+        end
+        # Si no hay ZIP válido, dejar sin state/city (usuario no dio info consistente)
+      end
+    elsif zip_norm.present?
+      # Sin state ni city: derivar todo por ZIP
+      zr = find_zipcode_by_code(zip_norm)
+      if zr
+        city = zr.city
+        state = city.state
+        zip_str = normalize_zip_code(zr.code)
+      else
+        # ZIP desconocido: usar 'Otro' para state y city y dejar zip en blanco
+        state = ensure_other_state
+        city = ensure_other_city(state)
+        zip_str = nil
+      end
+    end
+
+    { state: state, city: city, zip: zip_str }
   end
 end
