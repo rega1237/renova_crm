@@ -156,15 +156,87 @@ class ClientsImportService
 
     address = row["address"].to_s.strip
     state_value = row["state"].to_s.strip
-    state = find_state(state_value)
+    city_value = row["city"].to_s.strip
+    zip_value = row["zip_code"].to_s.strip
+
+    # Resolver estado según Excel; si no existe, asegurar 'Otro' pero recordar si el Excel realmente lo proporcionó
+    state_from_excel = find_state(state_value)
+    excel_state_provided = state_from_excel.present?
+    state = state_from_excel
     if state.nil?
       if state_value.blank?
         @result.warnings << "Estado vacío, se asigna 'Otro' (tel #{phone})"
       else
         @result.warnings << "Estado no encontrado: '#{state_value}' (tel #{phone}), se asigna 'Otro'"
       end
-      # Asegurar estado 'Otro' y asignarlo cuando no se proporcionó o no se encontró
       state = ensure_other_state
+    end
+
+    # Determinar ZIP: primero columna zip_code; si no, intentar extraer de address
+    normalized_zip_from_excel = normalize_zip_code(zip_value)
+    normalized_zip_from_address = normalized_zip_from_excel.present? ? nil : extract_zip_from_address(address)
+    normalized_zip = normalized_zip_from_excel.presence || normalized_zip_from_address.presence
+    # Guardaremos en el cliente el zip_code en formato 5 dígitos cuando corresponda
+    client_zip_string = nil
+
+    # Determinar city en base a reglas confirmadas
+    city = nil
+    if normalized_zip.present?
+      zip_record = find_zipcode_by_code(normalized_zip)
+      if zip_record
+        zip_state = zip_record.city.state
+        zip_city = zip_record.city
+
+        # Si Excel realmente trajo un estado y difiere del ZIP, priorizar estado del Excel y usar city/zip 'Otro' para ese estado
+        if excel_state_provided && state && zip_state && zip_state.id != state.id
+          @result.warnings << "ZIP #{normalized_zip} pertenece a '#{zip_state.name}', pero Excel indica estado '#{state.name}'. Se usa estado del Excel y city/zipcode 'Otro'. (tel #{phone})"
+          city = ensure_other_city(state)
+          ensure_other_zipcode(city) # Garantizar existencia
+          # En caso de conflicto, no establecer zip_code del cliente para evitar incongruencias
+          client_zip_string = nil
+        else
+          # Sin conflicto o sin estado Excel: usar estado/city del ZIP
+          state = zip_state
+          city = zip_city
+          client_zip_string = normalize_zip_code(zip_record.code)
+        end
+      else
+        # ZIP provisto o extraído pero no existe en BD
+        if state
+          @result.warnings << "ZIP #{normalized_zip} no encontrado en BD; se asigna city/zipcode 'Otro' bajo el estado '#{state.name}'. (tel #{phone})"
+          city = ensure_other_city(state)
+          ensure_other_zipcode(city)
+          # Aunque el ZIP no exista en BD, si vino en el archivo o se extrajo del address, guardarlo como texto para referencia
+          client_zip_string = normalized_zip
+        else
+          # No hay estado válido, todo 'Otro'
+          state = ensure_other_state
+          city = ensure_other_city(state)
+          ensure_other_zipcode(city)
+          client_zip_string = normalized_zip
+        end
+      end
+    else
+      # No hay ZIP disponible: respetar city del Excel si existe dentro del state
+      if state
+        if city_value.present?
+          found_city = find_city_by_name_and_state(city_value, state)
+          if found_city
+            city = found_city
+          else
+            @result.warnings << "Ciudad '#{city_value}' no encontrada en estado '#{state.name}'; se asigna 'Otro'. (tel #{phone})"
+            city = ensure_other_city(state)
+          end
+        else
+          city = ensure_other_city(state)
+        end
+        ensure_other_zipcode(city) # Garantizar existencia de zipcode 'Otro' para esa city
+      else
+        # Sin estado válido
+        state = ensure_other_state
+        city = ensure_other_city(state)
+        ensure_other_zipcode(city)
+      end
     end
 
     status_value = row["status"].to_s
@@ -187,6 +259,8 @@ class ClientsImportService
       phone: phone,
       address: address,
       state: state,
+      city: city,
+      zip_code: client_zip_string,
       status: status_mapped,
       source: source_final
     }
@@ -271,6 +345,62 @@ class ClientsImportService
   rescue => e
     @result.errors << "No se pudo asegurar estado 'Otro': #{e.message}"
     nil
+  end
+
+  # Garantiza o retorna la City 'Otro' asociada al estado dado
+  def ensure_other_city(state)
+    return nil if state.nil?
+    City.where(state: state).where("LOWER(name) = ?", "otro").first || City.find_or_create_by(state: state, name: "Otro")
+  rescue => e
+    @result.errors << "No se pudo asegurar city 'Otro' para estado '#{state&.name}': #{e.message}"
+    nil
+  end
+
+  # Garantiza o retorna el Zipcode 'Otro' para la ciudad dada
+  def ensure_other_zipcode(city)
+    return nil if city.nil?
+    Zipcode.where(city: city).where("LOWER(code) = ?", "otro").first || Zipcode.find_or_create_by(city: city, code: "Otro")
+  rescue => e
+    @result.errors << "No se pudo asegurar zipcode 'Otro' para ciudad '#{city&.name}': #{e.message}"
+    nil
+  end
+
+  # Buscar ciudad por nombre dentro de un estado (case-insensitive)
+  def find_city_by_name_and_state(name, state)
+    n = name.to_s.strip
+    return nil if n.blank? || state.nil?
+    City.where(state: state).where("LOWER(name) = ?", n.downcase).first
+  end
+
+  # Normaliza zip_code a formato de 5 dígitos (US). Acepta ZIP+4 (ej. 12345-6789) y devuelve 12345.
+  def normalize_zip_code(value)
+    v = value.to_s.strip
+    return nil if v.blank?
+    # Buscar primera ocurrencia de 5 dígitos consecutivos
+    if v =~ /(\d{5})(?:-\d{4})?/
+      $1
+    else
+      # Tomar la última secuencia de 5 dígitos si existiera
+      m = v.scan(/\d{5}/).last
+      m
+    end
+  end
+
+  # Extrae ZIP (5 dígitos) desde el address. Soporta ZIP+4; prioriza última aparición en el texto.
+  def extract_zip_from_address(address)
+    str = address.to_s
+    return nil if str.blank?
+    # Generalmente el ZIP está al final; usar última coincidencia
+    m = str.scan(/(\d{5})(?:-\d{4})?/).last
+    m ? m.first : nil
+  end
+
+  # Busca un Zipcode por code; acepta 5 dígitos y ZIP+4 (se usa 5 dígitos base para la búsqueda)
+  def find_zipcode_by_code(code)
+    five = normalize_zip_code(code)
+    return nil if five.blank?
+    # Preferir match exacto; luego ZIP+4 (LIKE '12345%')
+    Zipcode.where(code: five).first || Zipcode.where("code LIKE ?", "#{five}%").first
   end
 
   def map_status(value)

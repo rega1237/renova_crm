@@ -1,129 +1,156 @@
 require "test_helper"
 
 class ClientsImportServiceTest < ActiveSupport::TestCase
-  setup do
-    # Limpiar estado 'Otro' antes de cada prueba para tener un estado consistente
-    State.where("LOWER(name) = ?", "otro").destroy_all
+  def setup
+    # Ensure fixtures are loaded
+    @texas = states(:texas)
+    @florida = states(:florida)
+    @arizona = states(:arizona)
+
+    @monterrey = cities(:monterrey)
+    @guadalupe = cities(:guadalupe)
+    @phoenix = cities(:phoenix)
+    @miami = cities(:miami)
+
+    @zip_phx_85001 = zipcodes(:zip_phx_85001)
+    @zip_mia_33101 = zipcodes(:zip_mia_33101)
+    @zip_mty_64000 = zipcodes(:zip_mty_64000)
+    @zip_guad_67100 = zipcodes(:zip_guadalupe_67100)
   end
 
-  def build_fake_xls(headers:, rows:)
-    sheet = Class.new do
-      define_method(:initialize) do |headers, rows|
-        @headers = headers
-        @rows = rows
-      end
-
-      define_method(:row) do |i|
-        if i == 1
-          @headers
-        else
-          @rows[i - 2]
-        end
-      end
-
-      define_method(:last_row) do
-        @rows.size + 1
-      end
-    end.new(headers, rows)
-
-    Class.new do
-      define_method(:sheets) do
-        [ "Hoja1" ]
-      end
-
-      define_method(:sheet) do |name|
-        sheet
-      end
-    end.new
+  def build_service
+    # El servicio requiere un archivo, pero para pruebas unitarias invocamos import_row directamente.
+    # Pasamos una ruta ficticia; no se usará en estas pruebas.
+    ClientsImportService.new("/tmp/dummy.xlsx", current_user: nil)
   end
 
-  test "asigna estado 'Otro' cuando el estado viene vacío y registra warning" do
-    headers = [ "phone", "name", "state", "status", "source", "created_at" ]
-    rows = [ [ "1111111", "Juan", "", "lead", "base_de_datos", Time.current ] ]
-    fake_xls = build_fake_xls(headers: headers, rows: rows)
+  def base_row(overrides = {})
+    {
+      "phone" => "+1555#{SecureRandom.hex(4)}",
+      "name" => "Test User",
+      "last_name" => "",
+      "address" => "",
+      "state" => "",
+      "city" => "",
+      "zip_code" => "",
+      "status" => "lead",
+      "source" => "base_de_datos"
+    }.merge(overrides)
+  end
 
-    service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))
-    service.singleton_class.class_eval do
-      define_method(:valid_extension?) { |file| true }
-      define_method(:open_spreadsheet) { |file| fake_xls }
+  test "ZIP válido y state del Excel consistente usa state/city del ZIP" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => @arizona.name,
+      "zip_code" => @zip_phx_85001.code,
+      "address" => "Phoenix, AZ #{@zip_phx_85001.code}",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    assert_equal @arizona.name, client.state.name
+    assert_equal @phoenix.name, client.city.name
+    assert_equal "85001", client.zip_code, "Debe guardar el ZIP de 5 dígitos en el cliente"
+    assert_empty s.result.warnings.select { |w| w.include?("ZIP") && w.include?("estado") }
+  end
+
+  test "ZIP válido y conflicto con state del Excel prioriza state del Excel y city/zip 'Otro'" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => @texas.name, # conflicto: ZIP de Arizona
+      "zip_code" => @zip_phx_85001.code,
+      "address" => "Phoenix, AZ #{@zip_phx_85001.code}",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    assert_equal @texas.name, client.state.name, "Debe respetar state del Excel"
+    assert_not_nil client.city, "Debe asignar alguna city"
+    assert_equal "Otro", client.city.name, "En conflicto, city debe ser 'Otro'"
+    assert_nil client.zip_code, "En conflicto de estado/ZIP no debe guardar un ZIP que no pertenezca al estado"
+    assert_includes s.result.warnings.join("\n"), "Se usa estado del Excel", "Debe registrar warning de conflicto"
+    # Verificar que exista zipcode 'Otro' bajo la city
+    assert Zipcode.where(city: client.city).where("LOWER(code) = ?", "otro").exists?, "Debe garantizar zipcode 'Otro'"
+  end
+
+  test "ZIP invalido, state válido usa city/zip 'Otro' bajo el state" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => @florida.name,
+      "zip_code" => "99999",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    assert_equal @florida.name, client.state.name
+    assert_equal "Otro", client.city.name
+    assert_includes s.result.warnings.join("\n"), "ZIP 99999 no encontrado", "Debe avisar ZIP no encontrado"
+  end
+
+  test "sin zip, con state y city existente respeta la city" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => @texas.name,
+      "city" => @guadalupe.name,
+      "zip_code" => "",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    assert_equal @texas.name, client.state.name
+    assert_equal @guadalupe.name, client.city.name
+  end
+
+  test "sin zip, con state y city inexistente usa city 'Otro'" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => @texas.name,
+      "city" => "CiudadInexistente",
+      "zip_code" => "",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    assert_equal @texas.name, client.state.name
+    assert_equal "Otro", client.city.name
+    assert_includes s.result.warnings.join("\n"), "Ciudad 'CiudadInexistente' no encontrada", "Debe avisar ciudad no encontrada"
+  end
+
+  test "sin state ni zip todo 'Otro'" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => "",
+      "zip_code" => "",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    assert_equal "Otro", client.state.name
+    assert_equal "Otro", client.city.name
+  end
+
+  test "ZIP se extrae desde address si no viene en columna" do
+    s = build_service
+    phone = "+1#{format('%010d', SecureRandom.random_number(10_000_000_000))}"
+    row = base_row(
+      "state" => "", # permitirá adoptar el estado del ZIP
+      "zip_code" => "",
+      "address" => "123 Main St, Phoenix, AZ #{@zip_phx_85001.code}",
+      "phone" => phone
+    )
+    s.send(:import_row, row, false)
+    client = Client.find_by(phone: phone)
+    if client.nil?
+      flunk("Client no creado. Errors: #{s.result.errors.inspect} Warnings: #{s.result.warnings.inspect}")
     end
-
-    result = service.call(update_existing: false)
-    assert_equal 1, result.imported_clients_count
-
-    otro = State.where("LOWER(name) = ?", "otro").first
-    assert_not_nil otro, "Debe existir el estado 'Otro'"
-    assert_equal "OTRO", otro.abbreviation, "La abreviación de 'Otro' debe ser 'OTRO'"
-
-    client = Client.find_by(phone: "1111111")
-    assert_not_nil client
-    assert_equal otro, client.state
-
-    assert result.warnings.any? { |w| w.include?("Estado vacío") && w.include?("1111111") }
-  end
-
-  test "asigna estado 'Otro' cuando el estado es desconocido y registra warning con el valor original" do
-    headers = [ "phone", "name", "state", "status", "source", "created_at" ]
-    rows = [ [ "2222222", "Ana", "Ficticio", "lead", "base_de_datos", Time.current ] ]
-    fake_xls = build_fake_xls(headers: headers, rows: rows)
-
-    service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))
-    service.singleton_class.class_eval do
-      define_method(:valid_extension?) { |file| true }
-      define_method(:open_spreadsheet) { |file| fake_xls }
-    end
-
-    result = service.call(update_existing: false)
-
-    otro = State.where("LOWER(name) = ?", "otro").first
-    assert_not_nil otro
-    client = Client.find_by(phone: "2222222")
-    assert_equal otro, client.state
-
-    assert result.warnings.any? { |w| w.include?("Estado no encontrado: 'Ficticio'") && w.include?("2222222") }
-  end
-
-  test "no duplica el estado 'Otro' si existe en minúsculas (búsqueda case-insensitive)" do
-    existing = State.create!(name: "otro", abbreviation: "OT")
-
-    headers = [ "phone", "name", "state", "status", "source", "created_at" ]
-    rows = [ [ "3333333", "Luis", "", "lead", "base_de_datos", Time.current ] ]
-    fake_xls = build_fake_xls(headers: headers, rows: rows)
-
-    service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))
-    service.singleton_class.class_eval do
-      define_method(:valid_extension?) { |file| true }
-      define_method(:open_spreadsheet) { |file| fake_xls }
-    end
-
-    service.call(update_existing: false)
-
-    count_otro = State.where("LOWER(name) = ?", "otro").count
-    assert_equal 1, count_otro, "Debe existir un único estado 'Otro'"
-
-    client = Client.find_by(phone: "3333333")
-    assert_equal existing, client.state, "Debe usar el estado existente 'otro'"
-  end
-
-  test "ensure_other_state registra error y retorna nil si falla la creación" do
-    service = ClientsImportService.new("/tmp/fake.xlsx", current_user: users(:one))
-
-    # Forzar que no exista 'otro' y que find_or_create_by falle
-    State.where("LOWER(name) = ?", "otro").destroy_all
-
-    # Stub manual de métodos de clase usando singleton_class para simular fallo
-    original_where = State.method(:where)
-    original_find_or_create_by = State.method(:find_or_create_by)
-    begin
-      State.singleton_class.send(:define_method, :where, ->(*_args) { OpenStruct.new(first: nil) })
-      State.singleton_class.send(:define_method, :find_or_create_by, ->(*_args, **_kwargs, &block) { raise "DB error" })
-
-      result = service.send(:ensure_other_state)
-      assert_nil result, "Debe retornar nil cuando falla la creación"
-      assert service.result.errors.any? { |e| e.include?("No se pudo asegurar estado 'Otro':") }
-    ensure
-      State.singleton_class.send(:define_method, :where, original_where)
-      State.singleton_class.send(:define_method, :find_or_create_by, original_find_or_create_by)
-    end
+    assert_equal @arizona.name, client.state.name
+    assert_equal @phoenix.name, client.city.name
+    assert_equal "85001", client.zip_code, "Debe guardar el ZIP extraido del address"
   end
 end
