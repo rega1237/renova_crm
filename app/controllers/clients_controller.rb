@@ -34,6 +34,14 @@ class ClientsController < ApplicationController
       end
     end
 
+    # Filtro por código postal (solo 5 dígitos válidos)
+    if params[:zip_code].present?
+      five = normalize_zip_param(params[:zip_code])
+      if five.present?
+        @clients = @clients.where(zip_code: five)
+      end
+    end
+
     # Filtro por vendedor (busca en ambos campos)
     if params[:seller_id].present?
       @clients = @clients.where(
@@ -49,6 +57,37 @@ class ClientsController < ApplicationController
     end
 
     @clients = @clients.order(created_at: :desc)
+
+    # Construir colecciones para los dropdowns filtradas por los parámetros actuales (excepto city y zip)
+    base_for_filters = Client.where(nil)
+    base_for_filters = base_for_filters.where("name ILIKE ?", "%#{params[:query]}%") if params[:query].present?
+    base_for_filters = base_for_filters.where(status: params[:status]) if params[:status].present?
+    base_for_filters = base_for_filters.where(source: params[:source]) if params[:source].present?
+    base_for_filters = base_for_filters.where(state_id: params[:state_id]) if params[:state_id].present?
+    base_for_filters = base_for_filters.where(
+      "prospecting_seller_id = :sid OR assigned_seller_id = :sid",
+      sid: params[:seller_id]
+    ) if params[:seller_id].present?
+    if params[:date_from].present? || params[:date_to].present?
+      base_for_filters = base_for_filters.by_date_range(params[:date_from], params[:date_to])
+    end
+
+    city_ids = base_for_filters.where.not(city_id: nil).distinct.pluck(:city_id)
+    @cities_for_filter = if params[:state_id].present?
+                           City.where(id: city_ids, state_id: params[:state_id]).ordered
+                         else
+                           City.where(id: city_ids).ordered
+                         end
+
+    # Jerárquico para zipcodes: si hay ciudad, filtra por ciudad; si no, por estado; si no, todos
+    zips_scope = base_for_filters.where.not(zip_code: [ nil, "" ])
+    if params[:city_id].present? && params[:city_id] != "none"
+      zips_scope = zips_scope.where(city_id: params[:city_id])
+    elsif params[:state_id].present?
+      zips_scope = zips_scope.where(state_id: params[:state_id])
+    end
+
+    @zipcodes_for_filter = zips_scope.where("zip_code ~ ?", '^\\d{5}$').distinct.order(:zip_code).pluck(:zip_code)
   end
 
   def show
@@ -322,4 +361,15 @@ class ClientsController < ApplicationController
         :status, :source, :prospecting_seller_id, :assigned_seller_id, :reasons
       )
     end
+
+  # Normaliza un valor de filtro de ZIP: devuelve los 5 dígitos base si existen
+  def normalize_zip_param(value)
+    v = value.to_s.strip
+    return nil if v.blank?
+    if v =~ /^\d{5}$/
+      v
+    else
+      nil
+    end
+  end
 end

@@ -67,6 +67,7 @@ Rails.application.routes.draw do
   # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
   namespace :api do
     resources :cities, only: [ :index ]
+    resources :zipcodes, only: [ :index ]
     resources :calls, only: [ :create ]
     # WebRTC: preparar llamada (selección de número de origen) sin iniciar llamada server-side
     post "voice/prepare", to: "voice_calls#prepare"
