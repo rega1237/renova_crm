@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_02_121424) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_03_090100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "appointments", force: :cascade do |t|
     t.bigint "client_id", null: false
@@ -62,12 +63,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_02_121424) do
     t.string "reasons"
     t.bigint "city_id"
     t.index ["assigned_seller_id"], name: "index_clients_on_assigned_seller_id"
+    t.index ["city_id", "zip_code"], name: "index_clients_on_city_id_and_zip_code_5digits", where: "((zip_code)::text ~ '^[0-9]{5}$'::text)"
     t.index ["city_id"], name: "index_clients_on_city_id"
     t.index ["prospecting_seller_id"], name: "index_clients_on_prospecting_seller_id"
     t.index ["state_id", "city_id"], name: "index_clients_on_state_id_and_city_id"
+    t.index ["state_id", "zip_code"], name: "index_clients_on_state_id_and_zip_code_5digits", where: "((zip_code)::text ~ '^[0-9]{5}$'::text)"
     t.index ["state_id"], name: "index_clients_on_state_id"
     t.index ["updated_by_id"], name: "index_clients_on_updated_by_id"
     t.index ["updated_status_at"], name: "index_clients_on_updated_status_at"
+    t.index ["zip_code"], name: "index_clients_on_zip_code"
+    t.index ["zip_code"], name: "index_clients_on_zip_code_trgm", opclass: :gin_trgm_ops, using: :gin
   end
 
   create_table "facebook_integrations", force: :cascade do |t|
