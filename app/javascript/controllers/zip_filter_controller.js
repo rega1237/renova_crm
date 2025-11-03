@@ -51,13 +51,18 @@ export default class extends Controller {
     this.zipSelectTarget.appendChild(blankOpt)
 
     zipcodes.forEach((z) => {
+      const code = (typeof z === "string") ? z : (z && z.code)
+      if (!code) return
+      const label = (typeof z === "string")
+        ? z
+        : (z.city_name ? `${z.code} - ${z.city_name}${z.state_abbr ? ", " + z.state_abbr : ""}` : z.code)
       const opt = document.createElement("option")
-      opt.value = String(z)
-      opt.textContent = String(z)
+      opt.value = String(code)
+      opt.textContent = String(label)
       this.zipSelectTarget.appendChild(opt)
     })
 
-    const values = zipcodes.map(String)
+    const values = zipcodes.map(z => (typeof z === "string" ? String(z) : String(z.code)))
     if (values.includes(String(currentValue))) {
       this.zipSelectTarget.value = currentValue
     } else {

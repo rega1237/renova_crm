@@ -29,7 +29,7 @@ module Api
           base = base.where(city_id: city_id) if city_id.present?
           base = base.where("zip_code ~ ?", '^\\d{5}$')
           base = base.where("zip_code LIKE ?", "%#{query}%") if query.present?
-          base.distinct.order(:zip_code).pluck(:zip_code).map { |z| { code: z } }
+          base.distinct.order(:zip_code).pluck(:zip_code)
         end
       end
 
