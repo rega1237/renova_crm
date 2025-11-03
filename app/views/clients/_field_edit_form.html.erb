@@ -4,7 +4,7 @@
     class: "space-y-2 font-montserrat" do |form| %>
   <!-- Campo oculto para enviar el valor del campo específico -->
   <% case field %>
-  <% when 'name', 'phone', 'email', 'zip_code' %>
+  <% when 'name', 'phone', 'email' %>
     <%= text_field_tag field, client.send(field),
         class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" %>
   <% when 'address' %>
@@ -24,10 +24,30 @@
         { include_blank: 'Seleccionar estado...', 
           class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
   <% when 'city_id' %>
-    <%= select_tag field,
-        options_from_collection_for_select(City.order(:name), 'id', 'name', client.city_id),
-        { include_blank: 'Sin ciudad',
-          class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm" } %>
+    <div class="relative" 
+         data-controller="city-autocomplete"
+         data-city-autocomplete-url-value="/api/cities"
+         data-city-autocomplete-state-id-value="<%= client.state_id %>">
+      <%= hidden_field_tag 'city_id', client.city_id, 
+          data: { city_autocomplete_target: 'hidden' } %>
+      <%= text_field_tag 'city_name', (client.city&.name || ''),
+          placeholder: 'Escribe la ciudad...',
+          class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm",
+          data: { city_autocomplete_target: 'input' } %>
+      <div data-city-autocomplete-target="results" class="hidden absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1"></div>
+    </div>
+  <% when 'zip_code' %>
+    <div class="relative"
+         data-controller="zipcode-autocomplete"
+         data-zipcode-autocomplete-url-value="/api/zipcodes"
+         data-zipcode-autocomplete-state-id-value="<%= client.state_id %>"
+         data-zipcode-autocomplete-city-id-value="<%= client.city_id %>">
+      <%= text_field_tag field, client.send(field),
+          placeholder: 'Escribe el código postal...',
+          class: "block w-full border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat text-sm",
+          data: { zipcode_autocomplete_target: 'input' } %>
+      <div data-zipcode-autocomplete-target="results" class="hidden absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1"></div>
+    </div>
   <% when 'status' %>
     <%= select_tag field,
         options_for_select(Client.statuses.keys.map { |s| [status_display_name(s), s] }, client.status),
