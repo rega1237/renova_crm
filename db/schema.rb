@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_03_120000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_03_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -179,7 +179,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_120000) do
     t.integer "rol", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "linked_user_id"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["linked_user_id"], name: "index_users_on_linked_user_id"
   end
 
   create_table "zipcodes", force: :cascade do |t|
@@ -217,6 +219,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_120000) do
   add_foreign_key "numbers", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "unauthorized_access_attempts", "users"
+  add_foreign_key "users", "users", column: "linked_user_id"
   add_foreign_key "zipcodes", "cities"
   add_foreign_key "zips", "cities"
 end

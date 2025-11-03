@@ -19,7 +19,11 @@ class Number < ApplicationRecord
   validates :user_id, presence: true
 
   scope :for_state, ->(state_name) { where(state: state_name) }
-  scope :owned_by, ->(user) { where(user_id: user.id) }
+  # Incluye números propiedad del usuario y de su cuenta vinculada (si existe)
+  scope :owned_by, ->(user) {
+    ids = user.respond_to?(:shared_user_ids) ? user.shared_user_ids : Array(user).flatten
+    where(user_id: ids)
+  }
 
   private
 
