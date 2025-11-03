@@ -123,6 +123,50 @@ class Client < ApplicationRecord
     end
   end
 
+  # ===========================
+  # PRESENCE LOCK (USO ACTIVO)
+  # ===========================
+  # Timeout en minutos para liberar automáticamente el lock por inactividad
+  PRESENCE_LOCK_TIMEOUT_MINUTES = 5
+
+  def presence_lock_expired?
+    return true if presence_lock_expires_at.blank?
+    Time.current > presence_lock_expires_at
+  end
+
+  def presence_locked?
+    presence_lock_user_id.present? && !presence_lock_expired?
+  end
+
+  def lock_for!(user)
+    return false unless user
+    # Si está bloqueado por otro y no ha expirado, no permitir
+    if presence_locked? && presence_lock_user_id != user.id
+      return false
+    end
+
+    # Asignar/renovar lock para el usuario actual
+    update_columns(
+      presence_lock_user_id: user.id,
+      presence_lock_expires_at: PRESENCE_LOCK_TIMEOUT_MINUTES.minutes.from_now
+    )
+    true
+  end
+
+  def unlock_if_owner!(user)
+    return false unless user
+    return false unless presence_lock_user_id == user.id
+    update_columns(presence_lock_user_id: nil, presence_lock_expires_at: nil)
+    true
+  end
+
+  def keepalive_if_owner!(user)
+    return false unless user
+    return false unless presence_lock_user_id == user.id
+    update_columns(presence_lock_expires_at: PRESENCE_LOCK_TIMEOUT_MINUTES.minutes.from_now)
+    true
+  end
+
   # Selección automática del número Twilio a usar como caller ID
   # Retorna un hash con:
   #  - :number => Number (cuando hay coincidencia por estado y propiedad)

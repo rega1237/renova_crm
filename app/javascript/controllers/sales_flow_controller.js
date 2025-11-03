@@ -15,11 +15,45 @@ export default class extends Controller {
     this.initializeDragAndDrop();
     this.connectWebSocket();
     this.setupInfiniteScroll();
+
+    // Estado de presencia
+    this.currentClientIdOpen = null;
+    this.keepaliveInterval = null;
+
+    // Listeners para salir de la vista
+    this._beforeVisitHandler = this.handleBeforeVisit.bind(this);
+    this._beforeUnloadHandler = this.handleBeforeUnload.bind(this);
+    this._visibilityHandler = this.handleVisibilityChange.bind(this);
+    document.addEventListener("turbo:before-visit", this._beforeVisitHandler);
+    window.addEventListener("beforeunload", this._beforeUnloadHandler);
+    document.addEventListener("visibilitychange", this._visibilityHandler);
+
+    // Escuchar carga del Turbo Frame del slideover para arrancar keepalive
+    if (!this._onFrameLoadBound) {
+      this._onFrameLoadBound = (event) => {
+        const frame = event.target;
+        if (frame && frame.id === "slideover" && this.lastClickedClientId) {
+          this.currentClientIdOpen = this.lastClickedClientId;
+          this.startKeepalive();
+        }
+      };
+      document.addEventListener("turbo:frame-load", this._onFrameLoadBound);
+    }
   }
 
   disconnect() {
     this.disconnectWebSocket();
     this.destroyDragAndDrop();
+
+    document.removeEventListener("turbo:before-visit", this._beforeVisitHandler);
+    window.removeEventListener("beforeunload", this._beforeUnloadHandler);
+    document.removeEventListener("visibilitychange", this._visibilityHandler);
+    if (this._onFrameLoadBound) {
+      document.removeEventListener("turbo:frame-load", this._onFrameLoadBound);
+      this._onFrameLoadBound = null;
+    }
+    this.stopKeepalive();
+    this.currentClientIdOpen = null;
   }
 
   // Método que se ejecuta cuando Turbo Frame actualiza el contenido
@@ -94,6 +128,30 @@ export default class extends Controller {
   preventLinkClick(event) {
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  // Detectar click en tarjeta de cliente
+  onClientLinkClick(event) {
+    const link = event.currentTarget;
+    const clientId = link?.dataset?.clientId;
+    // No bloqueamos la navegación; solo registramos el intento
+    this.lastClickedClientId = clientId ? Number(clientId) : null;
+    // Iniciar lock explícito en el servidor para evitar que el prefetch por hover bloquee
+    if (this.lastClickedClientId) {
+      try {
+        fetch(`/clients/${this.lastClickedClientId}/lock`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+          },
+          // No esperamos la respuesta ni bloqueamos la navegación
+          keepalive: true,
+        }).catch(() => {});
+      } catch (e) {
+        // Silenciar errores; la UI se sincroniza vía ActionCable
+      }
+    }
   }
 
   // =============================================
@@ -525,6 +583,133 @@ export default class extends Controller {
     } else if (data.action === "reason_updated") {
       this.handleReasonUpdate(data);
       // No cambia el status, normalmente no afecta los totales
+    } else if (data.action === "client_opened") {
+      this.applyPresenceState(data.client_id, true, data.user_name);
+      // Si el evento es del usuario actual, activar keepalive
+      if (this.userIdValue && Number(data.user_id) === Number(this.userIdValue)) {
+        this.currentClientIdOpen = data.client_id;
+        this.startKeepalive();
+      }
+    } else if (data.action === "client_closed") {
+      this.applyPresenceState(data.client_id, false);
+      // Si el evento es del usuario actual, detener keepalive
+      if (this.userIdValue && Number(data.user_id) === Number(this.userIdValue)) {
+        if (this.currentClientIdOpen === data.client_id) {
+          this.stopKeepalive();
+          this.currentClientIdOpen = null;
+        }
+      }
+    }
+  }
+
+  
+
+  // =============================
+  // PRESENCE STATE UI
+  // =============================
+  applyPresenceState(clientId, active, userName = "") {
+    const card =
+      this.element.querySelector(`.client-card[data-client-id="${clientId}"]`) ||
+      this.element
+        .querySelector(`[data-client-id="${clientId}"]`)
+        ?.closest(".client-card");
+    if (!card) return;
+
+    const label = card.querySelector("[data-presence-label]");
+    if (active) {
+      card.classList.add("client-card--active");
+      card.classList.remove("client-card--inactive");
+      if (label) {
+        label.textContent = userName ? `En uso por ${userName}` : "En uso";
+        label.classList.remove("hidden");
+      }
+    } else {
+      card.classList.remove("client-card--active");
+      card.classList.add("client-card--inactive");
+      if (label) {
+        label.textContent = "";
+        label.classList.add("hidden");
+      }
+    }
+  }
+
+  // Llamado desde botón cerrar en slideover
+  async onClientClose(event) {
+    const btn = event.currentTarget;
+    const clientId = btn?.dataset?.clientId;
+    if (!clientId) return;
+    try {
+      await fetch(`/clients/${clientId}/unlock`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+        },
+      });
+      // Actualizar UI localmente sin esperar el broadcast
+      this.applyPresenceState(Number(clientId), false);
+    } catch (e) {
+      console.warn("No se pudo liberar el lock al cerrar:", e);
+    } finally {
+      if (this.currentClientIdOpen === Number(clientId)) {
+        this.stopKeepalive();
+        this.currentClientIdOpen = null;
+      }
+    }
+  }
+
+  // Mantener lock activo mientras el usuario tiene el slideover abierto
+  startKeepalive() {
+    this.stopKeepalive();
+    if (!this.currentClientIdOpen) return;
+    this.keepaliveInterval = setInterval(() => {
+      fetch(`/clients/${this.currentClientIdOpen}/keepalive`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+        },
+      }).catch(() => {});
+    }, 60 * 1000); // cada minuto
+  }
+
+  stopKeepalive() {
+    if (this.keepaliveInterval) {
+      clearInterval(this.keepaliveInterval);
+      this.keepaliveInterval = null;
+    }
+  }
+
+  // Desbloquear si el usuario navega fuera o oculta la página
+  handleBeforeVisit() {
+    this.unlockIfNeeded();
+  }
+
+  handleBeforeUnload() {
+    this.unlockIfNeeded();
+  }
+
+  handleVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      this.unlockIfNeeded();
+    }
+  }
+
+  async unlockIfNeeded() {
+    if (!this.currentClientIdOpen) return;
+    try {
+      await fetch(`/clients/${this.currentClientIdOpen}/unlock`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+        },
+      });
+    } catch (e) {
+      // Silencioso
+    } finally {
+      this.stopKeepalive();
+      this.currentClientIdOpen = null;
     }
   }
 

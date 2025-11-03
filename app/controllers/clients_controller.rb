@@ -107,6 +107,18 @@ class ClientsController < ApplicationController
 
   def show
     @client = Client.find(params[:id])
+    # No bloquear aquí para evitar que el prefetch de Turbo marque "en uso" al pasar el mouse.
+    # Solo mostrar banner si está bloqueado por otro usuario.
+    if @client.presence_locked? && (!Current.user || @client.presence_lock_user_id != Current.user.id)
+      begin
+        other_user = User.find_by(id: @client.presence_lock_user_id)
+        @client_in_use_by_name = other_user&.name || "Otro usuario"
+        flash.now[:alert] = "Este cliente está en uso por #{@client_in_use_by_name}. Algunos cambios podrían estar bloqueados."
+      rescue StandardError
+        @client_in_use_by_name = "Otro usuario"
+        flash.now[:alert] = "Este cliente está en uso por #{@client_in_use_by_name}."
+      end
+    end
   end
 
   def new
@@ -359,6 +371,72 @@ class ClientsController < ApplicationController
   def destroy
     @client.destroy
     redirect_to clients_url, notice: "Cliente eliminado exitosamente."
+  end
+
+  # ==========================
+  # PRESENCE LOCK ENDPOINTS
+  # ==========================
+  def lock
+    @client = Client.find(params[:id])
+    unless Current.user
+      return render json: { status: "error", message: "No autenticado" }, status: :unauthorized
+    end
+
+    if @client.lock_for!(Current.user)
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "client_opened",
+          client_id: @client.id,
+          user_id: Current.user.id,
+          user_name: Current.user.name
+        }
+      )
+      render json: { status: "locked", client_id: @client.id }
+    else
+      other_user = User.find_by(id: @client.presence_lock_user_id)
+      render json: {
+        status: "in_use",
+        client_id: @client.id,
+        by_user_id: @client.presence_lock_user_id,
+        by_user_name: other_user&.name || "Otro usuario"
+      }, status: :conflict
+    end
+  end
+
+  def unlock
+    @client = Client.find(params[:id])
+    unless Current.user
+      return render json: { status: "error", message: "No autenticado" }, status: :unauthorized
+    end
+
+    if @client.unlock_if_owner!(Current.user)
+      ActionCable.server.broadcast(
+        "sales_flow_channel",
+        {
+          action: "client_closed",
+          client_id: @client.id,
+          user_id: Current.user.id,
+          user_name: Current.user.name
+        }
+      )
+      render json: { status: "unlocked", client_id: @client.id }
+    else
+      render json: { status: "not_owner_or_not_locked" }, status: :unprocessable_entity
+    end
+  end
+
+  def keepalive
+    @client = Client.find(params[:id])
+    unless Current.user
+      return render json: { status: "error", message: "No autenticado" }, status: :unauthorized
+    end
+
+    if @client.keepalive_if_owner!(Current.user)
+      render json: { status: "ok", client_id: @client.id, expires_at: @client.presence_lock_expires_at }
+    else
+      render json: { status: "not_owner_or_not_locked" }, status: :unprocessable_entity
+    end
   end
 
   private

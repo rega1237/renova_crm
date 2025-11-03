@@ -85,9 +85,9 @@
       <% end %>
     </div>
   <% end %>
+  <!-- Slideover para mostrar detalles del cliente -->
+  <%= turbo_frame_tag "slideover" %>
 </div>
-<!-- Slideover para mostrar detalles del cliente -->
-<%= turbo_frame_tag "slideover" %>
 <style>
   .kanban-board {
     display: grid;
@@ -170,6 +170,16 @@
     100% {
       box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
     }
+  }
+
+  /* Presencia: estilos de borde para indicar que un cliente está en uso */
+  .client-card.client-card--active {
+    border: 2px solid #f97316; /* naranja vivo */
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+  }
+
+  .client-card.client-card--inactive {
+    border-color: #e5e7eb; /* gris por defecto */
   }
 </style>
 <!-- Call UI Turbo Frame -->

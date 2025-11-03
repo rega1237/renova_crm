@@ -1,18 +1,28 @@
-<%= link_to client_path(client), 
-    data: { 
+<% active_class = client.presence_locked? ? 'client-card--active' : '' %>
+<%= link_to client_path(client),
+    data: {
       turbo_frame: "slideover",
       client_id: client.id,
       client_status: client.status,
       assigned_seller_id: client.assigned_seller_id,
-      updated_at: (client.status == 'lead' ? client.created_at : (client.updated_status_at || client.updated_at)).iso8601
-    }, 
-    class: "block client-card bg-white border border-gray-200 rounded-lg p-3 relative group hover:shadow-lg transition-shadow" do %>
+      updated_at: (client.status == 'lead' ? client.created_at : (client.updated_status_at || client.updated_at)).iso8601,
+      action: "click->sales-flow#onClientLinkClick"
+    },
+    class: "block client-card bg-white border border-gray-200 rounded-lg p-3 relative group hover:shadow-lg transition-shadow #{active_class}" do %>
   <!-- Drag handle único (solo visible en hover) -->
   <div class="drag-handle absolute top-2 right-2 text-gray-400 group-hover:text-gray-600 z-10"
        data-action="click->sales-flow#preventLinkClick">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
     </svg>
+  </div>
+  <!-- Presencia: indicador de "en uso" -->
+  <% if client.presence_locked? %>
+    <% locked_user = User.find_by(id: client.presence_lock_user_id) %>
+  <% end %>
+  <div class="absolute -top-2 -left-2 bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow <%= client.presence_locked? ? '' : 'hidden' %>"
+       data-presence-label>
+    <%= client.presence_locked? ? "En uso por #{locked_user&.name || 'otro usuario'}" : '' %>
   </div>
   <!-- Avatar del cliente -->
   <div class="flex items-start space-x-3 mb-3">

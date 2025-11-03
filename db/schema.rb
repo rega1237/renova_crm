@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_03_090100) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_03_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -62,9 +62,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_090100) do
     t.integer "cancellations_count", default: 0, null: false
     t.string "reasons"
     t.bigint "city_id"
+    t.integer "presence_lock_user_id"
+    t.datetime "presence_lock_expires_at"
     t.index ["assigned_seller_id"], name: "index_clients_on_assigned_seller_id"
     t.index ["city_id", "zip_code"], name: "index_clients_on_city_id_and_zip_code_5digits", where: "((zip_code)::text ~ '^[0-9]{5}$'::text)"
     t.index ["city_id"], name: "index_clients_on_city_id"
+    t.index ["presence_lock_expires_at"], name: "index_clients_on_presence_lock_expires_at"
+    t.index ["presence_lock_user_id"], name: "index_clients_on_presence_lock_user_id"
     t.index ["prospecting_seller_id"], name: "index_clients_on_prospecting_seller_id"
     t.index ["state_id", "city_id"], name: "index_clients_on_state_id_and_city_id"
     t.index ["state_id", "zip_code"], name: "index_clients_on_state_id_and_zip_code_5digits", where: "((zip_code)::text ~ '^[0-9]{5}$'::text)"

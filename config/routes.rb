@@ -37,6 +37,9 @@ Rails.application.routes.draw do
     member do
       patch :update_assigned_seller
       patch :update_field
+      post :lock
+      post :unlock
+      post :keepalive
     end
   end
 
