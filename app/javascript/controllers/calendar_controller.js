@@ -22,6 +22,7 @@ export default class extends Controller {
     const calendarEl = this.element;
 
     this.calendar = new Calendar(calendarEl, {
+      timeZone: 'America/Chicago',
       plugins: [dayGridPlugin, timeGridPlugin],
       initialView: 'dayGridMonth',
       headerToolbar: {
