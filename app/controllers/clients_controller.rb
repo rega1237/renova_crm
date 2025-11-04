@@ -5,9 +5,9 @@ class ClientsController < ApplicationController
   def index
     @clients = Client.includes(:state, :city, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
 
-    # Filtro por búsqueda de nombre
+    # Filtro por búsqueda: nombre o teléfono
     if params[:query].present?
-      @clients = @clients.where("name ILIKE ?", "%#{params[:query]}%")
+      @clients = apply_query_filter(@clients)
     end
 
     # Filtro por status del cliente
@@ -60,7 +60,7 @@ class ClientsController < ApplicationController
 
     # Construir colecciones para los dropdowns filtradas por los parámetros actuales (excepto city y zip)
     base_for_filters = Client.where(nil)
-    base_for_filters = base_for_filters.where("name ILIKE ?", "%#{params[:query]}%") if params[:query].present?
+    base_for_filters = apply_query_filter(base_for_filters) if params[:query].present?
     base_for_filters = base_for_filters.where(status: params[:status]) if params[:status].present?
     base_for_filters = base_for_filters.where(source: params[:source]) if params[:source].present?
     base_for_filters = base_for_filters.where(state_id: params[:state_id]) if params[:state_id].present?
@@ -91,7 +91,7 @@ class ClientsController < ApplicationController
 
     # Estados disponibles: solo los que tienen clientes bajo los filtros actuales (excepto state/city/zip)
     base_for_states = Client.where(nil)
-    base_for_states = base_for_states.where("name ILIKE ?", "%#{params[:query]}%") if params[:query].present?
+    base_for_states = apply_query_filter(base_for_states) if params[:query].present?
     base_for_states = base_for_states.where(status: params[:status]) if params[:status].present?
     base_for_states = base_for_states.where(source: params[:source]) if params[:source].present?
     base_for_states = base_for_states.where(
@@ -457,6 +457,22 @@ class ClientsController < ApplicationController
         :name, :phone, :email, :address, :zip_code, :state_id, :city_id,
         :status, :source, :prospecting_seller_id, :assigned_seller_id, :reasons
       )
+    end
+
+    # Aplica filtro de búsqueda por nombre o teléfono (acepta dígitos sin símbolos)
+    def apply_query_filter(scope)
+      q = params[:query].to_s.strip.downcase
+      digits = q.gsub(/[^0-9]/, '')
+
+      conditions = ["LOWER(name) ILIKE :q", "phone ILIKE :q"]
+      args = { q: "%#{q}%" }
+
+      if digits.present?
+        conditions << "regexp_replace(phone, '[^0-9]+', '', 'g') LIKE :qd"
+        args[:qd] = "%#{digits}%"
+      end
+
+      scope.where(conditions.join(' OR '), args)
     end
 
   # Normaliza un valor de filtro de ZIP: devuelve los 5 dígitos base si existen

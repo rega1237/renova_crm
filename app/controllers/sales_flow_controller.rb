@@ -70,7 +70,7 @@ class SalesFlowController < ApplicationController
 
   # Aplicar filtros comunes
   def apply_filters(scope)
-    scope = scope.where("name ILIKE ?", "%#{@query}%") if @query.present?
+    scope = apply_query_filter(scope) if @query.present?
     scope = scope.where(source: @source_filter) if @source_filter.present?
     scope = scope.where(state_id: @state_filter) if @state_filter.present?
 
@@ -129,7 +129,7 @@ class SalesFlowController < ApplicationController
   def build_filter_collections
     # Base para ciudades y ZIPs (incluye filtro por estado cuando aplique)
     base = Client.where(nil)
-    base = base.where("name ILIKE ?", "%#{@query}%") if @query.present?
+    base = apply_query_filter(base) if @query.present?
     base = base.where(source: @source_filter) if @source_filter.present?
     base = base.where(state_id: @state_filter) if @state_filter.present?
     if @date_from.present? || @date_to.present?
@@ -153,7 +153,7 @@ class SalesFlowController < ApplicationController
 
     # Base separada para estados: solo los estados con clientes bajo los demás filtros (excluyendo state/city/zip)
     base_states = Client.where(nil)
-    base_states = base_states.where("name ILIKE ?", "%#{@query}%") if @query.present?
+    base_states = apply_query_filter(base_states) if @query.present?
     base_states = base_states.where(source: @source_filter) if @source_filter.present?
     if @date_from.present? || @date_to.present?
       base_states = base_states.by_date_range(@date_from, @date_to)
@@ -173,5 +173,22 @@ class SalesFlowController < ApplicationController
     else
       nil
     end
+  end
+
+  # Aplica filtro por query buscando por nombre o teléfono (incluye dígitos sin símbolos)
+  def apply_query_filter(scope)
+    q = @query.to_s.strip.downcase
+    digits = q.gsub(/[^0-9]/, "")
+
+    conditions = ["LOWER(name) ILIKE :q", "phone ILIKE :q"]
+    params = { q: "%#{q}%" }
+
+    if digits.present?
+      # Permite buscar por dígitos coincidiendo aunque el teléfono esté en E.164 (+...)
+      conditions << "regexp_replace(phone, '[^0-9]+', '', 'g') LIKE :qd"
+      params[:qd] = "%#{digits}%"
+    end
+
+    scope.where(conditions.join(" OR "), params)
   end
 end
