@@ -75,4 +75,19 @@ class Settings::DashboardController < ApplicationController
     render :progress
   end
 
+  # === DEDUPE BUTTONS ===
+  def dedupe_clients_dry_run
+    ClientsDedupeJob.perform_later(Current.user.id, dry_run: true, keep_strategy: params[:keep_strategy].presence || "oldest")
+    redirect_to settings_root_path, notice: "Se inició la simulación de deduplicación (Dry Run). Revisa los logs para ver el resultado."
+  rescue => e
+    redirect_to settings_root_path, alert: "Error al iniciar Dry Run de deduplicación: #{e.message}"
+  end
+
+  def dedupe_clients
+    ClientsDedupeJob.perform_later(Current.user.id, dry_run: false, keep_strategy: params[:keep_strategy].presence || "oldest")
+    redirect_to settings_root_path, notice: "Se inició la deduplicación real. Revisa los logs para ver el progreso y el resultado."
+  rescue => e
+    redirect_to settings_root_path, alert: "Error al iniciar deduplicación: #{e.message}"
+  end
+
 end

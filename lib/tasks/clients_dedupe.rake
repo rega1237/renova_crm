@@ -1,6 +1,27 @@
 # frozen_string_literal: true
 
 namespace :clients do
+  desc "Deduplicate clients by phone number (digits-only). KEEP_STRATEGY=oldest|latest DRY_RUN=1"
+  task dedupe_by_phone: :environment do
+    dry_run = ENV["DRY_RUN"].to_s == "1"
+    keep_strategy = ENV.fetch("KEEP_STRATEGY", "oldest")
+
+    service = ClientsDedupeService.new(keep_strategy: keep_strategy)
+    result = service.call(dry_run: dry_run)
+
+    puts "Deduplication summary:"
+    puts "  dry_run: #{result.dry_run}"
+    puts "  strategy: #{result.kept_strategy}"
+    puts "  groups_considered: #{result.groups_considered}"
+    puts "  groups_with_duplicates: #{result.groups_with_duplicates}"
+    puts "  reassigned_notes: #{result.reassigned_notes}"
+    puts "  reassigned_appointments: #{result.reassigned_appointments}"
+    puts "  duplicates_deleted: #{result.duplicates_deleted}"
+  end
+end
+
+
+namespace :clients do
   desc "Deduplicar clientes por teléfono. Mantiene el más reciente por defecto (ID mayor).\n" \
        "Variables: DRY_RUN=1 (no borra, sólo muestra), KEEP_STRATEGY=latest|oldest"
   task dedupe_by_phone: :environment do

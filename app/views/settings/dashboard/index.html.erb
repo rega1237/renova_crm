@@ -182,4 +182,15 @@
       </div>
     <% end %>
   </div>
+  <div class="block bg-white p-8 rounded-xl shadow-md">
+    <h2 class="font-poppins text-2xl font-semibold text-rojo-carmesi mb-4">Deduplicación de Clientes por Teléfono</h2>
+    <p class="font-montserrat text-negro-onix mb-4">
+      Ejecuta la deduplicación de clientes agrupando por teléfono (solo dígitos). Por defecto se conserva el registro más antiguo y se reubican notas y citas en ese cliente.
+    </p>
+    <div class="flex flex-col md:flex-row gap-4">
+      <%= button_to "Simulación (Dry Run)", settings_dedupe_clients_dry_run_path, method: :post, class: "inline-flex items-center justify-center bg-gray-600 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors" %>
+      <%= button_to "Ejecutar Deduplicación", settings_dedupe_clients_path, method: :post, class: "inline-flex items-center justify-center bg-red-600 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors", data: { confirm: "¿Seguro que deseas ejecutar la deduplicación? Esto eliminará duplicados y conservará el cliente más antiguo." } %>
+    </div>
+    <p class="text-sm text-gray-500 mt-3">Los resultados se registran en los logs de la aplicación. Puedes verlos con el botón de logs de Kamal o en tu agregador de logs.</p>
+  </div>
 </div>

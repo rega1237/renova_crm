@@ -26,6 +26,9 @@ Rails.application.routes.draw do
     root to: "dashboard#index"
     post "import_clients", to: "dashboard#import_clients"
     get  "export_clients", to: "dashboard#export_clients"
+    # Deduplication actions (trigger jobs)
+    post "dedupe_clients", to: "dashboard#dedupe_clients"
+    post "dedupe_clients_dry_run", to: "dashboard#dedupe_clients_dry_run"
     # Progreso en tiempo real (usado para importaciones)
     get  "progress", to: "dashboard#progress", as: :progress
   end
