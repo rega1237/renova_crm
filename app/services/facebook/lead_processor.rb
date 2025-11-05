@@ -184,14 +184,21 @@ class Facebook::LeadProcessor
     v_norm = I18n.transliterate(v).strip
     v_down = v_norm.downcase
 
+    # Variante que elimina dígitos y símbolos (caso "Texas77026", "TX-77026")
+    v_alpha = v_norm.gsub(/[^a-zA-Z ]/, " ").squeeze(" ").strip
+    v_alpha_down = v_alpha.downcase
+
     # 1) Buscar por abreviación exacta (case-insensitive)
     state = State.where("LOWER(abbreviation) = ?", v_down).first
+    state ||= State.where("LOWER(abbreviation) = ?", v_alpha_down).first
 
     # 2) Buscar por nombre exacto (case-insensitive)
     state ||= State.where("LOWER(name) = ?", v_down).first
+    state ||= State.where("LOWER(name) = ?", v_alpha_down).first
 
     # 3) Fallback por prefijo en nombre (para typos frecuentes como "texa" -> "Texas")
     state ||= State.where("LOWER(name) LIKE ?", "#{v_down}%").first
+    state ||= State.where("LOWER(name) LIKE ?", "#{v_alpha_down}%").first
 
     state
   end
@@ -218,14 +225,20 @@ class Facebook::LeadProcessor
   def find_city_by_name_and_state(name, state)
     n = name.to_s.strip
     return nil if n.blank? || state.nil?
-    City.where(state: state).where("LOWER(name) = ?", n.downcase).first
+    n_norm = I18n.transliterate(n).strip
+    n_alpha = n_norm.gsub(/[^a-zA-Z ]/, " ").squeeze(" ").strip
+    City.where(state: state).where("LOWER(name) = ?", n_norm.downcase).first ||
+      City.where(state: state).where("LOWER(name) = ?", n_alpha.downcase).first
   end
 
   # Buscar ciudad por nombre sin importar el estado (case-insensitive)
   def find_city_global(name)
     n = name.to_s.strip
     return nil if n.blank?
-    City.where("LOWER(name) = ?", n.downcase).first
+    n_norm = I18n.transliterate(n).strip
+    n_alpha = n_norm.gsub(/[^a-zA-Z ]/, " ").squeeze(" ").strip
+    City.where("LOWER(name) = ?", n_norm.downcase).first ||
+      City.where("LOWER(name) = ?", n_alpha.downcase).first
   end
 
   # Normaliza zip_code a formato de 5 dígitos (US). Acepta ZIP+4 (ej. 12345-6789) y devuelve 12345.
