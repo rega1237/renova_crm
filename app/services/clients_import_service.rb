@@ -178,12 +178,15 @@ class ClientsImportService
     normalized_zip = normalized_zip_from_excel.presence || normalized_zip_from_address.presence
     # Guardaremos en el cliente el zip_code en formato 5 dígitos cuando corresponda
     client_zip_string = nil
+    zip_record = nil
+    zip_valid = false
 
     # Determinar city en base a reglas confirmadas
     city = nil
     if normalized_zip.present?
       zip_record = find_zipcode_by_code(normalized_zip)
       if zip_record
+        zip_valid = true
         zip_state = zip_record.city.state
         zip_city = zip_record.city
 
@@ -265,13 +268,49 @@ class ClientsImportService
       source: source_final
     }
 
-    client = if update_existing
-      Client.find_or_initialize_by(phone: phone)
-    else
-      Client.new
-    end
+    existing_client = update_existing ? Client.find_by(phone: phone) : nil
+    client = existing_client || Client.new
 
     client.assign_attributes(client_attrs)
+
+    # Reglas de actualización seguras cuando el cliente ya existe:
+    if update_existing && existing_client
+      old_state_id = existing_client.state_id
+      old_city_id  = existing_client.city_id
+      old_zip      = existing_client.zip_code
+      old_status   = existing_client.status
+      old_name     = existing_client.name
+      old_address  = existing_client.address
+      old_source   = existing_client.source
+
+      # 1) No sobrescribir con valores vacíos
+      client.name = old_name if name.blank? && old_name.present?
+      client.address = old_address if address.blank? && old_address.present?
+      client.source = old_source if source_final.blank? && old_source.present?
+
+      # 2) Actualizar city/zip SOLO si el ZIP es válido (existe en BD)
+      unless zip_valid
+        client.city_id = old_city_id
+        client.zip_code = old_zip
+      end
+
+      # 3) Evitar degradar ubicación a 'Otro' si ya tenemos una ubicación específica
+      begin
+        if client.state&.name.to_s.downcase == "otro" && existing_client.state && existing_client.state.name.to_s.downcase != "otro"
+          client.state_id = old_state_id
+        end
+        if client.city&.name.to_s.downcase == "otro" && existing_client.city && existing_client.city.name.to_s.downcase != "otro"
+          client.city_id = old_city_id
+        end
+      rescue
+        # No romper el flujo por errores de lectura
+      end
+
+      # 4) No bajar el status a 'lead' si el cliente ya está en un estado posterior
+      if status_mapped == "lead" && old_status.present? && old_status != "lead"
+        client.status = old_status
+      end
+    end
 
     # Establecer fechas según el estado del cliente
     if client.new_record?
