@@ -38,14 +38,22 @@ class ClientsDedupeService
 
       # Reasignar asociaciones de cada duplicado
       duplicates.each do |dup|
-        notes_count = Note.where(client_id: dup.id).update_all(client_id: kept.id)
-        appts_count = Appointment.where(client_id: dup.id).update_all(client_id: kept.id)
-        result.reassigned_notes += notes_count
-        result.reassigned_appointments += appts_count
-
-        unless dry_run
-          dup.destroy!
-          result.duplicates_deleted += 1
+        if dry_run
+          # Solo contar lo que se movería, sin modificar la BD
+          notes_count = Note.where(client_id: dup.id).count
+          appts_count = Appointment.where(client_id: dup.id).count
+          result.reassigned_notes += notes_count
+          result.reassigned_appointments += appts_count
+        else
+          # Mover asociaciones y eliminar el duplicado de forma atómica
+          ActiveRecord::Base.transaction do
+            notes_count = Note.where(client_id: dup.id).update_all(client_id: kept.id)
+            appts_count = Appointment.where(client_id: dup.id).update_all(client_id: kept.id)
+            result.reassigned_notes += notes_count
+            result.reassigned_appointments += appts_count
+            dup.destroy!
+            result.duplicates_deleted += 1
+          end
         end
       end
     end
