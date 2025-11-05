@@ -255,6 +255,20 @@ class Facebook::LeadProcessor
     city = nil
     zip_str = nil
 
+    # Heurística: muchos leads de Meta llegan con city/state invertidos (ej. state = "Austin", city = "Texas").
+    # Si detectamos que el valor de state parece una ciudad y el valor de city parece un estado, los intercambiamos.
+    if state_input.present? && city_input.present?
+      looks_like_state_in_city = find_state_for_facebook(city_input).present?
+      looks_like_city_in_state = find_city_global(state_input).present?
+      looks_like_state_in_state = find_state_for_facebook(state_input).present?
+
+      if !looks_like_state_in_state && looks_like_state_in_city && looks_like_city_in_state
+        # Intercambiar
+        Rails.logger.info("[LeadProcessor] Detectada inversión de city/state. Swapping: state='#{state_input}' <-> city='#{city_input}'") rescue nil
+        state_input, city_input = city_input, state_input
+      end
+    end
+
     if state_input.present?
       state = find_state_for_facebook(state_input) || ensure_other_state
       if city_input.present?
@@ -267,7 +281,14 @@ class Facebook::LeadProcessor
               zip_str = normalize_zip_code(zr.code)
             else
               # Mismatch: mantener city existente bajo el estado y dejar zip en blanco
-              zip_str = nil
+              # Preferir derivación por ZIP si el estado es 'Otro' (confianza baja)
+              if zr && state&.name.to_s.downcase == "otro"
+                city = zr.city
+                state = city.state
+                zip_str = normalize_zip_code(zr.code)
+              else
+                zip_str = nil
+              end
             end
           end
         else
@@ -278,8 +299,15 @@ class Facebook::LeadProcessor
               city = zr.city
               zip_str = normalize_zip_code(zr.code)
             else
-              city = ensure_other_city(state)
-              zip_str = nil
+              # Si el estado es 'Otro' pero el ZIP es válido, derivar todo por ZIP
+              if zr
+                city = zr.city
+                state = city.state if state&.name.to_s.downcase == "otro"
+                zip_str = normalize_zip_code(zr.code)
+              else
+                city = ensure_other_city(state)
+                zip_str = nil
+              end
             end
           else
             city = ensure_other_city(state)
