@@ -1,6 +1,7 @@
 class State < ApplicationRecord
   has_many :cities, dependent: :destroy
   has_many :clients, dependent: :nullify
+  has_many :contact_lists, dependent: :nullify
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
   validates :abbreviation, presence: true, uniqueness: { case_sensitive: false }

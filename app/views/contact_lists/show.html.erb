@@ -1,0 +1,52 @@
+<div class="p-4 sm:p-8">
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+    <h1 class="font-poppins text-2xl font-bold text-rojo-carmesi">Detalle de Contacto</h1>
+    <div class="flex items-center gap-2">
+      <%= link_to "Editar", edit_contact_list_path(@contact_list), class: "px-3 py-1 text-sm rounded-md bg-yellow-500 text-white hover:bg-yellow-600" %>
+      <%= link_to "Volver", contact_lists_path, class: "text-gray-600 font-poppins hover:text-gray-800" %>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="font-poppins text-lg font-semibold text-negro-onix"><%= @contact_list.name %></p>
+        <div class="flex items-center gap-2 mt-1">
+          <p class="font-montserrat text-sm text-gray-700">
+            <%= @contact_list.phone.presence || content_tag(:span, "Sin teléfono", class: "italic text-gray-400") %>
+          </p>
+          <% if @contact_list.state.present? %>
+            <span class="px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">
+              <%= @contact_list.state.display_name_with_abbreviation %>
+            </span>
+          <% end %>
+        </div>
+      </div>
+
+      <% if @contact_list.phone.present? %>
+        <div data-controller="call"
+             data-call-client-name-value="<%= @contact_list.name %>"
+             data-call-to-number-value="<%= @contact_list.phone %>"
+             data-call-entity-type-value="contact_list"
+             data-call-entity-id-value="<%= @contact_list.id %>"
+             data-call-prepare-path-value="/api/voice/contact_list/prepare">
+          <button data-call-target="button" data-action="click->call#start" class="p-2 rounded-md bg-green-500 hover:bg-green-600 text-white">
+            Llamar
+          </button>
+          <span data-call-target="status" class="ml-2 text-xs font-poppins text-gray-600"></span>
+          <div data-call-target="selection" class="hidden"></div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <%= button_to contact_list_path(@contact_list), method: :delete,
+          form: { data: { turbo_confirm: "¿Seguro que deseas eliminar este contacto?" } },
+          class: "px-3 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600" do %>
+      Eliminar contacto
+    <% end %>
+  </div>
+</div>
+
+<%= render 'shared/call_ui_frame' %>

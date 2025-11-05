@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_03_180000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_04_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -77,6 +77,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_180000) do
     t.index ["updated_status_at"], name: "index_clients_on_updated_status_at"
     t.index ["zip_code"], name: "index_clients_on_zip_code"
     t.index ["zip_code"], name: "index_clients_on_zip_code_trgm", opclass: :gin_trgm_ops, using: :gin
+  end
+
+  create_table "contact_lists", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "phone", null: false
+    t.bigint "state_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_contact_lists_on_name"
+    t.index ["phone"], name: "index_contact_lists_on_phone"
+    t.index ["state_id"], name: "index_contact_lists_on_state_id"
   end
 
   create_table "facebook_integrations", force: :cascade do |t|
@@ -213,6 +224,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_180000) do
   add_foreign_key "clients", "sellers", column: "prospecting_seller_id"
   add_foreign_key "clients", "states"
   add_foreign_key "clients", "users", column: "updated_by_id"
+  add_foreign_key "contact_lists", "states"
   add_foreign_key "google_integrations", "users"
   add_foreign_key "notes", "clients"
   add_foreign_key "notes", "users", column: "created_by_id"

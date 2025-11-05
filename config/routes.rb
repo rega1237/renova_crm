@@ -43,6 +43,9 @@ Rails.application.routes.draw do
     end
   end
 
+  # --- Rutas de Contact Lists ---
+  resources :contact_lists
+
   # --- Ruta para Flujo de Ventas ---
   get "sales_flow", to: "sales_flow#index"
   get "sales_flow/load_more", to: "sales_flow#load_more"
@@ -74,6 +77,8 @@ Rails.application.routes.draw do
     resources :calls, only: [ :create ]
     # WebRTC: preparar llamada (selección de número de origen) sin iniciar llamada server-side
     post "voice/prepare", to: "voice_calls#prepare"
+    # WebRTC: preparar llamada para ContactList
+    post "voice/contact_list/prepare", to: "contact_list_voice_calls#prepare"
 
     # WebRTC: emisión de token para Twilio Voice SDK en el navegador
     namespace :twilio do

@@ -3,7 +3,9 @@ import { Controller } from "@hotwired/stimulus"
 // Handles click-to-call flow with Twilio via API
 export default class extends Controller {
   static targets = ["button", "status", "selection"]
-  static values = { clientId: Number, toNumber: String, clientName: String }
+  // Compatibilidad: clientId/clientName siguen funcionando para clientes.
+  // Generalización: entityType, entityId y preparePath permiten usar este controlador con otros modelos.
+  static values = { clientId: Number, toNumber: String, clientName: String, entityType: String, entityId: Number, preparePath: String }
 
   csrfToken() {
     const el = document.querySelector('meta[name="csrf-token"]')
@@ -29,7 +31,8 @@ export default class extends Controller {
     this.setStatus("Preparando llamada…", "text-yellow-700")
 
     try {
-      const r = await fetch("/api/voice/prepare", {
+      const endpoint = this.preparePathValue || "/api/voice/prepare"
+      const r = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,10 +40,7 @@ export default class extends Controller {
           "X-CSRF-Token": this.csrfToken()
         },
         credentials: "same-origin",
-        body: JSON.stringify({
-          client_id: this.clientIdValue,
-          to_number: this.toNumberValue
-        })
+        body: JSON.stringify(this.buildPreparePayload())
       })
       const { ok, data, status, isJson } = await this.parseResponse(r)
       if (!ok) {
@@ -62,7 +62,7 @@ export default class extends Controller {
       await this.connectViaWebrtc({
         from: data.selected_number,
         to: data.to_number || this.toNumberValue,
-        clientId: this.clientIdValue
+        clientId: this.currentEntityId()
       })
     } catch (err) {
       console.error(err)
@@ -78,7 +78,8 @@ export default class extends Controller {
     this.setLoading(btn, true)
     this.setStatus("Preparando…", "text-yellow-700")
     try {
-      const r = await fetch("/api/voice/prepare", {
+      const endpoint = this.preparePathValue || "/api/voice/prepare"
+      const r = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,11 +87,7 @@ export default class extends Controller {
           "X-CSRF-Token": this.csrfToken()
         },
         credentials: "same-origin",
-        body: JSON.stringify({
-          client_id: this.clientIdValue,
-          to_number: this.toNumberValue,
-          from_number: fromNumber
-        })
+        body: JSON.stringify(this.buildPreparePayload(fromNumber))
       })
       const { ok, data, status, isJson } = await this.parseResponse(r)
       if (!ok) {
@@ -107,7 +104,7 @@ export default class extends Controller {
         await this.connectViaWebrtc({
           from: data.selected_number,
           to: data.to_number || this.toNumberValue,
-          clientId: this.clientIdValue
+          clientId: this.currentEntityId()
         })
       } else {
         this.setStatus((isJson && data && data.error) ? data.error : `Error (${status})`, "text-red-700")
@@ -118,6 +115,31 @@ export default class extends Controller {
     } finally {
       this.setLoading(btn, false)
     }
+  }
+
+  // Construye el payload para /api/.../prepare según la entidad
+  buildPreparePayload(fromNumber = null) {
+    const payload = {
+      to_number: this.toNumberValue
+    }
+
+    // Enviar la llave correcta según el tipo de entidad
+    const type = (this.entityTypeValue || "client").toString()
+    const id = this.currentEntityId()
+    if (type === "contact_list") {
+      payload.contact_list_id = id
+    } else {
+      // Compatibilidad con clientes
+      payload.client_id = id || this.clientIdValue
+    }
+
+    if (fromNumber) payload.from_number = fromNumber
+    return payload
+  }
+
+  // Obtiene el ID de la entidad actual, ya sea entityId o clientId (fallback)
+  currentEntityId() {
+    return this.entityIdValue || this.clientIdValue || null
   }
 
   renderSelection(alternatives, clientState = null) {

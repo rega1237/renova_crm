@@ -1,0 +1,84 @@
+<div class="p-4 sm:p-8">
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+    <h1 class="font-poppins text-3xl font-bold text-rojo-carmesi">Contact List</h1>
+    <%= link_to "Nuevo Contacto", new_contact_list_path, class: "bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+
+  <div class="mb-8">
+    <%= form_with url: contact_lists_path, method: :get, class: "flex flex-col gap-4 bg-white p-4 rounded-xl shadow-md" do |form| %>
+      <div class="flex flex-col lg:flex-row items-center gap-4">
+        <div class="w-full lg:w-80">
+          <%= text_field_tag :query, params[:query], class: "mt-1 block w-full border-2 border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring-2 focus:ring-rojo-carmesi font-montserrat", placeholder: "Buscar por nombre o teléfono..." %>
+        </div>
+        <div class="w-full lg:w-auto">
+          <%= select_tag :state_id,
+            options_from_collection_for_select(@states_for_filter || [], :id, :display_name_with_abbreviation, params[:state_id]),
+            include_blank: 'Todos los Estados',
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-2 w-full">
+        <%= form.submit "Filtrar", class: "bg-negro-onix text-white font-poppins font-semibold py-2 px-4 rounded-lg cursor-pointer hover:opacity-90 transition-opacity" %>
+        <%= link_to "Limpiar", contact_lists_path, class: "text-gray-500 font-poppins font-medium py-2 px-4 hover:text-gray-700 transition-colors whitespace-nowrap" %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md">
+    <ul class="divide-y divide-gray-200">
+      <% if @contact_lists.any? %>
+        <% @contact_lists.each do |contact| %>
+          <li id="contact_list_<%= contact.id %>" class="p-4 flex items-center justify-between hover:bg-humo transition-colors duration-200">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-rojo-carmesi rounded-full flex items-center justify-center">
+                <span class="text-xl font-poppins font-bold text-white"><%= contact.name.first.upcase %></span>
+              </div>
+              <div>
+                <p class="font-poppins font-semibold text-negro-onix"><%= contact.name %></p>
+                <div class="flex items-center gap-2">
+                  <p class="font-montserrat text-sm text-gray-500"><%= contact.phone %></p>
+                  <% if contact.state.present? %>
+                    <span class="px-2 py-1 text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-600 font-montserrat">
+                      <%= contact.state.abbreviation %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <%= link_to "Ver", contact_list_path(contact), class: "px-3 py-1 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600" %>
+              <%= link_to "Editar", edit_contact_list_path(contact), class: "px-3 py-1 text-sm rounded-md bg-yellow-500 text-white hover:bg-yellow-600" %>
+              <% if contact.phone.present? %>
+                <div data-controller="call"
+                     data-call-client-name-value="<%= contact.name %>"
+                     data-call-to-number-value="<%= contact.phone %>"
+                     data-call-entity-type-value="contact_list"
+                     data-call-entity-id-value="<%= contact.id %>"
+                     data-call-prepare-path-value="/api/voice/contact_list/prepare">
+                  <button data-call-target="button" data-action="click->call#start"
+                          class="px-3 py-1 text-sm rounded-md bg-green-500 text-white hover:bg-green-600">
+                    Llamar
+                  </button>
+                  <span data-call-target="status" class="ml-2 text-xs font-poppins text-gray-600"></span>
+                  <div data-call-target="selection" class="hidden"></div>
+                </div>
+              <% end %>
+              <%= button_to contact_list_path(contact), method: :delete,
+                    form: { data: { turbo_confirm: "¿Seguro que deseas eliminar este contacto?" } },
+                    class: "px-3 py-1 text-sm rounded-md bg-red-500 text-white hover:bg-red-600" do %>
+                Eliminar
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      <% else %>
+        <li class="p-8 text-center font-montserrat text-gray-500">No se encontraron contactos.</li>
+      <% end %>
+    </ul>
+  </div>
+</div>
+
+<%= turbo_frame_tag "slideover" %>
+
+<%= render 'shared/call_ui_frame' %>

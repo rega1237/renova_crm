@@ -76,6 +76,23 @@
             <% end %>
           </div>
 
+          <!-- Contact List (solo admin) -->
+          <% if current_user&.admin? %>
+          <div class="group relative">
+            <%= link_to contact_lists_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
+              <!-- Contacts Icon -->
+              <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A4 4 0 018 17h8a4 4 0 013.879 4.804M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <!-- Tooltip -->
+              <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                Contact List
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+              </div>
+            <% end %>
+          </div>
+          <% end %>
+
           <!-- Flujo de ventas -->
           <div class="group relative">
             <%= link_to sales_flow_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
