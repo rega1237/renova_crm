@@ -7,7 +7,7 @@
   <div class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl flex flex-col"
        data-slideover-target="panel"
        data-action="click->slideover#preventClose"
-       data-controller="toggle">
+    data-controller="toggle">
     <div class="p-6 bg-rojo-carmesi">
       <div class="flex items-start justify-between">
         <h2 class="text-lg font-poppins font-medium text-white">
@@ -30,14 +30,12 @@
             <span data-call-target="status" class="ml-2 text-xs font-poppins text-gray-600"></span>
             <div data-call-target="selection" class="hidden"></div>
           </div>
-
           <!-- Botón Agendar Cita -->
           <button type="button" data-action="click->toggle#toggle" class="p-2 rounded-md bg-purple-500 hover:bg-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" title="Agendar Cita">
             <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
           </button>
-
           <!-- Icono de libreta/editar  -->
           <%= link_to edit_client_path(client), 
           class: "p-2 rounded-md bg-blue-500 hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300",
@@ -78,8 +76,8 @@
           <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Nombre</h3>
           <button type="button" 
                   data-action="click->client-inline-edit#toggleEdit"
-                  data-field="name"
-                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            data-field="name"
+            class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
             Editar
           </button>
         </div>
@@ -90,15 +88,14 @@
           <%= render 'field_edit_form', client: client, field: 'name' %>
         </div>
       </div>
-      
       <!-- Teléfono -->
       <div>
         <div class="flex items-center justify-between">
           <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Teléfono</h3>
           <button type="button" 
                   data-action="click->client-inline-edit#toggleEdit"
-                  data-field="phone"
-                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            data-field="phone"
+            class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
             Editar
           </button>
         </div>
@@ -115,15 +112,14 @@
           <%= render 'field_edit_form', client: client, field: 'phone' %>
         </div>
       </div>
-      
       <!-- Email -->
       <div>
         <div class="flex items-center justify-between">
           <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Email</h3>
           <button type="button" 
                   data-action="click->client-inline-edit#toggleEdit"
-                  data-field="email"
-                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            data-field="email"
+            class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
             Editar
           </button>
         </div>
@@ -140,15 +136,14 @@
           <%= render 'field_edit_form', client: client, field: 'email' %>
         </div>
       </div>
-      
       <!-- Dirección -->
       <div>
         <div class="flex items-center justify-between">
           <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Dirección</h3>
           <button type="button" 
                   data-action="click->client-inline-edit#toggleEdit"
-                  data-field="address"
-                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+            data-field="address"
+            class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
             Editar
           </button>
         </div>
@@ -165,42 +160,16 @@
           <%= render 'field_edit_form', client: client, field: 'address' %>
         </div>
       </div>
-      
-      <!-- Código Postal y Estado -->
+      <!-- Estado y ciudad -->
       <div class="grid grid-cols-2 gap-4">
-        <!-- Código Postal -->
-        <div>
-          <div class="flex items-center justify-between">
-            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Código Postal</h3>
-            <button type="button" 
-                    data-action="click->client-inline-edit#toggleEdit"
-                    data-field="zip_code"
-                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
-              Editar
-            </button>
-          </div>
-          <div id="client_zip_code_display" data-client-inline-edit-target="display" data-field="zip_code">
-            <p class="font-montserrat text-lg text-negro-onix mt-1">
-              <% if client.zip_code.present? %>
-                <%= client.zip_code %>
-              <% else %>
-                <span class="text-gray-400 italic">No especificado</span>
-              <% end %>
-            </p>
-          </div>
-          <div data-client-inline-edit-target="editForm" data-field="zip_code" class="hidden mt-1">
-            <%= render 'field_edit_form', client: client, field: 'zip_code' %>
-          </div>
-        </div>
-        
         <!-- Estado -->
         <div>
           <div class="flex items-center justify-between">
             <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Estado</h3>
             <button type="button" 
                     data-action="click->client-inline-edit#toggleEdit"
-                    data-field="state_id"
-                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              data-field="state_id"
+              class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
               Editar
             </button>
           </div>
@@ -217,33 +186,55 @@
             <%= render 'field_edit_form', client: client, field: 'state_id' %>
           </div>
         </div>
+        <!-- Ciudad -->
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Ciudad</h3>
+            <button type="button" 
+                  data-action="click->client-inline-edit#toggleEdit"
+              data-field="city_id"
+              class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              Editar
+            </button>
+          </div>
+          <div id="client_city_id_display" data-client-inline-edit-target="display" data-field="city_id">
+            <p class="font-montserrat text-lg text-negro-onix mt-1">
+              <% if client.city.present? %>
+                <%= client.city.name %>
+              <% else %>
+                <span class="text-gray-400 italic">No asignado</span>
+              <% end %>
+            </p>
+          </div>
+          <div data-client-inline-edit-target="editForm" data-field="city_id" class="hidden mt-1">
+            <%= render 'field_edit_form', client: client, field: 'city_id' %>
+          </div>
+        </div>
       </div>
-      
-      <!-- Ciudad -->
+      <!-- Código Postal -->
       <div>
         <div class="flex items-center justify-between">
-          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Ciudad</h3>
+          <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Código Postal</h3>
           <button type="button" 
-                  data-action="click->client-inline-edit#toggleEdit"
-                  data-field="city_id"
-                  class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+                    data-action="click->client-inline-edit#toggleEdit"
+            data-field="zip_code"
+            class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
             Editar
           </button>
         </div>
-        <div id="client_city_id_display" data-client-inline-edit-target="display" data-field="city_id">
+        <div id="client_zip_code_display" data-client-inline-edit-target="display" data-field="zip_code">
           <p class="font-montserrat text-lg text-negro-onix mt-1">
-            <% if client.city.present? %>
-              <%= client.city.name %>
+            <% if client.zip_code.present? %>
+              <%= client.zip_code %>
             <% else %>
-              <span class="text-gray-400 italic">No asignado</span>
+              <span class="text-gray-400 italic">No especificado</span>
             <% end %>
           </p>
         </div>
-        <div data-client-inline-edit-target="editForm" data-field="city_id" class="hidden mt-1">
-          <%= render 'field_edit_form', client: client, field: 'city_id' %>
+        <div data-client-inline-edit-target="editForm" data-field="zip_code" class="hidden mt-1">
+          <%= render 'field_edit_form', client: client, field: 'zip_code' %>
         </div>
       </div>
-
       <!-- Estado del Cliente y Fuente -->
       <div class="grid grid-cols-2 gap-4">
         <!-- Estado del Cliente -->
@@ -252,8 +243,8 @@
             <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Estado del Cliente</h3>
             <button type="button" 
                     data-action="click->client-inline-edit#toggleEdit"
-                    data-field="status"
-                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              data-field="status"
+              class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
               Editar
             </button>
           </div>
@@ -288,15 +279,14 @@
             <%= render 'field_edit_form', client: client, field: 'status' %>
           </div>
         </div>
-        
         <!-- Fuente -->
         <div>
           <div class="flex items-center justify-between">
             <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Fuente</h3>
             <button type="button" 
                     data-action="click->client-inline-edit#toggleEdit"
-                    data-field="source"
-                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+              data-field="source"
+              class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
               Editar
             </button>
           </div>
@@ -309,26 +299,25 @@
             <%= render 'field_edit_form', client: client, field: 'source' %>
           </div>
         </div>
-
         <!-- Motivo (solo cuando el estado es 'no_cerro') -->
         <% if client.status == 'no_cerro' %>
-        <div>
-          <div class="flex items-center justify-between">
-            <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Motivo</h3>
-            <button type="button"
+          <div>
+            <div class="flex items-center justify-between">
+              <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Motivo</h3>
+              <button type="button"
                     data-action="click->client-inline-edit#toggleEdit"
-                    data-field="reasons"
-                    class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
-              Editar
-            </button>
+                data-field="reasons"
+                class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+                Editar
+              </button>
+            </div>
+            <div id="client_reasons_display" data-client-inline-edit-target="display" data-field="reasons">
+              <%= render 'field_display', client: client, field: 'reasons' %>
+            </div>
+            <div data-client-inline-edit-target="editForm" data-field="reasons" class="hidden mt-1">
+              <%= render 'field_edit_form', client: client, field: 'reasons' %>
+            </div>
           </div>
-          <div id="client_reasons_display" data-client-inline-edit-target="display" data-field="reasons">
-            <%= render 'field_display', client: client, field: 'reasons' %>
-          </div>
-          <div data-client-inline-edit-target="editForm" data-field="reasons" class="hidden mt-1">
-            <%= render 'field_edit_form', client: client, field: 'reasons' %>
-          </div>
-        </div>
         <% end %>
       </div>
       <!-- Vendedor que generó prospecto y Vendedor asignado -->
@@ -339,8 +328,8 @@
               <h3 class="font-poppins text-sm font-semibold text-gray-500 uppercase">Vendedor que generó prospecto</h3>
               <button type="button" 
                       data-action="click->client-inline-edit#toggleEdit"
-                      data-field="prospecting_seller_id"
-                      class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
+                data-field="prospecting_seller_id"
+                class="text-xs text-rojo-carmesi hover:text-red-700 font-medium">
                 Editar
               </button>
             </div>
@@ -358,15 +347,12 @@
             </div>
           </div>
         <% end %>
-        
         <!-- Vendedor asignado -->
         <%= render 'assigned_seller_inline', client: client %>
       </div>
-
       <!-- Contenedor para el formulario de citas -->
       <div class="pt-4 border-t border-gray-200">
         <% active_appointment = client.appointments.find_by(status: 'scheduled') %>
-
         <div id="appointment-details-section">
           <% if active_appointment %>
             <div class="mb-2">
@@ -391,13 +377,11 @@
             </div>
           <% end %>
         </div>
-
         <div id="appointment-form-container" data-toggle-target="content" class="hidden">
           <%# Instanciamos un appointment nuevo para el formulario %>
           <%= render 'appointments/form', client: client, appointment: (active_appointment || client.appointments.new(seller_id: client.assigned_seller_id, address: client.address)) %>
         </div>
       </div>
-
       <!-- Fechas de creación y actualización -->
       <div class="pt-4 border-t border-gray-200">
         <div class="grid grid-cols-1 gap-3 text-sm">
@@ -469,16 +453,12 @@
         </div>
       </div>
       <div class="flex-shrink-0 px-4 py-4 flex justify-end items-center space-x-4 border-t">
-        <%= link_to "Editar", edit_client_path(client), class: "font-poppins text-negro-onix hover:text-rojo-carmesi transition-colors" %>
         <% if current_user&.admin? %>
           <%= button_to "Eliminar", client_path(client),
             method: :delete,
             data: { turbo_confirm: "¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer." },
             class: "bg-red-600 text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors" %>
         <% end %>
-        <button type="button" class="bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity">
-          Llamar
-        </button>
       </div>
     </div>
   </div>
