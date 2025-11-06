@@ -34,8 +34,7 @@ class GoogleCalendarService
       }
     )
 
-    result = calendar_service.insert_event(CALENDAR_ID, event, send_notifications: true)
-    result.id
+    with_token_refresh { calendar_service.insert_event(CALENDAR_ID, event, send_notifications: true) }.id
   end
 
   def update_event(appointment)
@@ -56,12 +55,12 @@ class GoogleCalendarService
       attendees: build_attendees(appointment)
     )
 
-    calendar_service.update_event(CALENDAR_ID, appointment.google_event_id, event, send_notifications: true)
+    with_token_refresh { calendar_service.update_event(CALENDAR_ID, appointment.google_event_id, event, send_notifications: true) }
   end
 
   def delete_event(appointment)
     return unless appointment.google_event_id
-    calendar_service.delete_event(CALENDAR_ID, appointment.google_event_id)
+    with_token_refresh { calendar_service.delete_event(CALENDAR_ID, appointment.google_event_id) }
   end
 
   private
@@ -86,15 +85,26 @@ class GoogleCalendarService
 
     creds.fetch_access_token! if creds.expired?
 
-    # Guardar los tokens actualizados si se refrescaron
-    if creds.access_token != @integration.access_token
-      @integration.update(
-        access_token: creds.access_token,
-        expires_at: creds.expires_at
-      )
+    # Guardar tokens actualizados si se refrescaron o rotaron
+    updates = {}
+    updates[:access_token] = creds.access_token if creds.access_token != @integration.access_token
+    updates[:expires_at]   = creds.expires_at   if creds.expires_at   != @integration.expires_at
+    if creds.refresh_token.present? && creds.refresh_token != @integration.refresh_token
+      updates[:refresh_token] = creds.refresh_token
     end
+    @integration.update(updates) if updates.any?
 
     creds
+  end
+
+  # Reintenta una vez si hay error de autorización, forzando la recarga de credenciales
+  def with_token_refresh
+    yield
+  rescue Google::Apis::AuthorizationError => e
+    Rails.logger.warn "Google authorization error: #{e.message}. Retrying after refreshing credentials."
+    @calendar_service = nil
+    calendar_service # fuerza recálculo y refresco de credenciales
+    yield
   end
 
   def build_attendees(appointment)
