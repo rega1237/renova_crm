@@ -132,11 +132,22 @@ module Twilio
 
       {
         status_callback: callback_url,
-        status_callback_method: "POST",
-        # Especificamos explícitamente los eventos que queremos.
-        # 'completed' es el más importante, ya que se dispara al final.
-        status_callback_event: "completed"
+        # Forzamos POST explícito para evitar defaults y cumplir con proxies intermedios.
+        # Removemos status_callback_event por ahora porque Twilio Console está
+        # advirtiendo (12200) que ese atributo no está permitido en <Dial> y
+        # al parecer ignora el statusCallback cuando se incluye.
+        # Con sólo status_callback, Twilio debe enviar al menos el evento
+        # "completed" con DialCallStatus/DialCallDuration, suficiente para
+        # actualizar answered y duration en nuestro Callback.
+        status_callback_method: "POST"
       }
+    end
+
+    # Buscar el usuario dueño del número Twilio llamado
+    def find_user_by_twilio_number(number)
+      num = number.to_s.strip
+      record = ::Number.find_by(phone_number: num)
+      record&.user
     end
 
     # Construye la URL absoluta para el webhook.
