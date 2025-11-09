@@ -128,14 +128,15 @@ module Twilio
     # Construye URL absoluta del callback de estado, incluyendo metadatos
     def build_status_callback_url(user_id: nil, direction: nil)
       helpers = Rails.application.routes.url_helpers
-      host = Rails.application.routes.default_url_options[:host] || Rails.application.config.action_mailer.default_url_options&.dig(:host)
-      if host.present?
-        return helpers.twilio_voice_status_callback_url(host: host, protocol: "https", user_id: user_id, direction: direction)
-      end
-      # Fallback: usar la URL base del request si no hay host configurado
+      # Preferir la URL base del request que Twilio usó para llamarnos
       if request && request.base_url.present?
         path = helpers.twilio_voice_status_callback_path(user_id: user_id, direction: direction)
         return "#{request.base_url}#{path}"
+      end
+      # Fallback: utilizar host configurado (evitar placeholder "example.com")
+      host = Rails.application.routes.default_url_options[:host] || Rails.application.config.action_mailer.default_url_options&.dig(:host)
+      if host.present? && host != "example.com"
+        return helpers.twilio_voice_status_callback_url(host: host, protocol: "https", user_id: user_id, direction: direction)
       end
       nil
     rescue StandardError => e
