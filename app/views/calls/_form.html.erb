@@ -1,0 +1,46 @@
+<%= form_with(model: call, class: "space-y-6") do |form| %>
+  <% if call.errors.any? %>
+    <div id="error_explanation" class="bg-red-50 text-red-700 px-4 py-3 rounded-lg" role="alert">
+      <strong class="font-bold font-poppins"><%= pluralize(call.errors.count, "Error") %> impidió guardar la llamada:</strong>
+      <ul class="list-disc list-inside mt-2 font-montserrat">
+        <% call.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <%= form.label :twilio_call_id, "Twilio Call SID", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.text_field :twilio_call_id, required: true, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+    <div>
+      <%= form.label :user_id, "Usuario", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.collection_select :user_id, User.order(:name), :id, :name,
+            { include_blank: "Seleccionar usuario..." },
+            { class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" } %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <%= form.label :call_date, "Fecha de llamada", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.date_field :call_date, required: true, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+    <div>
+      <%= form.label :call_time, "Hora de llamada", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+      <%= form.time_field :call_time, required: true, step: 1, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.label :duration, "Duración (segundos)", class: "block font-poppins text-sm font-medium text-negro-onix" %>
+    <%= form.number_field :duration, min: 0, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat" %>
+  </div>
+
+  <div class="flex items-center justify-end space-x-4 pt-4">
+    <%= link_to "Cancelar", calls_path, class: "font-poppins text-negro-onix" %>
+    <%= form.submit button_text, class: "cursor-pointer bg-rojo-carmesi text-white font-poppins font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity" %>
+  </div>
+<% end %>

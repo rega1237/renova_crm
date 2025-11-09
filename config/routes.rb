@@ -55,6 +55,8 @@ Rails.application.routes.draw do
   get "sales_flow/counts", to: "sales_flow#counts"
   get "calendar", to: "calendar#index"
   get "appointments_list", to: "appointments_list#index"
+  # --- Llamadas ---
+  resources :calls, only: [:index, :show, :new, :create, :edit, :update]
 
   # --- Ruta para Actualizar Status via Drag & Drop ---
   patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"
@@ -103,5 +105,7 @@ Rails.application.routes.draw do
   namespace :twilio do
     get "voice/connect", to: "voice#connect"
     post "voice/connect", to: "voice#connect"
+    # Webhook de estado (duración/completado)
+    post "voice/status_callback", to: "callbacks#voice_status", as: :voice_status_callback
   end
 end

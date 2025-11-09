@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_04_000000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_09_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -32,6 +32,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_04_000000) do
     t.index ["created_by_id"], name: "index_appointments_on_created_by_id"
     t.index ["google_event_id"], name: "index_appointments_on_google_event_id"
     t.index ["seller_id"], name: "index_appointments_on_seller_id"
+  end
+
+  create_table "calls", force: :cascade do |t|
+    t.string "twilio_call_id", null: false
+    t.date "call_date", null: false
+    t.time "call_time", null: false
+    t.integer "duration"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "direction"
+    t.boolean "answered"
+    t.index ["answered"], name: "index_calls_on_answered"
+    t.index ["call_date"], name: "index_calls_on_call_date"
+    t.index ["direction"], name: "index_calls_on_direction"
+    t.index ["twilio_call_id"], name: "index_calls_on_twilio_call_id", unique: true
+    t.index ["user_id"], name: "index_calls_on_user_id"
   end
 
   create_table "cities", force: :cascade do |t|
@@ -218,6 +235,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_04_000000) do
   add_foreign_key "appointments", "clients"
   add_foreign_key "appointments", "sellers"
   add_foreign_key "appointments", "users", column: "created_by_id"
+  add_foreign_key "calls", "users"
   add_foreign_key "cities", "states"
   add_foreign_key "clients", "cities"
   add_foreign_key "clients", "sellers", column: "assigned_seller_id"

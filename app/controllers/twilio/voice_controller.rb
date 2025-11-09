@@ -11,30 +11,73 @@ module Twilio
     def connect
       # Log de diagnóstico: parámetros recibidos por el webhook
       Rails.logger.info("Twilio Voice connect params: #{params.to_unsafe_h.inspect}")
-      # Este endpoint es llamado por Twilio cuando el navegador inicia una llamada
-      # mediante el Voice SDK (outgoing_application_sid). Los parámetros incluidos
-      # en Device.connect se reciben aquí (por ejemplo: To y From).
 
-      to_number = params[:To] || params[:to]
-      # Priorizar el caller_id numérico (E.164) enviado desde el cliente.
-      # Twilio incluye From/Caller="client:<identity>", que NO es válido como callerId para <Dial> a PSTN.
-      from_number = params[:caller_id] || params[:From] || params[:from]
-
-      unless to_number.present? && from_number.present?
-        Rails.logger.warn("Parámetros incompletos en /twilio/voice/connect: To=#{to_number.inspect}, From=#{from_number.inspect}")
-        return render xml: empty_twiml_with_say("Parámetros incompletos"), status: :ok
-      end
-
-      # Validar callerId en formato E.164 (+E.164) requerido por Twilio
-      unless from_number.present? && from_number.to_s.match?(/\A\+\d{8,15}\z/)
-        Rails.logger.warn("callerId inválido en /twilio/voice/connect: caller_id=#{from_number.inspect}")
-        return render xml: empty_twiml_with_say("callerId inválido para la llamada"), status: :ok
-      end
+      # Detectar flujo saliente (SDK) vs entrante.
+      caller_id_param = params[:caller_id]
+      to_param = params[:To] || params[:to]
+      called_param = params[:Called] || params[:called]
+      from_param = params[:From] || params[:from]
 
       response = ::Twilio::TwiML::VoiceResponse.new
-      # Evitar mensajes, conectamos directamente al número del cliente.
-      response.dial(caller_id: from_number, answer_on_bridge: true, timeout: 30) do |dial|
-        dial.number(to_number)
+
+      if caller_id_param.present?
+        # ===== Saliente desde navegador (WebRTC) =====
+        to_number = to_param
+        from_number = caller_id_param
+
+        unless to_number.present? && from_number.present?
+          Rails.logger.warn("Parámetros incompletos (saliente) en /twilio/voice/connect: To=#{to_number.inspect}, caller_id=#{from_number.inspect}")
+          return render xml: empty_twiml_with_say("Parámetros incompletos"), status: :ok
+        end
+
+        unless from_number.to_s.match?(/\A\+\d{8,15}\z/)
+          Rails.logger.warn("callerId inválido (saliente) en /twilio/voice/connect: caller_id=#{from_number.inspect}")
+          return render xml: empty_twiml_with_say("callerId inválido para la llamada"), status: :ok
+        end
+
+        callback_url = build_status_callback_url(user_id: params[:user_id], direction: "outbound-dial")
+
+        response.dial(caller_id: from_number, answer_on_bridge: true, timeout: 30,
+                      **status_callback_opts(callback_url)) do |dial|
+          dial.number(to_number)
+        end
+      else
+        # ===== Entrante (llamadas recibidas) =====
+        inbound_twilio_number = to_param || called_param
+        unless inbound_twilio_number.present?
+          Rails.logger.warn("Parámetros incompletos (entrante) en /twilio/voice/connect: Called/To ausente")
+          return render xml: empty_twiml_with_say("Número no disponible"), status: :ok
+        end
+
+        # Determinar el usuario dueño del número Twilio llamado
+        target_user = find_user_by_twilio_number(inbound_twilio_number)
+        unless target_user
+          Rails.logger.warn("No se encontró usuario asociado al número Twilio #{inbound_twilio_number}")
+          return render xml: empty_twiml_with_say("No disponible"), status: :ok
+        end
+
+        identity = target_user.email.presence || "user-#{target_user.id}"
+        callback_url = build_status_callback_url(user_id: target_user.id, direction: "inbound")
+
+        # Enrutar la llamada entrante al cliente (navegador) del usuario destino
+        response.dial(answer_on_bridge: true, timeout: 30, **status_callback_opts(callback_url)) do |dial|
+          dial.client(identity)
+        end
+
+        # Registrar preventivamente el Call usando el CallSid recibido (si disponible)
+        begin
+          sid = params[:CallSid] || params[:call_sid]
+          if sid.present?
+            ::Call.find_or_create_by!(twilio_call_id: sid) do |c|
+              c.call_date = Date.current
+              c.call_time = Time.current
+              c.user_id = target_user.id
+              c.duration = nil
+            end
+          end
+        rescue StandardError => e
+          Rails.logger.error("No se pudo registrar llamada entrante: #{e.class} - #{e.message}")
+        end
       end
 
       render xml: response.to_xml, content_type: "text/xml"
@@ -44,6 +87,34 @@ module Twilio
     end
 
     private
+
+    # Helper para construir opciones de status_callback en <Dial>
+    def status_callback_opts(callback_url)
+      return {} unless callback_url.present?
+      {
+        status_callback: callback_url,
+        status_callback_event: ["initiated", "ringing", "answered", "completed"],
+        status_callback_method: "POST"
+      }
+    end
+
+    # Buscar el usuario dueño del número Twilio llamado
+    def find_user_by_twilio_number(number)
+      num = number.to_s.strip
+      record = ::Number.find_by(phone_number: num)
+      record&.user
+    end
+
+    # Construye URL absoluta del callback de estado, incluyendo metadatos
+    def build_status_callback_url(user_id: nil, direction: nil)
+      helpers = Rails.application.routes.url_helpers
+      host = Rails.application.routes.default_url_options[:host] || Rails.application.config.action_mailer.default_url_options&.dig(:host)
+      return nil unless host.present?
+      helpers.twilio_voice_status_callback_url(host: host, protocol: "https", user_id: user_id, direction: direction)
+    rescue StandardError => e
+      Rails.logger.warn("No se pudo construir status_callback: #{e.class} - #{e.message}")
+      nil
+    end
 
     def empty_twiml_with_say(message)
       ::Twilio::TwiML::VoiceResponse.new do |r|

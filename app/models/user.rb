@@ -2,6 +2,7 @@ class User < ApplicationRecord
   has_secure_password
   has_many :sessions, dependent: :destroy
   has_many :numbers, dependent: :destroy
+  has_many :calls, dependent: :nullify
   has_one :google_integration, dependent: :destroy
 
   # Permite vincular otra cuenta (por ejemplo, el mismo usuario con rol admin y telemarketing)

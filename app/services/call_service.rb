@@ -30,13 +30,33 @@ class CallService
       dial.number(@to_number)
     end
 
+    # Preparar webhook de estado para capturar duración de la llamada al finalizar
+    callback_url = build_status_callback_url
+
     response = twilio.calls.create(
       from: @from_number,
       to: @to_number,
-      twiml: voice_response.to_s
+      twiml: voice_response.to_s,
+      **(callback_url ? { status_callback: callback_url, status_callback_event: ["completed"], status_callback_method: "POST" } : {})
     )
 
     log_note!("Llamada iniciada a #{@to_number} desde #{@from_number}. SID: #{response.sid}. Estado: #{response.status}.")
+
+    # Registrar la llamada en el sistema
+    begin
+      Call.create!(
+        twilio_call_id: response.sid,
+        call_date: Date.current,
+        call_time: Time.current,
+        user: @user,
+        duration: nil
+      )
+    rescue ActiveRecord::RecordNotUnique
+      # Si ya existe el registro (por reintentos), continuar sin error
+      Rails.logger.info("Call record already exists for SID #{response.sid}")
+    rescue StandardError => e
+      Rails.logger.error("Failed to create Call record: #{e.class} - #{e.message}")
+    end
 
     Result.new(success: true, sid: response.sid, status: response.status)
   rescue StandardError => e
@@ -67,5 +87,17 @@ class CallService
     Note.create!(client: @client_record, created_by: @user, text: text)
   rescue StandardError => e
     Rails.logger.error("Failed to record call note: #{e.message}")
+  end
+
+  def build_status_callback_url
+    # Intentar obtener host configurado para construir URL absoluta
+    helpers = Rails.application.routes.url_helpers
+    host = Rails.application.routes.default_url_options[:host] || Rails.application.config.action_mailer.default_url_options&.dig(:host)
+    return nil unless host.present?
+    # Incluye el user_id como query param para vincular si fuera necesario
+    helpers.twilio_voice_status_callback_url(host: host, protocol: "https", user_id: @user.id, direction: "outbound-api")
+  rescue StandardError => e
+    Rails.logger.warn("Unable to build status callback URL: #{e.class} - #{e.message}")
+    nil
   end
 end
