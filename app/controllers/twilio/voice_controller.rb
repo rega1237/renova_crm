@@ -120,8 +120,14 @@ module Twilio
       return {} unless callback_url.present?
       {
         status_callback: callback_url,
-        # Twilio espera la lista separada por espacios en XML; usamos string explícita.
-        status_callback_event: "initiated ringing answered completed"
+        # Forzamos POST explícito para evitar defaults y cumplir con proxies intermedios.
+        # Removemos status_callback_event por ahora porque Twilio Console está
+        # advirtiendo (12200) que ese atributo no está permitido en <Dial> y
+        # al parecer ignora el statusCallback cuando se incluye.
+        # Con sólo status_callback, Twilio debe enviar al menos el evento
+        # "completed" con DialCallStatus/DialCallDuration, suficiente para
+        # actualizar answered y duration en nuestro Callback.
+        status_callback_method: "POST"
       }
     end
 
