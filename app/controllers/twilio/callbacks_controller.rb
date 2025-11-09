@@ -45,6 +45,11 @@ module Twilio
         updates[:direction] = direction if direction.present?
         updates[:answered] = answered unless answered.nil?
         updates[:status] = (dial_status || call_status) if (dial_status || call_status)
+        # Rellenar user_id si el registro aún no lo tiene y podemos inferirlo
+        if call.user_id.blank?
+          inferred_user_id = resolve_user_id_from_callback
+          updates[:user_id] = inferred_user_id if inferred_user_id.present?
+        end
         # Si no teníamos fecha/hora (registros creados por otros flujos), setearlas
         updates[:call_date] ||= Date.current if call.call_date.blank?
         updates[:call_time] ||= Time.current if call.call_time.blank?
@@ -58,7 +63,7 @@ module Twilio
       else
         # Si no existe, intentar crearlo con información mínima
         # Podemos recibir user_id en la query string del status_callback
-        user_id = params[:user_id]
+        user_id = resolve_user_id_from_callback
         begin
           ::Call.create!(
             twilio_call_id: sid,
@@ -102,6 +107,32 @@ module Twilio
         Rails.logger.error("Error verificando firma de Twilio: #{e.class} - #{e.message}")
         true
       end
+    end
+
+    # Intenta deducir user_id a partir de los parámetros del callback
+    def resolve_user_id_from_callback
+      # 1) user_id explícito en la URL de callback
+      explicit = params[:user_id]
+      return explicit if explicit.present?
+
+      # 2) Desde el "From" cuando es un número Twilio en E.164
+      from = params[:From].to_s
+      if from.start_with?("+")
+        num = ::Number.find_by(phone_number: from)
+        return num.user_id if num
+      end
+
+      # 3) Desde la identidad de WebRTC (client:email)
+      identity = params[:Caller].presence || params[:From].presence
+      if identity.to_s.start_with?("client:")
+        email = identity.to_s.sub("client:", "")
+        user = ::User.find_by(email: email)
+        return user.id if user
+      end
+
+      nil
+    rescue StandardError
+      nil
     end
   end
 end

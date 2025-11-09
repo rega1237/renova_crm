@@ -35,11 +35,29 @@ module Twilio
           return render xml: empty_twiml_with_say("callerId inválido para la llamada"), status: :ok
         end
 
-        callback_url = build_status_callback_url(user_id: params[:user_id], direction: "outbound-dial")
+        # Intentar obtener el user_id desde los parámetros o desde la identidad del Caller (client:email)
+        user_id_param = params[:user_id].presence || find_user_id_from_identity(params[:Caller] || params[:From])
+        callback_url = build_status_callback_url(user_id: user_id_param, direction: "outbound-dial")
 
         response.dial(caller_id: from_number, answer_on_bridge: true, timeout: 30,
                       **status_callback_opts(callback_url)) do |dial|
           dial.number(to_number)
+        end
+
+        # Registrar preventivamente el Call usando el CallSid (si disponible) para que aparezca en el listado
+        begin
+          sid = params[:CallSid] || params[:call_sid]
+          if sid.present?
+            ::Call.find_or_create_by!(twilio_call_id: sid) do |c|
+              c.call_date = Date.current
+              c.call_time = Time.current
+              c.user_id = user_id_param
+              c.direction = "outbound-dial"
+              c.duration = nil
+            end
+          end
+        rescue StandardError => e
+          Rails.logger.error("No se pudo registrar llamada saliente: #{e.class} - #{e.message}")
         end
       else
         # ===== Entrante (llamadas recibidas) =====
@@ -109,8 +127,15 @@ module Twilio
     def build_status_callback_url(user_id: nil, direction: nil)
       helpers = Rails.application.routes.url_helpers
       host = Rails.application.routes.default_url_options[:host] || Rails.application.config.action_mailer.default_url_options&.dig(:host)
-      return nil unless host.present?
-      helpers.twilio_voice_status_callback_url(host: host, protocol: "https", user_id: user_id, direction: direction)
+      if host.present?
+        return helpers.twilio_voice_status_callback_url(host: host, protocol: "https", user_id: user_id, direction: direction)
+      end
+      # Fallback: usar la URL base del request si no hay host configurado
+      if request && request.base_url.present?
+        path = helpers.twilio_voice_status_callback_path(user_id: user_id, direction: direction)
+        return "#{request.base_url}#{path}"
+      end
+      nil
     rescue StandardError => e
       Rails.logger.warn("No se pudo construir status_callback: #{e.class} - #{e.message}")
       nil
@@ -146,6 +171,20 @@ module Twilio
         # En caso de error inesperado, no bloquear la llamada pero registrar.
         true
       end
+    end
+
+    # Extraer user_id desde una identidad de Twilio Voice SDK (client:email)
+    def find_user_id_from_identity(identity)
+      return nil unless identity.present?
+      str = identity.to_s
+      email = if (m = str.match(/\Aclient:(.+)\z/))
+                m[1]
+              else
+                str
+              end
+      ::User.find_by(email: email)&.id
+    rescue StandardError
+      nil
     end
   end
 end
