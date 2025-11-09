@@ -107,5 +107,7 @@ Rails.application.routes.draw do
     post "voice/connect", to: "voice#connect"
     # Webhook de estado (duración/completado)
     post "voice/status_callback", to: "callbacks#voice_status", as: :voice_status_callback
+    # Captura también GET por si Twilio (o proxies) lo invocan así por configuración
+    get  "voice/status_callback", to: "callbacks#voice_status"
   end
 end

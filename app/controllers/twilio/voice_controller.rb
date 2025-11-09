@@ -121,8 +121,7 @@ module Twilio
       {
         status_callback: callback_url,
         # Twilio espera la lista separada por espacios en XML; usamos string explícita.
-        status_callback_event: "initiated ringing answered completed",
-        status_callback_method: "POST"
+        status_callback_event: "initiated ringing answered completed"
       }
     end
 
