@@ -12,7 +12,11 @@ module Twilio
     def voice_status
       Rails.logger.info("Twilio Voice status callback params: #{params.to_unsafe_h.inspect}")
 
-      sid = params[:CallSid] || params[:call_sid]
+      # Para <Dial> Twilio envía ambos: CallSid (parent) y DialCallSid (child)
+      # Preferir el parent para actualizar el registro pre-creado y evitar duplicados
+      parent_sid = params[:CallSid] || params[:call_sid]
+      child_sid  = params[:DialCallSid]
+      sid = parent_sid.presence || child_sid
       call_status = params[:CallStatus] || params[:call_status]
       # Para <Dial>, Twilio envía DialCallStatus y DialCallDuration.
       # Para llamadas directas (API), envía CallStatus y CallDuration.
@@ -28,16 +32,22 @@ module Twilio
         answered = dial_duration_param.to_i > 0
       elsif duration_param.present?
         answered = duration_param.to_i > 0
-      elsif dial_status.present?
-        # Si no tenemos duración pero sí estado de <Dial>, inferir con estado
-        answered = (dial_status.to_s == "completed")
+      else
+        # Inferencias sin duración: considerar estados que implican conexión
+        if dial_status.present?
+          # 'answered' o 'completed' en Dial indican que el destinatario contestó
+          answered = %w[answered completed].include?(dial_status.to_s)
+        elsif call_status.present?
+          # En llamadas directas, 'in-progress' o 'completed' implican que fue atendida
+          answered = %w[in-progress completed].include?(call_status.to_s)
+        end
       end
 
       if sid.blank?
         return render json: { error: "Falta CallSid" }, status: :bad_request
       end
 
-      call = ::Call.find_by(twilio_call_id: sid)
+      call = ::Call.find_by(twilio_call_id: parent_sid) || ::Call.find_by(twilio_call_id: child_sid) || ::Call.find_by(twilio_call_id: sid)
       if call
         # Actualizar duración si está disponible
         updates = {}
@@ -66,7 +76,7 @@ module Twilio
         user_id = resolve_user_id_from_callback
         begin
           ::Call.create!(
-            twilio_call_id: sid,
+            twilio_call_id: parent_sid.presence || sid,
             call_date: Date.current,
             call_time: Time.current,
             user_id: user_id,

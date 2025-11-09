@@ -38,6 +38,7 @@ module Twilio
         # Intentar obtener el user_id desde los parámetros o desde la identidad del Caller (client:email)
         user_id_param = params[:user_id].presence || find_user_id_from_identity(params[:Caller] || params[:From])
         callback_url = build_status_callback_url(user_id: user_id_param, direction: "outbound-dial")
+        Rails.logger.info("Dial status_callback URL (outbound-dial): #{callback_url.inspect}")
 
         response.dial(caller_id: from_number, answer_on_bridge: true, timeout: 30,
                       **status_callback_opts(callback_url)) do |dial|
@@ -76,6 +77,7 @@ module Twilio
 
         identity = target_user.email.presence || "user-#{target_user.id}"
         callback_url = build_status_callback_url(user_id: target_user.id, direction: "inbound")
+        Rails.logger.info("Dial status_callback URL (inbound): #{callback_url.inspect}")
 
         # Enrutar la llamada entrante al cliente (navegador) del usuario destino
         response.dial(answer_on_bridge: true, timeout: 30, **status_callback_opts(callback_url)) do |dial|
