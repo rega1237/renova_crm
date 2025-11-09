@@ -100,6 +100,13 @@ module Twilio
         end
       end
 
+      # Log extra: TwiML generado para comprobar que incluye statusCallback en <Dial>
+      begin
+        twiml_xml = response.to_xml
+        Rails.logger.info("Generated TwiML for /twilio/voice/connect (truncated): #{twiml_xml.to_s[0, 500]}...")
+      rescue StandardError => e
+        Rails.logger.warn("Could not serialize TwiML for logging: #{e.class} - #{e.message}")
+      end
       render xml: response.to_xml, content_type: "text/xml"
     rescue StandardError => e
       Rails.logger.error("Twilio Voice connect error: #{e.message}")
@@ -113,7 +120,8 @@ module Twilio
       return {} unless callback_url.present?
       {
         status_callback: callback_url,
-        status_callback_event: ["initiated", "ringing", "answered", "completed"],
+        # Twilio espera la lista separada por espacios en XML; usamos string explícita.
+        status_callback_event: "initiated ringing answered completed",
         status_callback_method: "POST"
       }
     end
