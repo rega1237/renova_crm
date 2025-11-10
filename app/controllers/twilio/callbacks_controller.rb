@@ -56,10 +56,12 @@ module Twilio
 
       validator = ::Twilio::Security::RequestValidator.new(auth_token)
       url = request.original_url
-      params = request.request_parameters
+      # Para POST usamos los parámetros del cuerpo; para GET usamos los de la query
+      params = request.post? ? request.request_parameters : request.query_parameters
       signature = request.headers["X-Twilio-Signature"]
 
       unless validator.validate(url, params, signature)
+        Rails.logger.warn("Twilio signature inválida: url=#{url}, method=#{request.method}, params=#{params.inspect}")
         render xml: "<Response><Say>Solicitud no autorizada.</Say></Response>", status: :forbidden
       end
     end

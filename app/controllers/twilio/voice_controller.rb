@@ -38,8 +38,11 @@ module Twilio
 
       # Construimos la URL del webhook, ahora pasando también el client_id.
       callback_url = build_status_callback_url(client_id: client_id)
+      Rails.logger.info("[Twilio Voice] status callback URL (outbound): #{callback_url}")
+      opts = status_callback_opts(callback_url)
+      Rails.logger.info("[Twilio Voice] Dial options (outbound): #{opts.inspect}")
 
-      response.dial(caller_id: from_number, answer_on_bridge: true, **status_callback_opts(callback_url)) do |dial|
+      response.dial(caller_id: from_number, answer_on_bridge: true, **opts) do |dial|
         dial.number(to_number)
       end
 
@@ -57,8 +60,11 @@ module Twilio
 
       identity = target_user.email.presence || "user-#{target_user.id}"
       callback_url = build_status_callback_url # No hay cliente en llamadas entrantes directas.
+      Rails.logger.info("[Twilio Voice] status callback URL (inbound): #{callback_url}")
+      opts = status_callback_opts(callback_url)
+      Rails.logger.info("[Twilio Voice] Dial options (inbound): #{opts.inspect}")
 
-      response.dial(answer_on_bridge: true, **status_callback_opts(callback_url)) do |dial|
+      response.dial(answer_on_bridge: true, **opts) do |dial|
         dial.client(identity)
       end
 
@@ -87,7 +93,11 @@ module Twilio
       return {} unless callback_url.present?
 
       {
-        status_callback: callback_url
+        status_callback: callback_url,
+        # Forzamos método POST para el callback de estado
+        status_callback_method: "POST",
+        # Solo queremos el evento final para tener duración y estado definitivo
+        status_callback_event: "completed"
       }
     end
 
