@@ -88,7 +88,6 @@ module Twilio
 
       {
         status_callback: callback_url,
-        status_callback_method: "POST",
         status_callback_event: "completed"
       }
     end
