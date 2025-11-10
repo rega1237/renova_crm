@@ -6,13 +6,15 @@
 
     <div class="flex flex-col sm:flex-row gap-3">
       <%= form_with url: calls_path, method: :get, local: true, class: "flex flex-col sm:flex-row gap-3" do |form| %>
-        <div class="flex flex-col">
-          <%= form.label :user_id, "Usuario", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
-          <%= form.select :user_id, 
-                options_from_collection_for_select(@users, 'id', 'name', @user_id), 
-                { include_blank: 'Todos' }, 
-                class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
-        </div>
+        <% if current_user&.admin? %>
+          <div class="flex flex-col">
+            <%= form.label :user_id, "Usuario", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
+            <%= form.select :user_id, 
+                  options_from_collection_for_select(@users, 'id', 'name', @user_id), 
+                  { include_blank: 'Todos' }, 
+                  class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
+          </div>
+        <% end %>
         <div class="flex flex-col">
           <%= form.label :start_date, "Fecha inicio", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
           <%= form.date_field :start_date, value: @start_date, class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>

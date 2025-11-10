@@ -1,16 +1,30 @@
 class CallsController < ApplicationController
   before_action :set_call, only: [:show, :edit, :update]
+  before_action :authorize_call_access, only: [:show, :edit, :update]
 
   PER_PAGE = 20
 
   def index
+    is_admin = current_user&.admin?
+    is_telemarketing = current_user&.telemarketing?
+
     @users = User.order(:name)
-    @user_id = params[:user_id]
+    # Role-based user filter: admins can pick any user; telemarketing is forced to current_user
+    if is_admin
+      @user_id = params[:user_id]
+    else
+      # Log any attempt to view other users' data via params
+      if params[:user_id].present? && params[:user_id].to_i != current_user&.id
+        log_unauthorized_attempt(message: "Intento de filtrar llamadas de otro usuario")
+      end
+      @user_id = current_user&.id
+    end
     @start_date = params[:start_date]
     @end_date = params[:end_date]
     @page = params[:page].to_i
     @page = 1 if @page <= 0
 
+    # Base scope
     calls = Call.all
     calls = calls.by_user(@user_id)
     calls = calls.between_dates(@start_date, @end_date)
@@ -59,6 +73,15 @@ class CallsController < ApplicationController
 
   def set_call
     @call = Call.find(params[:id])
+  end
+
+  # Role-based authorization for accessing individual calls
+  def authorize_call_access
+    return if current_user&.admin?
+    if @call.user_id != current_user&.id
+      log_unauthorized_attempt(message: "Acceso no autorizado a llamada de otro usuario")
+      redirect_to calls_path, alert: "Acceso no autorizado"
+    end
   end
 
   def call_params
