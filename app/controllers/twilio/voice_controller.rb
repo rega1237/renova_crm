@@ -4,22 +4,17 @@ require "twilio-ruby"
 
 module Twilio
   class VoiceController < ActionController::Base
-    # NOTA: Usamos protect_from_forgery con :null_session para APIs, pero
-    # la verificación de firma de Twilio es la protección real aquí.
     protect_from_forgery with: :null_session
 
-    # Verificamos la firma de Twilio para asegurar que las peticiones son legítimas.
-    before_action :verify_twilio_signature, only: %i[connect status]
+    # La verificación de firma ahora solo se necesita para la acción connect en este controlador.
+    before_action :verify_twilio_signature, only: :connect
 
     # Acción llamada por Twilio para obtener el TwiML que define el flujo de la llamada.
     def connect
-      # Log para depuración.
       Rails.logger.info("Twilio Voice connect params: #{params.to_unsafe_h.inspect}")
 
       response = ::Twilio::TwiML::VoiceResponse.new
 
-      # El parámetro `caller_id` nos lo envía nuestro frontend (call_controller.js)
-      # para indicar que es una llamada saliente desde el navegador.
       if params[:caller_id].present?
         handle_outbound_call(response)
       else
@@ -30,45 +25,6 @@ module Twilio
     rescue StandardError => e
       Rails.logger.error("Twilio Voice connect error: #{e.message}\n#{e.backtrace.join("\n")}")
       render xml: empty_twiml_with_say("Error interno en la aplicación."), status: :ok
-    end
-
-    # --- NUEVA ACCIÓN PARA EL WEBHOOK ---
-    # Esta acción recibe la notificación del estado final de la llamada.
-    def status
-      Rails.logger.info("Twilio Voice status callback params: #{params.to_unsafe_h.inspect}")
-
-      # El `CallSid` aquí es el de la llamada "padre" (la que se inició desde el navegador).
-      parent_call_sid = params[:CallSid]
-      call_record = ::Call.find_by(twilio_call_id: parent_call_sid)
-
-      unless call_record
-        Rails.logger.warn("No se encontró registro de llamada para CallSid: #{parent_call_sid}")
-        return head :not_found
-      end
-
-      # Extraemos los datos importantes del webhook.
-      # `DialCallStatus` nos dice el resultado de la llamada al número externo.
-      status = params[:DialCallStatus]
-      duration = params[:DialCallDuration]
-      answered = (status == "completed")
-
-      # También recuperamos el client_id que pasamos en la URL del callback.
-      client_id = params[:client_id].presence
-
-      # Actualizamos nuestro registro en la base de datos.
-      call_record.update!(
-        answered: answered,
-        duration: duration.to_i,
-        status: status,
-        client_id: client_id
-      )
-
-      Rails.logger.info("Llamada #{call_record.id} actualizada: answered=#{answered}, duration=#{duration}, client_id=#{client_id}")
-
-      head :ok
-    rescue StandardError => e
-      Rails.logger.error("Error en status callback de Twilio: #{e.message}\n#{e.backtrace.join("\n")}")
-      head :internal_server_error
     end
 
     private
@@ -133,8 +89,6 @@ module Twilio
       {
         status_callback: callback_url,
         status_callback_method: "POST",
-        # Especificamos explícitamente los eventos que queremos.
-        # 'completed' es el más importante, ya que se dispara al final.
         status_callback_event: "completed"
       }
     end
@@ -142,8 +96,8 @@ module Twilio
     # Construye la URL absoluta para el webhook.
     def build_status_callback_url(client_id: nil)
       helpers = Rails.application.routes.url_helpers
-      # Pasamos los IDs que necesitemos para identificar la llamada.
-      helpers.twilio_voice_status_url(
+      # Usamos el helper correcto que coincide con tu archivo de rutas.
+      helpers.twilio_voice_status_callback_url(
         host: request.host,
         protocol: request.protocol,
         client_id: client_id
@@ -183,7 +137,7 @@ module Twilio
       signature = request.headers["X-Twilio-Signature"]
 
       unless validator.validate(url, params, signature)
-        render xml: empty_twiml_with_say("Solicitud no autorizada."), status: :forbidden
+        render xml: "<Response><Say>Solicitud no autorizada.</Say></Response>", status: :forbidden
       end
     end
   end
