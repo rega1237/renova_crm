@@ -93,8 +93,9 @@ module Twilio
 
     # Construye la URL absoluta para el webhook.
     def build_status_callback_url(client_id: nil)
+      helpers = Rails.application.routes.url_helpers
       # Usamos el helper correcto que coincide con tu archivo de rutas.
-      Rails.application.routes.url_helpers.twilio_voice_status_callback_url(
+      helpers.twilio_voice_status_callback_url(
         host: request.host,
         protocol: request.protocol,
         client_id: client_id
