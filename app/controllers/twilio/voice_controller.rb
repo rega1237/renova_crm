@@ -4,6 +4,8 @@ require "twilio-ruby"
 
 module Twilio
   class VoiceController < ActionController::Base
+    include Rails.application.routes.url_helpers
+    
     protect_from_forgery with: :null_session
 
     # La verificación de firma ahora solo se necesita para la acción connect en este controlador.
@@ -93,9 +95,8 @@ module Twilio
 
     # Construye la URL absoluta para el webhook.
     def build_status_callback_url(client_id: nil)
-      helpers = Rails.application.routes.url_helpers
       # Usamos el helper correcto que coincide con tu archivo de rutas.
-      helpers.voice_status_callback_url(
+      voice_status_callback_url(
         host: request.host,
         protocol: request.protocol,
         client_id: client_id
