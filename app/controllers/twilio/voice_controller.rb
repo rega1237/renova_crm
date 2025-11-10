@@ -87,8 +87,7 @@ module Twilio
       return {} unless callback_url.present?
 
       {
-        status_callback: callback_url,
-        status_callback_event: "completed"
+        status_callback: callback_url
       }
     end
 
