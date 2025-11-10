@@ -16,7 +16,12 @@ class CallsController < ApplicationController
     calls = calls.between_dates(@start_date, @end_date)
     calls = calls.order(call_date: :desc, call_time: :desc)
 
+    # KPI counters (computed on the filtered scope, not paginated)
     @total_count = calls.count
+    answered_condition = "answered = TRUE OR (answered IS NULL AND COALESCE(duration, 0) > 0)"
+    unanswered_condition = "answered = FALSE OR (answered IS NULL AND COALESCE(duration, 0) = 0)"
+    @answered_count = calls.where(Arel.sql(answered_condition)).count
+    @unanswered_count = calls.where(Arel.sql(unanswered_condition)).count
     @total_pages = (@total_count.to_f / PER_PAGE).ceil
     @calls = calls.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
   end
