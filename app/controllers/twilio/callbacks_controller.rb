@@ -40,8 +40,11 @@ module Twilio
       )
 
       Rails.logger.info("Llamada #{call_record.id} actualizada: answered=#{answered}, duration=#{duration}, client_id=#{client_id}")
-
-      head :ok
+      # Twilio espera TwiML en la URL de `action` del <Dial> para continuar el flujo
+      # después de finalizar la marcación. Si respondemos vacío, Twilio registra
+      # el error 12100 (Document parse failure). Para evitarlo, devolvemos un
+      # Response vacío válido.
+      render xml: "<Response></Response>", content_type: "text/xml", status: :ok
     rescue StandardError => e
       Rails.logger.error("Error en status callback de Twilio: #{e.message}\n#{e.backtrace.join("\n")}")
       head :internal_server_error
