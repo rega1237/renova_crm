@@ -92,12 +92,10 @@ module Twilio
     def status_callback_opts(callback_url)
       return {} unless callback_url.present?
 
+      # TwiML correcto: usar action y method en <Dial> para recibir DialCallStatus/DialCallDuration
       {
-        status_callback: callback_url,
-        # Forzamos método POST para el callback de estado
-        status_callback_method: "POST",
-        # Solo queremos el evento final para tener duración y estado definitivo
-        status_callback_event: "completed"
+        action: callback_url,
+        method: "POST"
       }
     end
 
