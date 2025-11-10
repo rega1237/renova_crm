@@ -21,6 +21,8 @@ class CallsController < ApplicationController
     end
     @start_date = params[:start_date]
     @end_date = params[:end_date]
+    # Filtro por "atendida" disponible para admin y telemarketing (sobre su propio set)
+    @answered = params[:answered]
     @page = params[:page].to_i
     @page = 1 if @page <= 0
 
@@ -28,6 +30,13 @@ class CallsController < ApplicationController
     calls = Call.all
     calls = calls.by_user(@user_id)
     calls = calls.between_dates(@start_date, @end_date)
+    # Filtro por atendida basado en el campo answered
+    case @answered
+    when 'yes'
+      calls = calls.answered
+    when 'no'
+      calls = calls.unanswered
+    end
     calls = calls.order(call_date: :desc, call_time: :desc)
 
     # KPI counters (computed on the filtered scope, not paginated)
