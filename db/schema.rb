@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_09_000200) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_09_234547) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -45,8 +45,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_000200) do
     t.string "direction"
     t.boolean "answered"
     t.string "status"
+    t.bigint "client_id", null: false
     t.index ["answered"], name: "index_calls_on_answered"
     t.index ["call_date"], name: "index_calls_on_call_date"
+    t.index ["client_id"], name: "index_calls_on_client_id"
     t.index ["direction"], name: "index_calls_on_direction"
     t.index ["status"], name: "index_calls_on_status"
     t.index ["twilio_call_id"], name: "index_calls_on_twilio_call_id", unique: true
@@ -237,6 +239,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_000200) do
   add_foreign_key "appointments", "clients"
   add_foreign_key "appointments", "sellers"
   add_foreign_key "appointments", "users", column: "created_by_id"
+  add_foreign_key "calls", "clients"
   add_foreign_key "calls", "users"
   add_foreign_key "cities", "states"
   add_foreign_key "clients", "cities"

@@ -1,5 +1,6 @@
 class Call < ApplicationRecord
   belongs_to :user
+  belongs_to :client, optional: true
 
   # Validaciones
   validates :twilio_call_id, presence: true, uniqueness: true
