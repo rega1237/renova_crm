@@ -93,15 +93,9 @@ module Twilio
 
     # Construye la URL absoluta para el webhook.
     def build_status_callback_url(client_id: nil)
-      # --- INICIO DE CAMBIO TEMPORAL PARA DEPURACIÓN ---
-      # Reemplaza la siguiente línea con tu URL de webhook.site
-      # Esto nos permitirá ver si Twilio está enviando el callback.
-      return "https://webhook.site/d98881f5-5dde-45ba-8d9f-114110930a96"
-      # --- FIN DE CAMBIO TEMPORAL ---
-
       helpers = Rails.application.routes.url_helpers
       # Usamos el helper correcto que coincide con tu archivo de rutas.
-      helpers.twilio_voice_status_callback_url(
+      helpers.voice_status_callback_url(
         host: request.host,
         protocol: request.protocol,
         client_id: client_id
