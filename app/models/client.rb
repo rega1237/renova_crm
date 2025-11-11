@@ -6,6 +6,7 @@ class Client < ApplicationRecord
   belongs_to :updated_by, class_name: "User", optional: true
   has_many :notes, dependent: :destroy
   has_many :appointments, dependent: :destroy
+  has_many :calls, dependent: :delete_all
 
   scope :with_recent_notes, -> { includes(:notes).order("notes.created_at DESC") }
 

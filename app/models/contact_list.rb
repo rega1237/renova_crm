@@ -1,5 +1,6 @@
 class ContactList < ApplicationRecord
   belongs_to :state
+  has_many :calls, dependent: :delete_all
 
   DEFAULT_PHONE_COUNTRY = ::DEFAULT_PHONE_COUNTRY
 
@@ -9,42 +10,48 @@ class ContactList < ApplicationRecord
   validates :name, presence: true
   validates :phone, presence: true
   # Validación suave: si comienza con '+', exigir formato E.164
-  validates :phone,
-            format: {
-              with: Number::PHONE_REGEX,
-              message: "debe estar en formato E.164 (ej. +13125550123)"
-            },
-            if: -> { phone.to_s.start_with?("+") }
+  validate :phone_e164_if_plus
 
   # Búsqueda simple por nombre o teléfono
-  scope :search, ->(q) {
+  def self.search(q)
     return all if q.blank?
-    where("LOWER(name) LIKE ? OR phone LIKE ?", "%#{q.to_s.downcase}%", "%#{q}%")
-  }
+    q_str = q.to_s
+    where("LOWER(name) LIKE ? OR phone LIKE ?", "%#{q_str.downcase}%", "%#{q_str}%")
+  end
 
   # Filtro por estado
-  scope :by_state, ->(state_id) {
+  def self.by_state(state_id)
     return all if state_id.blank?
     where(state_id: state_id)
-  }
+  end
 
   # Selección automática del número Twilio a usar como caller ID (igual que Client)
   def select_outbound_number_for(user)
     user_numbers = Number.active.owned_by(user)
 
-    contact_state_abbr = state&.abbreviation.to_s.strip
-    contact_state_name = state&.name.to_s.strip
+    contact_state_abbr = (state.try(:abbreviation).to_s).strip
+    contact_state_name = (state.try(:name).to_s).strip
 
     if contact_state_abbr.present? || contact_state_name.present?
       match = user_numbers.where("LOWER(state) = ?", contact_state_abbr.downcase).first if contact_state_abbr.present?
       match ||= user_numbers.where("LOWER(state) = ?", contact_state_name.downcase).first if contact_state_name.present?
-      return { number: match, alternatives: [] } if match
+      return({ :number => match, :alternatives => [] }) if match
     end
 
-    { number: nil, alternatives: user_numbers.order(:state) }
+    { :number => nil, :alternatives => user_numbers.order(:state) }
   end
 
   private
+
+  def phone_e164_if_plus
+    return if phone.blank?
+    str = phone.to_s.strip
+    if str.start_with?("+")
+      unless str.match(Number::PHONE_REGEX)
+        errors.add(:phone, "debe estar en formato E.164 (ej. +13125550123)")
+      end
+    end
+  end
 
   def normalize_phone_default!
     return if phone.blank?

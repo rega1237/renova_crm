@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_11_103000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_11_104500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -241,8 +241,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_11_103000) do
   add_foreign_key "appointments", "clients"
   add_foreign_key "appointments", "sellers"
   add_foreign_key "appointments", "users", column: "created_by_id"
-  add_foreign_key "calls", "clients"
-  add_foreign_key "calls", "contact_lists"
+  add_foreign_key "calls", "clients", on_delete: :cascade
+  add_foreign_key "calls", "contact_lists", on_delete: :cascade
   add_foreign_key "calls", "users"
   add_foreign_key "cities", "states"
   add_foreign_key "clients", "cities"
