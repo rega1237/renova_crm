@@ -405,13 +405,21 @@ export default class extends Controller {
     window.CallState = Object.assign({ inCall: true, clientName: uiDetail.name, phone: uiDetail.phone }, window.CallState || {})
     window.dispatchEvent(new CustomEvent("call:ui:show", { detail: uiDetail }))
 
-    this.device.connect({
-      params: {
-        To: to,
-        caller_id: from,
-        client_id: clientId
-      }
-    })
+    // Construir parámetros personalizados según el tipo de entidad
+    const params = {
+      To: to,
+      caller_id: from
+    }
+    const entityType = (this.entityTypeValue || "client").toString()
+    if (entityType === "contact_list") {
+      // Para llamadas a ContactList, enviar contact_list_id
+      params.contact_list_id = clientId
+    } else {
+      // Compatibilidad: para clientes, enviar client_id
+      params.client_id = clientId
+    }
+
+    this.device.connect({ params })
   }
 
   // Espera a que Twilio.Device emita "ready" antes de intentar conectar.
