@@ -1,6 +1,7 @@
 class Call < ApplicationRecord
   belongs_to :user
   belongs_to :client, optional: true
+  belongs_to :contact_list, optional: true
 
   # Validaciones
   validates :twilio_call_id, presence: true, uniqueness: true
@@ -31,5 +32,17 @@ class Call < ApplicationRecord
   def effective_answered?
     return answered unless answered.nil?
     duration.to_i > 0
+  end
+
+  validate :client_or_contact_exclusive
+
+  private
+
+  # No permitir que una llamada pertenezca simultáneamente a un cliente y a un contacto.
+  # Se permite que ninguno esté presente (p. ej., llamadas entrantes sin asignación).
+  def client_or_contact_exclusive
+    if client_id.present? && contact_list_id.present?
+      errors.add(:base, "La llamada no puede pertenecer a cliente y contacto a la vez")
+    end
   end
 end

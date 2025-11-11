@@ -28,18 +28,23 @@ module Twilio
       duration = params[:DialCallDuration]
       answered = (status == "completed")
 
-      # También recuperamos el client_id que pasamos en la URL del callback.
+      # Recuperamos IDs que pudimos pasar en la URL del callback.
       client_id = params[:client_id].presence
+      contact_list_id = params[:contact_list_id].presence
 
       # Actualizamos nuestro registro en la base de datos.
-      call_record.update!(
+      updates = {
         answered: answered,
         duration: duration.to_i,
-        status: status,
-        client_id: client_id
-      )
+        status: status
+      }
+      # Asignar únicamente si existen para no romper FK
+      updates[:client_id] = client_id if client_id && ::Client.exists?(client_id)
+      updates[:contact_list_id] = contact_list_id if contact_list_id && ::ContactList.exists?(contact_list_id)
 
-      Rails.logger.info("Llamada #{call_record.id} actualizada: answered=#{answered}, duration=#{duration}, client_id=#{client_id}")
+      call_record.update!(updates)
+
+      Rails.logger.info("Llamada #{call_record.id} actualizada: answered=#{answered}, duration=#{duration}, client_id=#{client_id}, contact_list_id=#{contact_list_id}")
       # Twilio espera TwiML en la URL de `action` del <Dial> para continuar el flujo
       # después de finalizar la marcación. Si respondemos vacío, Twilio registra
       # el error 12100 (Document parse failure). Para evitarlo, devolvemos un

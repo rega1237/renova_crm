@@ -34,10 +34,11 @@ module Twilio
       to_number = params[:To]
       from_number = params[:caller_id]
       client_id = params[:client_id].presence
+      contact_list_id = params[:contact_list_id].presence
       user = find_user_from_identity(params[:From])
 
-      # Construimos la URL del webhook, ahora pasando también el client_id.
-      callback_url = build_status_callback_url(client_id: client_id)
+      # Construimos la URL del webhook, pasando también los IDs si existen.
+      callback_url = build_status_callback_url(client_id: client_id, contact_list_id: contact_list_id)
       Rails.logger.info("[Twilio Voice] status callback URL (outbound): #{callback_url}")
       opts = status_callback_opts(callback_url)
       Rails.logger.info("[Twilio Voice] Dial options (outbound): #{opts.inspect}")
@@ -47,7 +48,7 @@ module Twilio
       end
 
       # Creamos el registro inicial de la llamada.
-      create_initial_call_record(params[:CallSid], user, client_id, "outbound-dial")
+      create_initial_call_record(params[:CallSid], user, client_id, contact_list_id, "outbound-dial")
     end
 
     # Maneja llamadas entrantes (Teléfono -> Twilio -> Navegador)
@@ -72,14 +73,16 @@ module Twilio
     end
 
     # Crea el registro en la BD al iniciar la llamada.
-    def create_initial_call_record(sid, user, client_id, direction)
+    def create_initial_call_record(sid, user, client_id, contact_list_id, direction)
       return if sid.blank? || user.blank?
 
       ::Call.find_or_create_by!(twilio_call_id: sid) do |c|
         c.call_date = Date.current
         c.call_time = Time.current
         c.user = user
-        c.client_id = client_id
+        # Asignar cliente/contacto solo si existen para evitar violaciones de FK
+        c.client_id = (client_id if client_id && ::Client.exists?(client_id))
+        c.contact_list_id = (contact_list_id if contact_list_id && ::ContactList.exists?(contact_list_id))
         c.direction = direction
         c.answered = false # Estado inicial
         c.duration = 0     # Estado inicial
@@ -100,13 +103,14 @@ module Twilio
     end
 
     # Construye la URL absoluta para el webhook.
-    def build_status_callback_url(client_id: nil)
+    def build_status_callback_url(client_id: nil, contact_list_id: nil)
       helpers = Rails.application.routes.url_helpers
       # Usamos el helper correcto que coincide con tu archivo de rutas.
       helpers.twilio_voice_status_callback_url(
         host: request.host,
         protocol: request.protocol,
-        client_id: client_id
+        client_id: client_id,
+        contact_list_id: contact_list_id
       )
     rescue StandardError => e
       Rails.logger.warn("No se pudo construir status_callback_url: #{e.message}")

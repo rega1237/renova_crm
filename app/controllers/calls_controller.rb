@@ -26,8 +26,8 @@ class CallsController < ApplicationController
     @page = params[:page].to_i
     @page = 1 if @page <= 0
 
-    # Base scope
-    calls = Call.all
+    # Base scope (preload de asociaciones para evitar N+1)
+    calls = Call.includes(:client, :contact_list)
     calls = calls.by_user(@user_id)
     calls = calls.between_dates(@start_date, @end_date)
     # Filtro por atendida basado en el campo answered
@@ -94,6 +94,6 @@ class CallsController < ApplicationController
   end
 
   def call_params
-    params.require(:call).permit(:twilio_call_id, :call_date, :call_time, :user_id, :duration)
+    params.require(:call).permit(:twilio_call_id, :call_date, :call_time, :user_id, :duration, :client_id, :contact_list_id)
   end
 end

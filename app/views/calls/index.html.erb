@@ -80,7 +80,7 @@
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente/Contacto</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duración (s)</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -97,10 +97,20 @@
               <td class="px-4 py-3 font-montserrat text-sm text-gray-700"><%= call.user&.name || "-" %></td>
               <td class="px-4 py-3 font-montserrat text-sm text-gray-700">
                 <% if call.client.present? %>
-                  <%= link_to(call.client.name,
-                              client_path(call.client),
-                              data: { turbo_frame: "slideover" },
-                              class: "text-rojo-carmesi hover:underline") %>
+                  <span class="inline-flex items-center gap-2">
+                    <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 font-poppins">Cliente</span>
+                    <%= link_to(call.client.name,
+                                client_path(call.client),
+                                data: { turbo_frame: "slideover" },
+                                class: "text-rojo-carmesi hover:underline") %>
+                  </span>
+                <% elsif call.contact_list.present? %>
+                  <span class="inline-flex items-center gap-2">
+                    <span class="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700 font-poppins">Contacto</span>
+                    <%= link_to(call.contact_list.name,
+                                contact_list_path(call.contact_list),
+                                class: "text-rojo-carmesi hover:underline") %>
+                  </span>
                 <% else %>
                   -
                 <% end %>

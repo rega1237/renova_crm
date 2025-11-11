@@ -64,7 +64,8 @@ module Api
         auto_selected_number: auto_selected ? from_number_record.phone_number : nil,
         selected_number: from_number_record.phone_number,
         client_state: contact.state&.abbreviation,
-        number_state: from_number_record.state
+        number_state: from_number_record.state,
+        contact_list_id: contact.id
       }, status: :ok
     end
 
