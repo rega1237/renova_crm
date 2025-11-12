@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 // Handles the fixed call UI, independent of where it's rendered.
 // Interacts with global window.twilioDevice and window.activeConnection created by call_controller.
 export default class extends Controller {
-  static targets = ["container", "name", "phone", "status", "hangupButton"]
+  static targets = ["container", "name", "phone", "status", "hangupButton", "answerButton"]
 
   connect() {
     // Initialize global state if missing (minimal)
@@ -18,21 +18,39 @@ export default class extends Controller {
     this.onShow = (e) => {
       const { name, phone } = e.detail || {}
       this.render(name, phone)
+      // Modo activo por defecto (saliente)
+      this.setActiveMode()
       // Prepara el contexto de audio para poder reproducir el tono tras interacción del usuario
       this.ensureAudioContext()
     }
-    this.onHide = () => this.hide()
+    this.onHide = () => {
+      this.hide()
+      // Re-inicializar el Device para recibir futuras llamadas entrantes
+      // (por ejemplo, después de finalizar una llamada saliente que destruyó el Device)
+      setTimeout(() => this.initializeIncomingDeviceIfNeeded(), 250)
+    }
 
     // Eventos para feedback auditivo
     this.onRinging = () => this.startRingback()
     this.onAccepted = () => this.stopRingback()
     this.onStopAudio = () => this.stopRingback()
 
+    // Evento específico para llamadas entrantes
+    this.onIncoming = (e) => {
+      const { name, phone } = e.detail || {}
+      this.render(name || "Llamada entrante", phone)
+      this.setIncomingMode()
+    }
+
     window.addEventListener("call:ui:show", this.onShow)
     window.addEventListener("call:ui:hide", this.onHide)
     window.addEventListener("call:ui:ringing", this.onRinging)
     window.addEventListener("call:ui:accepted", this.onAccepted)
     window.addEventListener("call:ui:stop-audio", this.onStopAudio)
+    window.addEventListener("call:ui:incoming", this.onIncoming)
+
+    // Inicializar el dispositivo para poder recibir llamadas entrantes
+    this.initializeIncomingDeviceIfNeeded()
   }
 
   disconnect() {
@@ -42,6 +60,7 @@ export default class extends Controller {
     window.removeEventListener("call:ui:ringing", this.onRinging)
     window.removeEventListener("call:ui:accepted", this.onAccepted)
     window.removeEventListener("call:ui:stop-audio", this.onStopAudio)
+    window.removeEventListener("call:ui:incoming", this.onIncoming)
     this.stopRingback()
   }
 
@@ -80,7 +99,11 @@ export default class extends Controller {
       // Detener ringback antes de colgar
       this.stopRingback()
       const conn = window.activeConnection
-      if (conn && typeof conn.disconnect === "function") {
+      const incoming = window.activeIncomingCall
+      // Si hay una llamada entrante sin aceptar aún, rechazarla.
+      if (incoming && typeof incoming.reject === "function" && !window.CallState?.inCall) {
+        try { incoming.reject() } catch (_) {}
+      } else if (conn && typeof conn.disconnect === "function") {
         conn.disconnect()
       }
       // Si por algún motivo no tenemos la conexión, colgamos a nivel de Device
@@ -93,6 +116,113 @@ export default class extends Controller {
     } catch (e) {
       console.error("Error al colgar la llamada:", e)
     }
+  }
+
+  async answer() {
+    try {
+      const incoming = window.activeIncomingCall
+      if (!incoming || typeof incoming.accept !== "function") {
+        console.warn("No hay llamada entrante para aceptar.")
+        return
+      }
+      // Solicitar permiso de micrófono para mejorar la experiencia al responder
+      try {
+        const gum = navigator.mediaDevices?.getUserMedia
+        if (typeof gum === "function") {
+          const stream = await gum.call(navigator.mediaDevices, { audio: { echoCancellation: true, noiseSuppression: true } })
+          stream.getTracks().forEach(t => t.stop())
+        }
+      } catch (_) {}
+      // Aceptar y cambiar a modo activo
+      incoming.accept()
+      this.setActiveMode()
+      window.CallState = Object.assign({}, window.CallState, { inCall: true })
+      window.dispatchEvent(new CustomEvent("call:ui:accepted"))
+      // Exponer como conexión activa si la API lo permite
+      window.activeConnection = incoming
+    } catch (e) {
+      console.error("Error al aceptar la llamada:", e)
+      this.statusTarget.textContent = `Error al responder: ${e?.message || e}`
+    }
+  }
+
+  // ===== Modos de UI (entrante/activa) =====
+  setIncomingMode() {
+    try {
+      this.answerButtonTarget?.classList.remove("hidden")
+      this.hangupButtonTarget?.classList.add("hidden")
+      this.statusTarget.textContent = "Llamada entrante…"
+    } catch (_) {}
+  }
+
+  setActiveMode() {
+    try {
+      this.answerButtonTarget?.classList.add("hidden")
+      this.hangupButtonTarget?.classList.remove("hidden")
+      // Si ya se aceptó, el estado es conectado o llamando según eventos
+    } catch (_) {}
+  }
+
+  // ===== Inicialización de Twilio.Device para llamadas entrantes =====
+  async initializeIncomingDeviceIfNeeded() {
+    try {
+      // Si ya hay un Device global, asegúrate de que esté registrado y con handlers
+      if (window.twilioDevice) {
+        try { window.twilioDevice.register?.() } catch (_) {}
+        this.attachIncomingHandlers(window.twilioDevice)
+        return
+      }
+      // SDK no cargado
+      if (!window.Twilio || !window.Twilio.Device) return
+      // Obtener token del backend
+      const r = await fetch("/api/twilio/voice/token", { method: "POST", headers: { "Accept": "application/json" }, credentials: "same-origin" })
+      const data = await r.json().catch(() => ({}))
+      if (!data?.token) return
+      // Crear y registrar Device solo para recepción
+      const device = new window.Twilio.Device(data.token, { logLevel: "warn", enableRingingState: true })
+      try { device.register?.() } catch (_) {}
+      window.twilioDevice = device
+      this.attachIncomingHandlers(device)
+    } catch (e) {
+      console.warn("No se pudo inicializar Twilio.Device para llamadas entrantes:", e)
+    }
+  }
+
+  attachIncomingHandlers(device) {
+    try {
+      if (!device || typeof device.on !== "function") return
+      if (this._incomingAttached) return
+      device.on("incoming", (call) => {
+        try {
+          window.activeIncomingCall = call
+          const from = call?.parameters?.From || call?.parameters?.Caller || "Número desconocido"
+          const uiDetail = { name: "Llamada entrante", phone: from }
+          window.dispatchEvent(new CustomEvent("call:ui:incoming", { detail: uiDetail }))
+          // Eventos del ciclo de vida
+          call.on?.("accept", () => {
+            window.activeConnection = call
+            window.CallState = Object.assign({}, window.CallState, { inCall: true })
+            window.dispatchEvent(new CustomEvent("call:ui:accepted"))
+            try { this.statusTarget.textContent = "Conectado" } catch (_) {}
+          })
+          call.on?.("cancel", () => {
+            window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            window.CallState = Object.assign({}, window.CallState, { inCall: false })
+          })
+          call.on?.("disconnect", () => {
+            window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            window.CallState = Object.assign({}, window.CallState, { inCall: false })
+          })
+          call.on?.("error", (e) => {
+            console.error("Twilio.Call (entrante) error", e)
+            this.statusTarget.textContent = `Error: ${e?.message || e}`
+            window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            window.CallState = Object.assign({}, window.CallState, { inCall: false })
+          })
+        } catch (_) {}
+      })
+      this._incomingAttached = true
+    } catch (_) {}
   }
 
   // ===== Ringback (tono de repique) =====
