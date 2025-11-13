@@ -69,7 +69,8 @@ module Twilio
         dial.client(identity: identity)
       end
 
-      create_initial_call_record(params[:CallSid], target_user, nil, "inbound")
+      # En llamadas entrantes directas no hay client_id ni contact_list_id
+      create_initial_call_record(params[:CallSid], target_user, nil, nil, "inbound")
     end
 
     # Crea el registro en la BD al iniciar la llamada.
