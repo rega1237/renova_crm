@@ -77,6 +77,7 @@ Rails.application.routes.draw do
 
   # --- RUTAS PARA EL WEBHOOK DE FACEBOOK ---
   namespace :api do
+    get "lookup/caller", to: "lookups#caller"
     resources :cities, only: [ :index ]
     resources :zipcodes, only: [ :index ]
     resources :calls, only: [ :create ]

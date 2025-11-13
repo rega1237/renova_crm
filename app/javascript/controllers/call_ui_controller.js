@@ -170,9 +170,8 @@ export default class extends Controller {
   // ===== Inicialización de Twilio.Device para llamadas entrantes =====
   async initializeIncomingDeviceIfNeeded() {
     try {
-      // Si ya hay un Device global, asegúrate de que esté registrado y con handlers
+      // Si ya hay un Device global, solo asegurar handlers (no re-registrar)
       if (window.twilioDevice) {
-        try { window.twilioDevice.register?.() } catch (_) {}
         this.attachIncomingHandlers(window.twilioDevice)
         return
       }
@@ -184,7 +183,10 @@ export default class extends Controller {
       if (!data?.token) return
       // Crear y registrar Device solo para recepción
       const device = new window.Twilio.Device(data.token, { logLevel: "warn", enableRingingState: true })
-      try { device.register?.() } catch (_) {}
+      // Registrar sólo si no está ya registrado (cuando el Device es nuevo, su estado inicial es “unregistered”)
+      if (device?.state !== "registered") {
+        try { await device.register?.() } catch (_) {}
+      }
       window.twilioDevice = device
       this.attachIncomingHandlers(device)
     } catch (e) {
@@ -200,8 +202,11 @@ export default class extends Controller {
         try {
           window.activeIncomingCall = call
           const from = call?.parameters?.From || call?.parameters?.Caller || "Número desconocido"
-          const uiDetail = { name: "Llamada entrante", phone: from }
-          window.dispatchEvent(new CustomEvent("call:ui:incoming", { detail: uiDetail }))
+          ;(async () => {
+            const name = await this.resolveCallerName(from)
+            const uiDetail = { name: name || "Llamada entrante", phone: from }
+            window.dispatchEvent(new CustomEvent("call:ui:incoming", { detail: uiDetail }))
+          })()
           // Eventos del ciclo de vida
           call.on?.("accept", () => {
             window.activeConnection = call
@@ -227,6 +232,19 @@ export default class extends Controller {
       })
       this._incomingAttached = true
     } catch (_) {}
+  }
+
+  // ===== Resolver nombre por teléfono (Client/ContactList) =====
+  async resolveCallerName(phone) {
+    try {
+      if (!phone) return null
+      const url = `/api/lookup/caller?phone=${encodeURIComponent(phone)}`
+      const r = await fetch(url, { headers: { "Accept": "application/json", "X-CSRF-Token": this.csrfToken() }, credentials: "include" })
+      const data = await r.json().catch(() => ({}))
+      return data?.name || null
+    } catch (_) {
+      return null
+    }
   }
 
   // ===== Ringback (tono de repique) =====

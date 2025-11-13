@@ -468,9 +468,6 @@ export default class extends Controller {
     try { this.device?.destroy?.() } catch (_) {}
     this.device = null
     this.connection = null
-    // Asegurar que el UI de llamadas entrantes pueda re-inicializar el Device
-    try { window.twilioDevice = null } catch (_) {}
-    try { window.activeConnection = null } catch (_) {}
   }
 
   hideCallButton() {

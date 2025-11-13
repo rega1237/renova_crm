@@ -69,7 +69,7 @@ module Twilio
         dial.client(identity: identity)
       end
 
-      create_initial_call_record(params[:CallSid], target_user, nil, nil, "inbound")
+      create_initial_call_record(params[:CallSid], target_user, nil, "inbound")
     end
 
     # Crea el registro en la BD al iniciar la llamada.

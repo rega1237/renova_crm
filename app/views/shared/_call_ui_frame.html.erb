@@ -1,60 +1,44 @@
-<%# Mostrar la UI solo si el usuario actual es propietario (directo o vinculado) de algún número %>
-<% if Number.owned_by(current_user).exists? %>
-  <%= turbo_frame_tag "call_ui" do %>
-    <!-- Contenedor fijo del UI de llamadas (hidden por defecto, visible vía Stimulus) -->
-    <div 
-      id="call-ui-container"
-      data-controller="call-ui"
-      data-call-ui-target="container"
-      class="fixed top-4 right-4 z-50 hidden"
-      role="dialog" aria-live="polite" aria-label="Estado de llamada"
-    >
-      <!-- Tarjeta -->
-      <div class="flex items-center gap-3 bg-negro-onix text-white rounded-2xl shadow-xl px-4 py-3 transition transform duration-200 ease-out max-w-xs sm:max-w-sm">
-        <!-- Avatar/indicador -->
-        <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center" aria-hidden="true">
-          <svg class="w-6 h-6 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+<%= turbo_frame_tag "call_ui" do %>
+  <!-- Fixed Call UI container (hidden by default, shown via Stimulus) -->
+  <div 
+    id="call-ui-container"
+    data-controller="call-ui"
+    data-call-ui-target="container"
+    class="fixed top-4 right-4 z-50 hidden"
+  >
+    <!-- Card -->
+    <div class="flex items-center gap-3 bg-negro-onix text-white rounded-2xl shadow-xl px-4 py-3 transition transform duration-200 ease-out">
+      <!-- Avatar placeholder -->
+      <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+        <svg class="w-6 h-6 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+      </div>
+
+      <!-- Info -->
+      <div class="mr-2">
+        <div class="font-poppins font-semibold text-base" data-call-ui-target="name">Llamando...</div>
+        <div class="font-montserrat text-xs text-gray-300" data-call-ui-target="phone"></div>
+        <div class="font-montserrat text-[11px] text-gray-400" data-call-ui-target="status"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center gap-2 ml-auto">
+        <!-- Botón de colgar -->
+        <button type="button"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
+                title="Colgar"
+                aria-label="Colgar llamada"
+                data-call-ui-target="hangupButton"
+                data-action="click->call-ui#hangup">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <!-- Teléfono -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5.5A2.5 2.5 0 015.5 3H8a2 2 0 011.414.586l2.5 2.5a1.5 1.5 0 010 2.121l-1.414 1.414a12 12 0 006.293 6.293l1.414-1.414a1.5 1.5 0 012.121 0l2.5 2.5A2 2 0 0121 20h-2.5C12.5 20 4 11.5 4 6.5V5.5z" />
+            <!-- X de colgar -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l5 5M20 9l-5 5" />
           </svg>
-        </div>
-
-        <!-- Información -->
-        <div class="mr-2 min-w-0">
-          <div class="font-poppins font-semibold text-base truncate" data-call-ui-target="name">Llamando…</div>
-          <div class="font-montserrat text-xs text-gray-300 truncate" data-call-ui-target="phone"></div>
-          <div class="font-montserrat text-[11px] text-gray-400" data-call-ui-target="status"></div>
-        </div>
-
-        <!-- Controles -->
-        <div class="flex items-center gap-2 ml-auto">
-          <!-- Botón verde (aceptar llamada entrante) -->
-          <button type="button"
-                  class="w-10 h-10 flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md hidden"
-                  title="Responder"
-                  aria-label="Responder llamada entrante"
-                  data-call-ui-target="answerButton"
-                  data-action="click->call-ui#answer">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <!-- Icono de teléfono para responder -->
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2 5a3 3 0 013-3h3a2 2 0 011.414.586l2 2A2 2 0 0112 6v2a2 2 0 01-.586 1.414l-1 1a12 12 0 006.172 6.172l1-1A2 2 0 0119 15h2a2 2 0 012 2v3a3 3 0 01-3 3h-1.5C11 23 3 15 3 8.5V7a3 3 0 01-1-2z" />
-            </svg>
-          </button>
-
-          <!-- Botón rojo (colgar en llamada activa) -->
-          <button type="button"
-                  class="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
-                  title="Colgar"
-                  aria-label="Colgar llamada"
-                  data-call-ui-target="hangupButton"
-                  data-action="click->call-ui#hangup">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <!-- Teléfono + X para colgar -->
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5.5A2.5 2.5 0 015.5 3H8a2 2 0 011.414.586l2.5 2.5a1.5 1.5 0 010 2.121l-1.414 1.414a12 12 0 006.293 6.293l1.414-1.414a1.5 1.5 0 012.121 0l2.5 2.5A2 2 0 0121 20h-2.5C12.5 20 4 11.5 4 6.5V5.5z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l5 5M20 9l-5 5" />
-            </svg>
-          </button>
-        </div>
+        </button>
       </div>
     </div>
-  <% end %>
+  </div>
 <% end %>
