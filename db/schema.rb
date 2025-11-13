@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_11_104500) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_13_181955) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -47,6 +47,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_11_104500) do
     t.string "status"
     t.bigint "client_id"
     t.bigint "contact_list_id"
+    t.string "caller_phone"
     t.index ["answered"], name: "index_calls_on_answered"
     t.index ["call_date"], name: "index_calls_on_call_date"
     t.index ["client_id"], name: "index_calls_on_client_id"

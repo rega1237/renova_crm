@@ -60,7 +60,15 @@ module Twilio
       end
 
       identity = target_user.email.presence || "user-#{target_user.id}"
-      callback_url = build_status_callback_url # No hay cliente en llamadas entrantes directas.
+      # Resolver el llamante (cliente o contacto) según el número que llama (params[:From])
+      from_number = params[:From].to_s.strip
+      resolved_client = resolve_by_phone(::Client, from_number)
+      resolved_contact = resolved_client ? nil : resolve_by_phone(::ContactList, from_number)
+      client_id = resolved_client&.id
+      contact_list_id = resolved_contact&.id
+
+      # Preparar callback URL incluyendo ids si se resolvieron
+      callback_url = build_status_callback_url(client_id: client_id, contact_list_id: contact_list_id)
       Rails.logger.info("[Twilio Voice] status callback URL (inbound): #{callback_url}")
       opts = status_callback_opts(callback_url)
       Rails.logger.info("[Twilio Voice] Dial options (inbound): #{opts.inspect}")
@@ -69,12 +77,14 @@ module Twilio
         dial.client(identity: identity)
       end
 
-      # En llamadas entrantes directas no hay client_id ni contact_list_id
-      create_initial_call_record(params[:CallSid], target_user, nil, nil, "inbound")
+      # Crear registro inicial de la llamada, asignando cliente/contacto si se resolvió.
+      # Si no se resolvió, guardar el número en caller_phone para referencia futura.
+      unresolved_phone = (client_id || contact_list_id) ? nil : normalize_phone_for_storage(from_number)
+      create_initial_call_record(params[:CallSid], target_user, client_id, contact_list_id, "inbound", caller_phone: unresolved_phone)
     end
 
     # Crea el registro en la BD al iniciar la llamada.
-    def create_initial_call_record(sid, user, client_id, contact_list_id, direction)
+    def create_initial_call_record(sid, user, client_id, contact_list_id, direction, caller_phone: nil)
       return if sid.blank? || user.blank?
 
       ::Call.find_or_create_by!(twilio_call_id: sid) do |c|
@@ -84,6 +94,7 @@ module Twilio
         # Asignar cliente/contacto solo si existen para evitar violaciones de FK
         c.client_id = (client_id if client_id && ::Client.exists?(client_id))
         c.contact_list_id = (contact_list_id if contact_list_id && ::ContactList.exists?(contact_list_id))
+        c.caller_phone = (caller_phone if caller_phone.present?)
         c.direction = direction
         c.answered = false # Estado inicial
         c.duration = 0     # Estado inicial
@@ -135,6 +146,54 @@ module Twilio
       ::Twilio::TwiML::VoiceResponse.new do |r|
         r.say(message: message, language: "es-MX", voice: "alice")
       end.to_xml
+    end
+
+    # --- Resolución de llamante por número ---
+    def resolve_by_phone(klass, raw_phone)
+      normalized = normalize_phone_for_storage(raw_phone)
+      digits = raw_phone.to_s.gsub(/[^0-9]/, "")
+      scope = klass.where.not(phone: [nil, ""]) 
+      # Exactos primero
+      rec = scope.where(phone: normalized).first if normalized.present?
+      return rec if rec
+      rec = scope.where(phone: digits).first if digits.present?
+      return rec if rec
+      # Sufijo (últimos 10/7 dígitos) limpiando no-dígitos
+      return nil if digits.blank?
+      last10 = digits[-10..]
+      last7  = digits[-7..]
+      begin
+        if last10.present?
+          rec = scope.where("regexp_replace(phone, '[^0-9]', '', 'g') LIKE ?", "%#{last10}").first
+          return rec if rec
+        end
+        if last7.present?
+          rec = scope.where("regexp_replace(phone, '[^0-9]', '', 'g') LIKE ?", "%#{last7}").first
+          return rec if rec
+        end
+      rescue
+        cleaned = scope.map { |r| [r, r.phone.to_s.gsub(/[^0-9]/, "")] }
+        if last10.present?
+          rec = cleaned.find { |(_, digits_db)| digits_db.end_with?(last10) }&.first
+          return rec if rec
+        end
+        if last7.present?
+          rec = cleaned.find { |(_, digits_db)| digits_db.end_with?(last7) }&.first
+          return rec if rec
+        end
+      end
+      nil
+    end
+
+    def normalize_phone_for_storage(str)
+      s = str.to_s.strip
+      return s.gsub(/\s+/, "") if s.start_with?("+")
+      begin
+        normalized = PhonyRails.normalize_number(s, country_code: DEFAULT_PHONE_COUNTRY)
+        normalized.presence || s
+      rescue
+        s
+      end
     end
 
     # Verificación de la firma de la petición de Twilio.
