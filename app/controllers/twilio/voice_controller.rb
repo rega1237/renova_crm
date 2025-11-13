@@ -66,7 +66,7 @@ module Twilio
       Rails.logger.info("[Twilio Voice] Dial options (inbound): #{opts.inspect}")
 
       response.dial(answer_on_bridge: true, **opts) do |dial|
-        dial.client(identity)
+        dial.client(identity: identity)
       end
 
       create_initial_call_record(params[:CallSid], target_user, nil, nil, "inbound")
