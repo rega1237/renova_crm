@@ -1,5 +1,6 @@
 module Api
   class LookupsController < ApplicationController
+    protect_from_forgery with: :null_session
     # Requiere sesión; estos lookups son internos del CRM
     before_action :resume_session
     before_action :require_current_user!
@@ -82,6 +83,21 @@ module Api
         normalized.presence || s
       rescue
         s
+      end
+    end
+
+    # Asegura que el endpoint sólo responda si hay usuario en sesión
+    def require_current_user!
+      unless Current.user
+        raw_cookie = cookies[:session_id]
+        signed_cookie = nil
+        begin
+          signed_cookie = cookies.signed[:session_id]
+        rescue => e
+          Rails.logger.warn("[Lookups] cookies.signed[:session_id] error in require_current_user!: #{e.message}")
+        end
+        Rails.logger.warn("[Lookups] 401: Current.user=nil raw_cookie=#{raw_cookie.inspect} signed_cookie=#{signed_cookie.inspect} Current.session=#{Current.session&.id}")
+        render json: { error: "No autorizado" }, status: :unauthorized
       end
     end
   end
