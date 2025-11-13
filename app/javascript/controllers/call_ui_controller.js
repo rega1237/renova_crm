@@ -15,15 +15,21 @@ export default class extends Controller {
 
     // Restore UI if a call is already active (Turbo navigation)
     if (window.CallState.inCall) {
-      this.render(window.CallState.clientName, window.CallState.phone)
+      this.render(window.CallState.clientName, window.CallState.phone, "Conectado")
     }
 
     // Listen for UI events from call_controller
     this.onShow = (e) => {
-      const { name, phone } = e.detail || {}
-      this.render(name, phone)
-      // Modo activo por defecto (saliente)
-      this.setActiveMode()
+      const { name, phone, direction } = e.detail || {}
+      const hasIncomingPending = !!(window.activeIncomingCall && typeof window.activeIncomingCall.accept === "function" && !window.CallState?.inCall)
+      // Mantener modo entrante si hay llamada pendiente o si el emisor lo indica
+      if (hasIncomingPending || direction === "inbound") {
+        this.render(name, phone, "Llamada entrante…")
+        this.setIncomingMode()
+      } else {
+        this.render(name, phone, "Llamando…")
+        this.setActiveMode()
+      }
       // Prepara el contexto de audio para poder reproducir el tono tras interacción del usuario
       this.ensureAudioContext()
     }
@@ -42,7 +48,7 @@ export default class extends Controller {
     // Evento específico para llamadas entrantes
     this.onIncoming = (e) => {
       const { name, phone } = e.detail || {}
-      this.render(name || "Llamada entrante", phone)
+      this.render(name || "Llamada entrante", phone, "Llamada entrante…")
       this.setIncomingMode()
     }
 
@@ -69,10 +75,12 @@ export default class extends Controller {
   }
 
   // ===== UI rendering =====
-  render(name, phone) {
+  render(name, phone, statusText) {
     if (name) this.nameTarget.textContent = name
     if (phone) this.phoneTarget.textContent = phone
-    this.statusTarget.textContent = "Llamando…"
+    if (statusText) {
+      this.statusTarget.textContent = statusText
+    }
     this.show()
     // No additional controls to update
   }

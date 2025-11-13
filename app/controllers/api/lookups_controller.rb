@@ -32,14 +32,46 @@ module Api
     private
 
     def find_by_phone(klass, normalized, digits)
-      rec = nil
+      scope = klass.where.not(phone: [nil, ""]) 
+      # 1) Exact matches primero
       if normalized.present?
-        rec = klass.where(phone: normalized).first
+        rec = scope.where(phone: normalized).first
+        return rec if rec
       end
-      if !rec && digits.present?
-        rec = klass.where(phone: digits).first
+      if digits.present?
+        rec = scope.where(phone: digits).first
+        return rec if rec
       end
-      rec
+
+      # 2) Normalizar sólo dígitos y hacer match por sufijo (últimos 10/7)
+      return nil if digits.blank?
+      last10 = digits[-10..]
+      last7  = digits[-7..]
+
+      # Intentar con Postgres: regexp_replace para limpiar no dígitos
+      begin
+        if last10.present?
+          rec = scope.where("regexp_replace(phone, '[^0-9]', '', 'g') LIKE ?", "%#{last10}").first
+          return rec if rec
+        end
+        if last7.present?
+          rec = scope.where("regexp_replace(phone, '[^0-9]', '', 'g') LIKE ?", "%#{last7}").first
+          return rec if rec
+        end
+      rescue
+        # Fallback para otros adapters (SQLite/MySQL): comparar en Ruby
+        cleaned = scope.map { |r| [r, r.phone.to_s.gsub(/[^0-9]/, "")] }
+        if last10.present?
+          rec = cleaned.find { |(_, digits_db)| digits_db.end_with?(last10) }&.first
+          return rec if rec
+        end
+        if last7.present?
+          rec = cleaned.find { |(_, digits_db)| digits_db.end_with?(last7) }&.first
+          return rec if rec
+        end
+      end
+
+      nil
     end
 
     def normalize_phone(str)

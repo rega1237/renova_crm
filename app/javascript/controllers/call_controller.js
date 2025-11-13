@@ -401,7 +401,7 @@ export default class extends Controller {
 
     // Mostrar inmediatamente la UI de llamada y ocultar el botón original
     this.hideCallButton()
-    const uiDetail = { name: this.clientNameValue || "", phone: to }
+    const uiDetail = { name: this.clientNameValue || "", phone: to, direction: "outbound" }
     window.CallState = Object.assign({ inCall: true, clientName: uiDetail.name, phone: uiDetail.phone }, window.CallState || {})
     window.dispatchEvent(new CustomEvent("call:ui:show", { detail: uiDetail }))
 
