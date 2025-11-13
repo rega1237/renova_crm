@@ -10,7 +10,19 @@ module Api
       before_action :require_current_user!
 
       def create
-        identity = Current.user.email.presence || "user-#{Current.user.id}"
+        begin
+          raw_cookie = cookies[:session_id]
+          signed_cookie = nil
+          begin
+            signed_cookie = cookies.signed[:session_id]
+          rescue => e
+            Rails.logger.warn("[VoiceTokens] cookies.signed[:session_id] error: #{e.message}")
+          end
+          Rails.logger.info("[VoiceTokens] cookie raw session_id=#{raw_cookie.inspect} signed=#{signed_cookie.inspect} Current.session=#{Current.session&.id} Current.user=#{Current.user&.id}")
+        rescue => e
+          Rails.logger.warn("[VoiceTokens] logging error: #{e.message}")
+        end
+identity = Current.user.email.presence || "user-#{Current.user.id}"
 
         api_key_sid = Rails.application.credentials.dig(:twilio, :api_key_sid) || ENV["TWILIO_API_KEY_SID"]
         api_key_secret = Rails.application.credentials.dig(:twilio, :api_key_secret) || ENV["TWILIO_API_KEY_SECRET"]
@@ -37,6 +49,15 @@ module Api
 
       def require_current_user!
         unless Current.user
+                    # Más diagnóstico cuando no hay usuario
+          raw_cookie = cookies[:session_id]
+          signed_cookie = nil
+          begin
+            signed_cookie = cookies.signed[:session_id]
+          rescue => e
+            Rails.logger.warn("[VoiceTokens] cookies.signed[:session_id] error in require_current_user!: #{e.message}")
+          end
+          Rails.logger.warn("[VoiceTokens] 401: Current.user=nil raw_cookie=#{raw_cookie.inspect} signed_cookie=#{signed_cookie.inspect} Current.session=#{Current.session&.id}")
           render json: { error: "No autorizado" }, status: :unauthorized
         end
       end

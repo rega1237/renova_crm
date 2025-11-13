@@ -4,7 +4,11 @@ import { Controller } from "@hotwired/stimulus"
 // Interacts with global window.twilioDevice and window.activeConnection created by call_controller.
 export default class extends Controller {
   static targets = ["container", "name", "phone", "status", "hangupButton", "answerButton"]
-
+  // CSRF helper (igual que en otros controladores)
+  csrfToken() {
+    const meta = document.querySelector("meta[name=csrf-token]");
+    return meta ? meta.getAttribute("content") : ""
+  }
   connect() {
     // Initialize global state if missing (minimal)
     window.CallState = window.CallState || { inCall: false }
@@ -175,7 +179,7 @@ export default class extends Controller {
       // SDK no cargado
       if (!window.Twilio || !window.Twilio.Device) return
       // Obtener token del backend
-      const r = await fetch("/api/twilio/voice/token", { method: "POST", headers: { "Accept": "application/json" }, credentials: "same-origin" })
+      const r = await fetch("/api/twilio/voice/token", { method: "POST", headers: { "Accept": "application/json", "X-CSRF-Token": this.csrfToken() }, credentials: "include" })
       const data = await r.json().catch(() => ({}))
       if (!data?.token) return
       // Crear y registrar Device solo para recepción
