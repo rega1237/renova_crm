@@ -3,7 +3,7 @@ module Api
     protect_from_forgery with: :null_session
 
     # Evitar el redirect HTML del concern Authentication y manejar auth como JSON
-    allow_unauthenticated_access only: [:create]
+    allow_unauthenticated_access only: [ :create ]
     # Asegurar que Current.user se setee desde cookie de sesión si existe
     before_action :resume_session
 
@@ -13,12 +13,12 @@ module Api
 
     def create
       client = Client.find(params[:client_id])
-      
+
       # Validate client has required data
       unless client.phone.present?
         return render json: { error: "El cliente no tiene teléfono registrado" }, status: :unprocessable_entity
       end
-      
+
       # Get number selection for this client and user
       selection = client.select_outbound_number_for(Current.user)
 
@@ -34,28 +34,28 @@ module Api
         # Manual selection provided by user - validate it's active and owned
         candidate = Number.active.owned_by(Current.user).find_by(phone_number: from_number_param)
         unless candidate
-          return render json: { 
-            error: "El número seleccionado no es válido, no está activo o no te pertenece" 
+          return render json: {
+            error: "El número seleccionado no es válido, no está activo o no te pertenece"
           }, status: :unprocessable_entity
         end
         from_number_record = candidate
       else
         # No automatic match and no manual selection - show alternatives
         if selection[:alternatives].empty?
-          return render json: { 
-            error: "No tienes números activos disponibles para realizar llamadas" 
+          return render json: {
+            error: "No tienes números activos disponibles para realizar llamadas"
           }, status: :unprocessable_entity
         end
 
         return render json: {
           need_selection: true,
           client_state: client.state&.abbreviation,
-          alternatives: selection[:alternatives].map { |n| 
-            { 
-              phone_number: n.phone_number, 
+          alternatives: selection[:alternatives].map { |n|
+            {
+              phone_number: n.phone_number,
               state: n.state,
               formatted: "#{n.phone_number} (#{n.state})"
-            } 
+            }
           }
         }, status: :ok
       end
@@ -70,9 +70,9 @@ module Api
       result = CallService.new(client: client, to_number: to_number, from_number: from_number_record.phone_number, user: Current.user).call!
 
       if result.success
-        render json: { 
-          success: true, 
-          sid: result.sid, 
+        render json: {
+          success: true,
+          sid: result.sid,
           status: result.status,
           auto_selected_number: auto_selected ? from_number_record.phone_number : nil,
           selected_number: from_number_record.phone_number,
@@ -106,7 +106,7 @@ module Api
 
     def require_call_permission!
       user = Current.user
-      allowed_roles = ["telemarketing", "admin"]
+      allowed_roles = [ "telemarketing", "admin" ]
       unless user && allowed_roles.include?(user.rol.to_s)
         render json: { error: "No autorizado para realizar llamadas" }, status: :forbidden
       end

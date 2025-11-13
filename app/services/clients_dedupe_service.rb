@@ -83,11 +83,11 @@ class ClientsDedupeService
     when "latest"
       sorted = clients.sort_by(&:id)
       kept = sorted.last
-      [kept, sorted[0..-2]]
+      [ kept, sorted[0..-2] ]
     else # "oldest" por defecto
       sorted = clients.sort_by(&:id)
       kept = sorted.first
-      [kept, sorted[1..-1]]
+      [ kept, sorted[1..-1] ]
     end
   end
 end

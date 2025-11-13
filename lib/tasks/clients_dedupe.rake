@@ -39,7 +39,7 @@ namespace :clients do
     end
 
     grouped = Hash.new { |h, k| h[k] = [] }
-    Client.where.not(phone: [nil, ""]).find_each(batch_size: 500) do |client|
+    Client.where.not(phone: [ nil, "" ]).find_each(batch_size: 500) do |client|
       key = normalize_phone_key(client.phone)
       next if key.blank?
       grouped[key] << client
@@ -55,7 +55,7 @@ namespace :clients do
       processed_groups += 1
       sorted = arr.sort_by(&:id)
       keeper = keep_strategy == "oldest" ? sorted.first : sorted.last
-      to_delete = sorted - [keeper]
+      to_delete = sorted - [ keeper ]
 
       puts "Grupo #{processed_groups}: phone_key=#{key} | keep_id=#{keeper.id} delete_ids=[#{to_delete.map(&:id).join(", ")}]"
 

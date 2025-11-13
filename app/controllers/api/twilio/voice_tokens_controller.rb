@@ -5,7 +5,7 @@ module Api
     class VoiceTokensController < ApplicationController
       protect_from_forgery with: :null_session
 
-      allow_unauthenticated_access only: [:create]
+      allow_unauthenticated_access only: [ :create ]
       before_action :resume_session
       before_action :require_current_user!
 

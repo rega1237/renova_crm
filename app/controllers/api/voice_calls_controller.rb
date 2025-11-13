@@ -3,7 +3,7 @@ module Api
     protect_from_forgery with: :null_session
 
     # Igual que en Api::CallsController: autenticación vía cookie de sesión
-    allow_unauthenticated_access only: [:prepare]
+    allow_unauthenticated_access only: [ :prepare ]
     before_action :resume_session
 
     before_action :require_current_user!
@@ -88,7 +88,7 @@ module Api
 
     def require_call_permission!
       user = Current.user
-      allowed_roles = ["telemarketing", "admin"]
+      allowed_roles = [ "telemarketing", "admin" ]
       unless user && allowed_roles.include?(user.rol.to_s)
         render json: { error: "No autorizado para realizar llamadas" }, status: :forbidden
       end

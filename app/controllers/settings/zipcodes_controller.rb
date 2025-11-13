@@ -1,11 +1,11 @@
 class Settings::ZipcodesController < ApplicationController
   include Authorization
   before_action -> { require_admin!(message: "Acceso no autorizado") }
-  before_action :set_zipcode, only: [:show, :edit, :update, :destroy]
+  before_action :set_zipcode, only: [ :show, :edit, :update, :destroy ]
 
   def index
     scope = Zipcode.includes(city: :state).ordered
-    
+
     # Filtro por búsqueda de código postal
     if params[:query].present?
       scope = scope.where("code ILIKE ?", "%#{params[:query]}%")
@@ -29,9 +29,9 @@ class Settings::ZipcodesController < ApplicationController
     # Ciudades para el filtro dependiente: si hay estado seleccionado, limitar ciudades a ese estado
     @cities = if params[:state_id].present?
                 City.where(state_id: params[:state_id]).ordered
-              else
+    else
                 City.includes(:state).ordered
-              end
+    end
     @states = State.ordered
 
     # Para peticiones de scroll infinito: devolver solo filas
@@ -93,8 +93,8 @@ class Settings::ZipcodesController < ApplicationController
     @selected_state_id = params[:state_id].presence || @zipcode&.city&.state_id
     @cities = if @selected_state_id.present?
                 City.where(state_id: @selected_state_id).ordered
-              else
+    else
                 City.includes(:state).ordered
-              end
+    end
   end
 end

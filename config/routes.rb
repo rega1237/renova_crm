@@ -21,7 +21,7 @@ Rails.application.routes.draw do
     resources :cities
     resources :zipcodes
     resources :numbers
-    resources :location_imports, only: [:new, :create]
+    resources :location_imports, only: [ :new, :create ]
     # La página principal del menú de configuración
     root to: "dashboard#index"
     post "import_clients", to: "dashboard#import_clients"
@@ -56,7 +56,7 @@ Rails.application.routes.draw do
   get "calendar", to: "calendar#index"
   get "appointments_list", to: "appointments_list#index"
   # --- Llamadas ---
-  resources :calls, only: [:index, :show, :new, :create, :edit, :update]
+  resources :calls, only: [ :index, :show, :new, :create, :edit, :update ]
 
   # --- Ruta para Actualizar Status via Drag & Drop ---
   patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"

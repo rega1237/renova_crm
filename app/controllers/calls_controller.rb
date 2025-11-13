@@ -1,6 +1,6 @@
 class CallsController < ApplicationController
-  before_action :set_call, only: [:show, :edit, :update]
-  before_action :authorize_call_access, only: [:show, :edit, :update]
+  before_action :set_call, only: [ :show, :edit, :update ]
+  before_action :authorize_call_access, only: [ :show, :edit, :update ]
 
   PER_PAGE = 20
 

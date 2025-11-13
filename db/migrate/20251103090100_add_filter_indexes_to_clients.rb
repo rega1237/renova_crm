@@ -7,11 +7,11 @@ class AddFilterIndexesToClients < ActiveRecord::Migration[8.0]
     add_index :clients, :zip_code, name: "index_clients_on_zip_code"
 
     # Índices parciales (solo ZIP de 5 dígitos) combinados con estado/ciudad, para filtros jerárquicos
-    add_index :clients, [:city_id, :zip_code],
+    add_index :clients, [ :city_id, :zip_code ],
               where: "zip_code ~ '^[0-9]{5}$'",
               name: "index_clients_on_city_id_and_zip_code_5digits"
 
-    add_index :clients, [:state_id, :zip_code],
+    add_index :clients, [ :state_id, :zip_code ],
               where: "zip_code ~ '^[0-9]{5}$'",
               name: "index_clients_on_state_id_and_zip_code_5digits"
 

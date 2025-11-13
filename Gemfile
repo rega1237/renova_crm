@@ -54,7 +54,7 @@ gem "koala", "~> 3.0"
 # --- Google API ---
 gem "google-apis-calendar_v3"
 gem "omniauth-google-oauth2"
- 
+
 # Twilio SDK for voice calls
 gem "twilio-ruby", "~> 6.0"
 

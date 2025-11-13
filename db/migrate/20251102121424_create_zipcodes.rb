@@ -8,6 +8,6 @@ class CreateZipcodes < ActiveRecord::Migration[8.0]
     end
 
     add_index :zipcodes, :code
-    add_index :zipcodes, [:code, :city_id], unique: true
+    add_index :zipcodes, [ :code, :city_id ], unique: true
   end
 end

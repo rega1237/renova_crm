@@ -10,7 +10,7 @@ class CreateNumbers < ActiveRecord::Migration[7.1]
     end
 
     add_index :numbers, :phone_number, unique: true
-    add_index :numbers, [:user_id, :state]
+    add_index :numbers, [ :user_id, :state ]
     add_index :numbers, :status
   end
 end

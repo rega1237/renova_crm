@@ -79,9 +79,9 @@ class ClientsController < ApplicationController
     city_ids = base_for_filters.where.not(city_id: nil).distinct.pluck(:city_id)
     @cities_for_filter = if params[:state_id].present?
                            City.where(id: city_ids, state_id: params[:state_id]).ordered
-                         else
+    else
                            City.where(id: city_ids).ordered
-                         end
+    end
 
     # Jerárquico para zipcodes: si hay ciudad, filtra por ciudad; si no, por estado; si no, todos
     zips_scope = base_for_filters.where.not(zip_code: [ nil, "" ])
@@ -468,7 +468,7 @@ class ClientsController < ApplicationController
       q = params[:query].to_s.strip.downcase
       digits = q.gsub(/[^0-9]/, '')
 
-      conditions = ["LOWER(name) ILIKE :q", "phone ILIKE :q"]
+      conditions = [ "LOWER(name) ILIKE :q", "phone ILIKE :q" ]
       args = { q: "%#{q}%" }
 
       if digits.present?

@@ -89,5 +89,4 @@ class Settings::DashboardController < ApplicationController
   rescue => e
     redirect_to settings_root_path, alert: "Error al iniciar deduplicación: #{e.message}"
   end
-
 end

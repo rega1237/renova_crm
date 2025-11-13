@@ -71,7 +71,7 @@ class ClientsImportService
     xls.sheets.each do |sheet_name|
       sheet = xls.sheet(sheet_name)
       last_row = sheet.last_row.to_i
-      total_rows += [last_row - 1, 0].max
+      total_rows += [ last_row - 1, 0 ].max
     end
     on_progress&.call(event: "start", message: "Procesando #{total_rows} filas de clientes", total: total_rows, processed: 0, percent: 0)
 

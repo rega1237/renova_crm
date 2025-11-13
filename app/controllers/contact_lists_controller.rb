@@ -1,7 +1,7 @@
 class ContactListsController < ApplicationController
   include Authorization
   before_action -> { require_admin!(message: "Acceso no autorizado") }
-  before_action :set_contact_list, only: [:show, :edit, :update, :destroy]
+  before_action :set_contact_list, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @states_for_filter = State.ordered

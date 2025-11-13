@@ -1,5 +1,5 @@
 class Settings::NumbersController < ApplicationController
-  before_action :set_number, only: [:show, :edit, :update, :destroy]
+  before_action :set_number, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @numbers = Number.includes(:user).order(created_at: :desc)

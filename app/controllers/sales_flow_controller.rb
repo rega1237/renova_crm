@@ -144,9 +144,9 @@ class SalesFlowController < ApplicationController
     city_ids = base.where.not(city_id: nil).distinct.pluck(:city_id)
     @filter_cities = if @state_filter.present?
                        City.where(id: city_ids, state_id: @state_filter).ordered
-                     else
+    else
                        City.where(id: city_ids).ordered
-                     end
+    end
 
     zips_scope = base.where.not(zip_code: [ nil, "" ])
     if @city_filter.present? && @city_filter != "none"
@@ -167,7 +167,7 @@ class SalesFlowController < ApplicationController
     @states_for_filter = State.where(id: state_ids).order(:name)
   end
 
-  
+
 
   # Normaliza un valor de filtro de ZIP: devuelve los 5 dígitos base si existen
   def normalize_zip_param(value)
@@ -185,7 +185,7 @@ class SalesFlowController < ApplicationController
     q = @query.to_s.strip.downcase
     digits = q.gsub(/[^0-9]/, "")
 
-    conditions = ["LOWER(name) ILIKE :q", "phone ILIKE :q"]
+    conditions = [ "LOWER(name) ILIKE :q", "phone ILIKE :q" ]
     params = { q: "%#{q}%" }
 
     if digits.present?

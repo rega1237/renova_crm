@@ -37,7 +37,7 @@ class CallService
       from: @from_number,
       to: @to_number,
       twiml: voice_response.to_s,
-      **(callback_url ? { status_callback: callback_url, status_callback_event: ["completed"], status_callback_method: "POST" } : {})
+      **(callback_url ? { status_callback: callback_url, status_callback_event: [ "completed" ], status_callback_method: "POST" } : {})
     )
 
     log_note!("Llamada iniciada a #{@to_number} desde #{@from_number}. SID: #{response.sid}. Estado: #{response.status}.")
