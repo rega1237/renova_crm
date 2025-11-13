@@ -86,7 +86,22 @@ class SalesFlowController < ApplicationController
 
     # Filtro por rango de fechas
     if @date_from.present? || @date_to.present?
-      scope = scope.by_date_range(@date_from, @date_to)
+      if @order_by_created
+        begin
+          from = @date_from.present? && Date.parse(@date_from.to_s).beginning_of_day
+          to   = @date_to.present?   && Date.parse(@date_to.to_s).end_of_day
+          if from && to
+            scope = scope.where(created_at: from..to)
+          elsif from
+            scope = scope.where("created_at >= ?", from)
+          elsif to
+            scope = scope.where("created_at <= ?", to)
+          end
+        rescue ArgumentError
+        end
+      else
+        scope = scope.by_date_range(@date_from, @date_to)
+      end
     end
 
     # Filtro por código postal (solo 5 dígitos)
@@ -138,7 +153,22 @@ class SalesFlowController < ApplicationController
     base = base.where(source: @source_filter) if @source_filter.present?
     base = base.where(state_id: @state_filter) if @state_filter.present?
     if @date_from.present? || @date_to.present?
-      base = base.by_date_range(@date_from, @date_to)
+      if @order_by_created
+        begin
+          from = @date_from.present? && Date.parse(@date_from.to_s).beginning_of_day
+          to   = @date_to.present?   && Date.parse(@date_to.to_s).end_of_day
+          if from && to
+            base = base.where(created_at: from..to)
+          elsif from
+            base = base.where("created_at >= ?", from)
+          elsif to
+            base = base.where("created_at <= ?", to)
+          end
+        rescue ArgumentError
+        end
+      else
+        base = base.by_date_range(@date_from, @date_to)
+      end
     end
 
     city_ids = base.where.not(city_id: nil).distinct.pluck(:city_id)
@@ -161,7 +191,22 @@ class SalesFlowController < ApplicationController
     base_states = apply_query_filter(base_states) if @query.present?
     base_states = base_states.where(source: @source_filter) if @source_filter.present?
     if @date_from.present? || @date_to.present?
-      base_states = base_states.by_date_range(@date_from, @date_to)
+      if @order_by_created
+        begin
+          from = @date_from.present? && Date.parse(@date_from.to_s).beginning_of_day
+          to   = @date_to.present?   && Date.parse(@date_to.to_s).end_of_day
+          if from && to
+            base_states = base_states.where(created_at: from..to)
+          elsif from
+            base_states = base_states.where("created_at >= ?", from)
+          elsif to
+            base_states = base_states.where("created_at <= ?", to)
+          end
+        rescue ArgumentError
+        end
+      else
+        base_states = base_states.by_date_range(@date_from, @date_to)
+      end
     end
     state_ids = base_states.where.not(state_id: nil).distinct.pluck(:state_id)
     @states_for_filter = State.where(id: state_ids).order(:name)

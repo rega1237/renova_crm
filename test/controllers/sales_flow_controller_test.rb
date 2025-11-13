@@ -43,4 +43,50 @@ class SalesFlowControllerTest < ActionDispatch::IntegrationTest
       assert idx_c2 < idx_c1
     end
   end
+
+  test "rango de fechas con checkbox usa created_at en vendido" do
+    c1 = clients(:two)
+    c2 = clients(:one)
+    c1.update_columns(status: Client.statuses[:vendido])
+    c2.update_columns(status: Client.statuses[:vendido])
+
+    # c1: fuera de rango por created_at, dentro por updated_status_at
+    c1.update_columns(created_at: 30.days.ago, updated_status_at: 1.day.ago)
+    # c2: dentro de rango por created_at, fuera por updated_status_at
+    c2.update_columns(created_at: 3.days.ago, updated_status_at: 60.days.ago)
+
+    from = 7.days.ago.to_date
+    to = Date.today
+
+    get sales_flow_url, params: { order_by_created: "1", date_from: from, date_to: to }
+    assert_response :success
+    assert_select "div.kanban-column[data-status='vendido'] a.client-card" do |elements|
+      ids = elements.map { |el| el["id"] }
+      assert_includes ids, "client_#{c2.id}"
+      refute_includes ids, "client_#{c1.id}"
+    end
+  end
+
+  test "rango de fechas sin checkbox usa updated_status_at en vendido" do
+    c1 = clients(:two)
+    c2 = clients(:one)
+    c1.update_columns(status: Client.statuses[:vendido])
+    c2.update_columns(status: Client.statuses[:vendido])
+
+    # c1 fuera por created_at, dentro por updated_status_at
+    c1.update_columns(created_at: 30.days.ago, updated_status_at: 2.days.ago)
+    # c2 dentro por created_at pero fuera por updated_status_at
+    c2.update_columns(created_at: 3.days.ago, updated_status_at: 60.days.ago)
+
+    from = 7.days.ago.to_date
+    to = Date.today
+
+    get sales_flow_url, params: { date_from: from, date_to: to }
+    assert_response :success
+    assert_select "div.kanban-column[data-status='vendido'] a.client-card" do |elements|
+      ids = elements.map { |el| el["id"] }
+      assert_includes ids, "client_#{c1.id}"
+      refute_includes ids, "client_#{c2.id}"
+    end
+  end
 end

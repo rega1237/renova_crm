@@ -53,7 +53,23 @@ class ClientsController < ApplicationController
 
     # Filtro por rango de fechas
     if params[:date_from].present? || params[:date_to].present?
-      @clients = @clients.by_date_range(params[:date_from], params[:date_to])
+      if params[:order_by_created].present?
+        begin
+          from = params[:date_from].presence && Date.parse(params[:date_from].to_s).beginning_of_day
+          to   = params[:date_to].presence   && Date.parse(params[:date_to].to_s).end_of_day
+          if from && to
+            @clients = @clients.where(created_at: from..to)
+          elsif from
+            @clients = @clients.where("created_at >= ?", from)
+          elsif to
+            @clients = @clients.where("created_at <= ?", to)
+          end
+        rescue ArgumentError
+          # Si las fechas son inválidas, omitir el filtro
+        end
+      else
+        @clients = @clients.by_date_range(params[:date_from], params[:date_to])
+      end
     end
 
     if params[:order_by_created].present?
@@ -73,7 +89,22 @@ class ClientsController < ApplicationController
       sid: params[:seller_id]
     ) if params[:seller_id].present?
     if params[:date_from].present? || params[:date_to].present?
-      base_for_filters = base_for_filters.by_date_range(params[:date_from], params[:date_to])
+      if params[:order_by_created].present?
+        begin
+          from = params[:date_from].presence && Date.parse(params[:date_from].to_s).beginning_of_day
+          to   = params[:date_to].presence   && Date.parse(params[:date_to].to_s).end_of_day
+          if from && to
+            base_for_filters = base_for_filters.where(created_at: from..to)
+          elsif from
+            base_for_filters = base_for_filters.where("created_at >= ?", from)
+          elsif to
+            base_for_filters = base_for_filters.where("created_at <= ?", to)
+          end
+        rescue ArgumentError
+        end
+      else
+        base_for_filters = base_for_filters.by_date_range(params[:date_from], params[:date_to])
+      end
     end
 
     city_ids = base_for_filters.where.not(city_id: nil).distinct.pluck(:city_id)
@@ -103,7 +134,22 @@ class ClientsController < ApplicationController
       sid: params[:seller_id]
     ) if params[:seller_id].present?
     if params[:date_from].present? || params[:date_to].present?
-      base_for_states = base_for_states.by_date_range(params[:date_from], params[:date_to])
+      if params[:order_by_created].present?
+        begin
+          from = params[:date_from].presence && Date.parse(params[:date_from].to_s).beginning_of_day
+          to   = params[:date_to].presence   && Date.parse(params[:date_to].to_s).end_of_day
+          if from && to
+            base_for_states = base_for_states.where(created_at: from..to)
+          elsif from
+            base_for_states = base_for_states.where("created_at >= ?", from)
+          elsif to
+            base_for_states = base_for_states.where("created_at <= ?", to)
+          end
+        rescue ArgumentError
+        end
+      else
+        base_for_states = base_for_states.by_date_range(params[:date_from], params[:date_to])
+      end
     end
     state_ids = base_for_states.where.not(state_id: nil).distinct.pluck(:state_id)
     @states_for_filter = State.where(id: state_ids).ordered

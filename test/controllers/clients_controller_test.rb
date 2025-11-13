@@ -47,4 +47,46 @@ class ClientsControllerTest < ActionDispatch::IntegrationTest
       assert idx_y < idx_x
     end
   end
+
+  test "rango de fechas con checkbox usa created_at" do
+    a = clients(:one)
+    b = clients(:two)
+
+    # a: fuera de rango por created_at, dentro por updated_status_at
+    a.update_columns(created_at: 30.days.ago, updated_status_at: 1.day.ago)
+    # b: dentro de rango por created_at, fuera por updated_status_at
+    b.update_columns(created_at: 3.days.ago, updated_status_at: 60.days.ago)
+
+    from = 7.days.ago.to_date
+    to = Date.today
+
+    get clients_url(order_by_created: "1", date_from: from, date_to: to)
+    assert_response :success
+    assert_select "li[id]" do |elements|
+      ids = elements.map { |el| el["id"] }.compact
+      assert_includes ids, "client_#{b.id}"
+      refute_includes ids, "client_#{a.id}"
+    end
+  end
+
+  test "rango de fechas sin checkbox usa created_at para lead y updated_status_at para otros" do
+    lead = clients(:one)
+    vend = clients(:two)
+
+    # lead dentro por created_at
+    lead.update_columns(created_at: 3.days.ago, updated_status_at: 40.days.ago)
+    # vendido dentro por updated_status_at, fuera por created_at
+    vend.update_columns(created_at: 30.days.ago, updated_status_at: 2.days.ago)
+
+    from = 7.days.ago.to_date
+    to = Date.today
+
+    get clients_url(date_from: from, date_to: to)
+    assert_response :success
+    assert_select "li[id]" do |elements|
+      ids = elements.map { |el| el["id"] }.compact
+      assert_includes ids, "client_#{lead.id}"
+      assert_includes ids, "client_#{vend.id}"
+    end
+  end
 end
