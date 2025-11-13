@@ -56,7 +56,11 @@ class ClientsController < ApplicationController
       @clients = @clients.by_date_range(params[:date_from], params[:date_to])
     end
 
-    @clients = @clients.order(created_at: :desc)
+    if params[:order_by_created].present?
+      @clients = @clients.reorder(created_at: :desc)
+    else
+      @clients = @clients.reorder(Arel.sql("COALESCE(updated_status_at, created_at) DESC"))
+    end
 
     # Construir colecciones para los dropdowns filtradas por los parámetros actuales (excepto city y zip)
     base_for_filters = Client.where(nil)

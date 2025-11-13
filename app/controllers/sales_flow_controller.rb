@@ -43,6 +43,7 @@ class SalesFlowController < ApplicationController
     @zip_filter = params[:zip_code]
     @date_from = params[:date_from]
     @date_to = params[:date_to]
+    @order_by_created = params[:order_by_created].present?
   end
 
   def load_clients_by_status
@@ -118,10 +119,14 @@ class SalesFlowController < ApplicationController
 
   # Ordenar por la fecha relevante
   def order_scope_for_status(scope, status)
-    if status == "lead"
+    if @order_by_created
       scope.order(created_at: :desc)
     else
-      scope.order(Arel.sql("COALESCE(updated_status_at, created_at) DESC"))
+      if status == "lead"
+        scope.order(created_at: :desc)
+      else
+        scope.order(Arel.sql("COALESCE(updated_status_at, created_at) DESC"))
+      end
     end
   end
 
