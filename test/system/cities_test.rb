@@ -4,7 +4,7 @@ class CitiesTest < ApplicationSystemTestCase
   test "navigate from settings dashboard to cities index" do
     visit "/settings"
     assert_text "Configuración del Sistema"
-    click_on "Gestionar Ciudades"
+    find("a", text: "Gestionar Ciudades").click
     assert_current_path "/settings/cities"
     assert_text "Ciudades"
   end
@@ -18,7 +18,7 @@ class CitiesTest < ApplicationSystemTestCase
     select "Texas", from: "Estado"
     click_on "Crear Ciudad"
 
-    assert_text "Ciudad creada exitosamente."
+    assert_selector "#notifications-container", text: "Ciudad creada exitosamente.", wait: 5, visible: :all
     # En el índice, localizar la fila de la ciudad recién creada y hacer clic en "Editar"
     within find("tr", text: "Test City") do
       find("a[title='Editar']").click

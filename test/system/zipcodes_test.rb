@@ -17,22 +17,24 @@ class ZipcodesTest < ApplicationSystemTestCase
     select "Monterrey", from: "Ciudad"
     click_on "Crear Código Postal"
 
-    assert_text "Código postal creado exitosamente."
+    assert_selector "#notifications-container", text: "Código postal creado exitosamente.", wait: 5, visible: :all
 
     within find("tr", text: "99999") do
       find("a[title='Editar']").click
     end
     fill_in "Código Postal", with: "99998"
     click_on "Actualizar Código Postal"
-    assert_text "Código postal actualizado exitosamente."
+    assert_selector "#notifications-container", text: "Código postal actualizado exitosamente.", wait: 5, visible: :all
 
     click_on "Ver Todos los Códigos Postales"
     assert_text "99998"
 
     within find("tr", text: "99998") do
-      find("button[title='Eliminar']").click
+      accept_confirm do
+        find("button[title='Eliminar']").click
+      end
     end
-    assert_text "Código postal eliminado exitosamente."
+    assert_selector "#notifications-container", text: "Código postal eliminado exitosamente.", wait: 5, visible: :all
     refute_text "99998"
   end
 end

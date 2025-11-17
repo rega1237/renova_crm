@@ -64,7 +64,9 @@ class Settings::ZipcodesController < ApplicationController
   end
 
   def update
-    if @zipcode.update(zipcode_params)
+    attrs = zipcode_params
+    attrs[:city_id] = @zipcode.city_id if attrs[:city_id].blank?
+    if @zipcode.update(attrs)
       redirect_to settings_zipcode_path(@zipcode), notice: "Código postal actualizado exitosamente."
     else
       load_form_collections
