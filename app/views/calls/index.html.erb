@@ -25,6 +25,17 @@
                   {},
                   class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
           </div>
+          <div class="flex flex-col">
+            <%= form.label :direction, "Dirección", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
+            <%= form.select :direction,
+                  options_for_select([
+                    ['Todas', nil],
+                    ['Entrantes', 'inbound'],
+                    ['Salientes', 'outbound-dial']
+                  ], @direction),
+                  {},
+                  class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
+          </div>
         <% end %>
         <% unless current_user&.admin? %>
           <div class="flex flex-col">
@@ -35,6 +46,17 @@
                     ['Sí', 'yes'],
                     ['No', 'no']
                   ], @answered),
+                  {},
+                  class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
+          </div>
+          <div class="flex flex-col">
+            <%= form.label :direction, "Dirección", class: "text-sm font-poppins font-medium text-gray-700 mb-1" %>
+            <%= form.select :direction,
+                  options_for_select([
+                    ['Todas', nil],
+                    ['Entrantes', 'inbound'],
+                    ['Salientes', 'outbound-dial']
+                  ], @direction),
                   {},
                   class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rojo-carmesi focus:border-rojo-carmesi font-montserrat text-sm" %>
           </div>
@@ -152,7 +174,7 @@
       </svg>
       <h3 class="mt-2 text-sm font-poppins font-medium text-gray-900">No hay llamadas</h3>
       <p class="mt-1 text-sm font-montserrat text-gray-500">
-        <% if @user_id.present? || @start_date.present? || @end_date.present? %>
+        <% if @user_id.present? || @start_date.present? || @end_date.present? || @answered.present? || @direction.present? %>
           No se encontraron llamadas para los filtros seleccionados.
         <% else %>
           Aún no hay registros de llamadas.

@@ -23,6 +23,7 @@ class CallsController < ApplicationController
     @end_date = params[:end_date]
     # Filtro por "atendida" disponible para admin y telemarketing (sobre su propio set)
     @answered = params[:answered]
+    @direction = params[:direction]
     @page = params[:page].to_i
     @page = 1 if @page <= 0
 
@@ -30,6 +31,7 @@ class CallsController < ApplicationController
     calls = Call.includes(:client, :contact_list)
     calls = calls.by_user(@user_id)
     calls = calls.between_dates(@start_date, @end_date)
+    calls = calls.by_direction(@direction)
     # Filtro por atendida basado en el campo answered
     case @answered
     when 'yes'
