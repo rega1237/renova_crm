@@ -1,5 +1,6 @@
 require "test_helper"
 require "capybara/rails"
+Capybara.default_max_wait_time = 5
 
 Capybara.register_driver :chrome_headless_ci do |app|
   options = Selenium::WebDriver::Chrome::Options.new
@@ -21,8 +22,8 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   private
     def login_as_admin
       visit new_session_path
-      fill_in "Correo Electrónico", with: users(:one).email
-      fill_in "Contraseña", with: "password"
-      click_on "Ingresar"
+      fill_in "email", with: users(:one).email
+      fill_in "password", with: "password"
+      click_button "Ingresar"
     end
 end
