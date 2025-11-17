@@ -85,11 +85,11 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v1
-
-      - name: Setup Chromedriver
-        uses: browser-actions/setup-chromedriver@v1
+      - name: Setup Chrome + Chromedriver
+        uses: browser-actions/setup-chrome@v2
+        with:
+          install-chromedriver: true
+          install-dependencies: true
 
       - name: Run tests
         env:
