@@ -34,9 +34,9 @@ class CallsController < ApplicationController
     calls = calls.by_direction(@direction)
     # Filtro por atendida basado en el campo answered
     case @answered
-    when 'yes'
+    when "yes"
       calls = calls.answered
-    when 'no'
+    when "no"
       calls = calls.unanswered
     end
     calls = calls.order(call_date: :desc, call_time: :desc)

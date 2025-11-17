@@ -33,7 +33,7 @@ module Api
     private
 
     def find_by_phone(klass, normalized, digits)
-      scope = klass.where.not(phone: [nil, ""]) 
+      scope = klass.where.not(phone: [ nil, "" ])
       # 1) Exact matches primero
       if normalized.present?
         rec = scope.where(phone: normalized).first
@@ -61,7 +61,7 @@ module Api
         end
       rescue
         # Fallback para otros adapters (SQLite/MySQL): comparar en Ruby
-        cleaned = scope.map { |r| [r, r.phone.to_s.gsub(/[^0-9]/, "")] }
+        cleaned = scope.map { |r| [ r, r.phone.to_s.gsub(/[^0-9]/, "") ] }
         if last10.present?
           rec = cleaned.find { |(_, digits_db)| digits_db.end_with?(last10) }&.first
           return rec if rec

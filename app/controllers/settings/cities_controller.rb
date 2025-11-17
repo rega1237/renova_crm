@@ -11,7 +11,7 @@ class Settings::CitiesController < ApplicationController
     # Para peticiones de scroll infinito: devolver solo filas
     if params[:only_rows].present?
       render partial: "settings/cities/row", collection: @cities, as: :city, layout: false
-      return
+      nil
     end
   end
 

@@ -37,7 +37,7 @@ class Settings::ZipcodesController < ApplicationController
     # Para peticiones de scroll infinito: devolver solo filas
     if params[:only_rows].present?
       render partial: "settings/zipcodes/row", collection: @zipcodes, as: :zipcode, layout: false
-      return
+      nil
     end
   end
 

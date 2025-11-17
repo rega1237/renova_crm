@@ -512,7 +512,7 @@ class ClientsController < ApplicationController
     # Aplica filtro de búsqueda por nombre o teléfono (acepta dígitos sin símbolos)
     def apply_query_filter(scope)
       q = params[:query].to_s.strip.downcase
-      digits = q.gsub(/[^0-9]/, '')
+      digits = q.gsub(/[^0-9]/, "")
 
       conditions = [ "LOWER(name) ILIKE :q", "phone ILIKE :q" ]
       args = { q: "%#{q}%" }
@@ -522,7 +522,7 @@ class ClientsController < ApplicationController
         args[:qd] = "%#{digits}%"
       end
 
-      scope.where(conditions.join(' OR '), args)
+      scope.where(conditions.join(" OR "), args)
     end
 
   # Normaliza un valor de filtro de ZIP: devuelve los 5 dígitos base si existen

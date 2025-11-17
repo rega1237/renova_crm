@@ -6,7 +6,7 @@ module Api
       city_id = params[:city_id]
       query = params[:q].to_s.strip
       # Si use_model=true o source=model, usamos el modelo Zipcode
-      use_model = ActiveModel::Type::Boolean.new.cast(params[:use_model]) || params[:source] == 'model' || ActiveModel::Type::Boolean.new.cast(params[:all])
+      use_model = ActiveModel::Type::Boolean.new.cast(params[:use_model]) || params[:source] == "model" || ActiveModel::Type::Boolean.new.cast(params[:all])
 
       cache_key = [
         (use_model ? "api:zipcodes_model" : "api:zipcodes_with_clients"),

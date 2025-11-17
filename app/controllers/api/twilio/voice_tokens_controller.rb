@@ -49,7 +49,7 @@ identity = Current.user.email.presence || "user-#{Current.user.id}"
 
       def require_current_user!
         unless Current.user
-                    # Más diagnóstico cuando no hay usuario
+          # Más diagnóstico cuando no hay usuario
           raw_cookie = cookies[:session_id]
           signed_cookie = nil
           begin

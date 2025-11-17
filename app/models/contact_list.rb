@@ -35,10 +35,10 @@ class ContactList < ApplicationRecord
     if contact_state_abbr.present? || contact_state_name.present?
       match = user_numbers.where("LOWER(state) = ?", contact_state_abbr.downcase).first if contact_state_abbr.present?
       match ||= user_numbers.where("LOWER(state) = ?", contact_state_name.downcase).first if contact_state_name.present?
-      return ({ :number => match, :alternatives => [] }) if match
+      return ({ number: match, alternatives: [] }) if match
     end
 
-    { :number => nil, :alternatives => user_numbers.order(:state) }
+    { number: nil, alternatives: user_numbers.order(:state) }
   end
 
   private

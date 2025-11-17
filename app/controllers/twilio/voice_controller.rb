@@ -152,7 +152,7 @@ module Twilio
     def resolve_by_phone(klass, raw_phone)
       normalized = normalize_phone_for_storage(raw_phone)
       digits = raw_phone.to_s.gsub(/[^0-9]/, "")
-      scope = klass.where.not(phone: [nil, ""]) 
+      scope = klass.where.not(phone: [ nil, "" ])
       # Exactos primero
       rec = scope.where(phone: normalized).first if normalized.present?
       return rec if rec
@@ -172,7 +172,7 @@ module Twilio
           return rec if rec
         end
       rescue
-        cleaned = scope.map { |r| [r, r.phone.to_s.gsub(/[^0-9]/, "")] }
+        cleaned = scope.map { |r| [ r, r.phone.to_s.gsub(/[^0-9]/, "") ] }
         if last10.present?
           rec = cleaned.find { |(_, digits_db)| digits_db.end_with?(last10) }&.first
           return rec if rec
