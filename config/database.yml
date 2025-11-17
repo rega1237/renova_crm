@@ -57,6 +57,10 @@ development:
 test:
   <<: *default
   database: renova_crm_test
+  username: <%= ENV.fetch("POSTGRES_USER", ENV.fetch("PGUSER", "postgres")) %>
+  password: <%= ENV["POSTGRES_PASSWORD"] || ENV["PGPASSWORD"] %>
+  host: <%= ENV.fetch("PGHOST", ENV.fetch("POSTGRES_HOST", "localhost")) %>
+  port: <%= ENV.fetch("PGPORT", 5432) %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
