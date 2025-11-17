@@ -111,4 +111,8 @@ Rails.application.routes.draw do
     # Captura también GET por si Twilio (o proxies) lo invocan así por configuración
     get  "voice/status_callback", to: "callbacks#voice_status"
   end
+
+  if Rails.env.test?
+    get "test_login/:id", to: "sessions#test_login", as: :test_login
+  end
 end

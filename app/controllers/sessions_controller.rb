@@ -19,4 +19,13 @@ class SessionsController < ApplicationController
     terminate_session
     redirect_to new_session_path
   end
+
+  def test_login
+    unless Rails.env.test?
+      head :forbidden and return
+    end
+    user = User.find(params[:id])
+    start_new_session_for user
+    redirect_to after_authentication_url
+  end
 end

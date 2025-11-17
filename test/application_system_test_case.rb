@@ -21,9 +21,6 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
 
   private
     def login_as_admin
-      visit new_session_path
-      fill_in "email", with: users(:one).email
-      fill_in "password", with: "password"
-      click_button "Ingresar"
+      visit test_login_path(users(:one).id)
     end
 end
