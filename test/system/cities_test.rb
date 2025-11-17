@@ -32,7 +32,9 @@ class CitiesTest < ApplicationSystemTestCase
 
     # Eliminar la ciudad usando el botón "Eliminar" dentro de la fila correspondiente
     within find("tr", text: "Test City Updated") do
-      find("button[title='Eliminar']").click
+      accept_confirm do
+        find("button[title='Eliminar']").click
+      end
     end
     assert_text "Ciudad eliminada exitosamente."
     refute_text "Test City Updated"

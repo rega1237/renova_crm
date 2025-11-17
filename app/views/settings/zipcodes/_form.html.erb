@@ -34,7 +34,7 @@
 
     <div>
       <%= form.label :city_id, "Ciudad", class: "block font-poppins text-sm font-medium text-negro-onix" %>
-      <%= form.collection_select :city_id, @cities, :id, :name, { prompt: "Selecciona una ciudad" }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", data: { zipcodes_filter_target: "citySelect" } %>
+      <%= form.collection_select :city_id, @cities, :id, :name, { prompt: "Selecciona una ciudad", selected: zipcode.city_id }, class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:border-rojo-carmesi focus:ring focus:ring-rojo-carmesi focus:ring-opacity-50 font-montserrat", data: { zipcodes_filter_target: "citySelect" } %>
       <span class="hidden text-xs text-gray-500" data-zipcodes-filter-target="loadingIndicator">Cargando ciudades...</span>
     </div>
   </div>
