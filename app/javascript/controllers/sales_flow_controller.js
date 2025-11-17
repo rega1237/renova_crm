@@ -690,8 +690,8 @@ export default class extends Controller {
   }
 
   handleVisibilityChange() {
-    if (document.visibilityState === "hidden") {
-      this.unlockIfNeeded();
+    if (document.visibilityState === "visible" && this.currentClientIdOpen) {
+      this.startKeepalive();
     }
   }
 
