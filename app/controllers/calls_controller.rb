@@ -85,8 +85,8 @@ class CallsController < ApplicationController
       head :not_found and return
     end
 
-    account_sid = ENV["TWILIO_ACCOUNT_SID"].to_s
-    auth_token  = ENV["TWILIO_AUTH_TOKEN"].to_s
+    account_sid = (Rails.application.credentials.dig(:twilio, :account_sid).presence || ENV["TWILIO_ACCOUNT_SID"]).to_s
+    auth_token  = (Rails.application.credentials.dig(:twilio, :auth_token).presence  || ENV["TWILIO_AUTH_TOKEN"]).to_s
     if account_sid.blank? || auth_token.blank?
       head :service_unavailable and return
     end
