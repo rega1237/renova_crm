@@ -91,13 +91,13 @@ class CallsController < ApplicationController
       head :service_unavailable and return
     end
 
-    require 'net/http'
-    require 'uri'
+    require "net/http"
+    require "uri"
     begin
       uri = URI.parse("https://api.twilio.com/2010-04-01/Accounts/#{account_sid}/Recordings/#{@call.recording_sid}.mp3")
       response = fetch_with_basic_auth(uri, account_sid, auth_token)
       if response.is_a?(Net::HTTPSuccess)
-        send_data response.body, type: 'audio/mpeg', disposition: 'inline'
+        send_data response.body, type: "audio/mpeg", disposition: "inline"
       else
         Rails.logger.error("Twilio media fetch failed: status=#{response.code} body=#{response.body.to_s[0..200]}")
         head :bad_gateway
@@ -128,16 +128,16 @@ class CallsController < ApplicationController
   end
 
   def fetch_with_basic_auth(uri, user, password, limit = 3)
-    raise ArgumentError, 'too many HTTP redirects' if limit <= 0
+    raise ArgumentError, "too many HTTP redirects" if limit <= 0
     http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = (uri.scheme == 'https')
+    http.use_ssl = (uri.scheme == "https")
     http.read_timeout = 15
     http.open_timeout = 10
     request = Net::HTTP::Get.new(uri)
     request.basic_auth(user, password)
     response = http.request(request)
-    if response.is_a?(Net::HTTPRedirection) && response['Location'].present?
-      return fetch_with_basic_auth(URI.parse(response['Location']), user, password, limit - 1)
+    if response.is_a?(Net::HTTPRedirection) && response["Location"].present?
+      return fetch_with_basic_auth(URI.parse(response["Location"]), user, password, limit - 1)
     end
     response
   end
