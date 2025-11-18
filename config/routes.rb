@@ -56,7 +56,11 @@ Rails.application.routes.draw do
   get "calendar", to: "calendar#index"
   get "appointments_list", to: "appointments_list#index"
   # --- Llamadas ---
-  resources :calls, only: [ :index, :show, :new, :create, :edit, :update ]
+  resources :calls, only: [ :index, :show, :new, :create, :edit, :update ] do
+    member do
+      get :recording
+    end
+  end
 
   # --- Ruta para Actualizar Status via Drag & Drop ---
   patch "clients/:id/update_status", to: "clients#update_status", as: "update_client_status"
@@ -110,6 +114,9 @@ Rails.application.routes.draw do
     post "voice/status_callback", to: "callbacks#voice_status", as: :voice_status_callback
     # Captura también GET por si Twilio (o proxies) lo invocan así por configuración
     get  "voice/status_callback", to: "callbacks#voice_status"
+    # Webhook de estado de grabación
+    post "voice/recording_status_callback", to: "callbacks#recording_status", as: :recording_status_callback
+    get  "voice/recording_status_callback", to: "callbacks#recording_status"
   end
 
   if Rails.env.test?

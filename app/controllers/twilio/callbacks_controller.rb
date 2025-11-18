@@ -55,6 +55,37 @@ module Twilio
       head :internal_server_error
     end
 
+    # Acción que recibe la notificación del estado de la grabación.
+    def recording_status
+      Rails.logger.info("Twilio Recording status callback params: #{params.to_unsafe_h.inspect}")
+
+      parent_call_sid = params[:parent_sid]
+      call_record = ::Call.find_by(twilio_call_id: parent_call_sid)
+
+      unless call_record
+        Rails.logger.warn("No se encontró registro de llamada para parent_sid: #{parent_call_sid}")
+        return render xml: "<Response></Response>", content_type: "text/xml", status: :ok
+      end
+
+      recording_sid = params[:RecordingSid]
+      recording_status = params[:RecordingStatus]
+      recording_duration = params[:RecordingDuration].to_i if params[:RecordingDuration].present?
+
+      updates = {
+        recording_sid: recording_sid,
+        recording_status: recording_status,
+        recording_duration: recording_duration
+      }.compact
+
+      call_record.update!(updates)
+
+      Rails.logger.info("Grabación actualizada para llamada #{call_record.id}: sid=#{recording_sid}, status=#{recording_status}, duration=#{recording_duration}")
+      render xml: "<Response></Response>", content_type: "text/xml", status: :ok
+    rescue StandardError => e
+      Rails.logger.error("Error en recording status callback de Twilio: #{e.message}\n#{e.backtrace.join("\n")}")
+      render xml: "<Response></Response>", content_type: "text/xml", status: :ok
+    end
+
     private
 
     # Verificación de la firma de la petición de Twilio.

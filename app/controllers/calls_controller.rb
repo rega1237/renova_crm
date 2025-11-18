@@ -1,6 +1,6 @@
 class CallsController < ApplicationController
-  before_action :set_call, only: [ :show, :edit, :update ]
-  before_action :authorize_call_access, only: [ :show, :edit, :update ]
+  before_action :set_call, only: [ :show, :edit, :update, :recording ]
+  before_action :authorize_call_access, only: [ :show, :edit, :update, :recording ]
 
   PER_PAGE = 20
 
@@ -80,6 +80,34 @@ class CallsController < ApplicationController
     end
   end
 
+  def recording
+    unless @call.recording_sid.present?
+      head :not_found and return
+    end
+
+    account_sid = (Rails.application.credentials.dig(:twilio, :account_sid).presence || ENV["TWILIO_ACCOUNT_SID"]).to_s
+    auth_token  = (Rails.application.credentials.dig(:twilio, :auth_token).presence  || ENV["TWILIO_AUTH_TOKEN"]).to_s
+    if account_sid.blank? || auth_token.blank?
+      head :service_unavailable and return
+    end
+
+    require "net/http"
+    require "uri"
+    begin
+      uri = URI.parse("https://api.twilio.com/2010-04-01/Accounts/#{account_sid}/Recordings/#{@call.recording_sid}.mp3")
+      response = fetch_with_basic_auth(uri, account_sid, auth_token)
+      if response.is_a?(Net::HTTPSuccess)
+        send_data response.body, type: "audio/mpeg", disposition: "inline"
+      else
+        Rails.logger.error("Twilio media fetch failed: status=#{response.code} body=#{response.body.to_s[0..200]}")
+        head :bad_gateway
+      end
+    rescue => e
+      Rails.logger.error("Error obteniendo grabación Twilio: #{e.class}: #{e.message}")
+      head :bad_gateway
+    end
+  end
+
   private
 
   def set_call
@@ -96,6 +124,21 @@ class CallsController < ApplicationController
   end
 
   def call_params
-    params.require(:call).permit(:twilio_call_id, :call_date, :call_time, :user_id, :duration, :client_id, :contact_list_id)
+    params.require(:call).permit(:twilio_call_id, :call_date, :call_time, :user_id, :duration, :client_id, :contact_list_id, :recording_sid, :recording_status, :recording_duration)
+  end
+
+  def fetch_with_basic_auth(uri, user, password, limit = 3)
+    raise ArgumentError, "too many HTTP redirects" if limit <= 0
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = (uri.scheme == "https")
+    http.read_timeout = 15
+    http.open_timeout = 10
+    request = Net::HTTP::Get.new(uri)
+    request.basic_auth(user, password)
+    response = http.request(request)
+    if response.is_a?(Net::HTTPRedirection) && response["Location"].present?
+      return fetch_with_basic_auth(URI.parse(response["Location"]), user, password, limit - 1)
+    end
+    response
   end
 end

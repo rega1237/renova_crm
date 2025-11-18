@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_13_181955) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -48,11 +48,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_13_181955) do
     t.bigint "client_id"
     t.bigint "contact_list_id"
     t.string "caller_phone"
+    t.string "recording_sid"
+    t.string "recording_status"
+    t.integer "recording_duration"
     t.index ["answered"], name: "index_calls_on_answered"
     t.index ["call_date"], name: "index_calls_on_call_date"
     t.index ["client_id"], name: "index_calls_on_client_id"
     t.index ["contact_list_id"], name: "index_calls_on_contact_list_id"
     t.index ["direction"], name: "index_calls_on_direction"
+    t.index ["recording_sid"], name: "index_calls_on_recording_sid"
     t.index ["status"], name: "index_calls_on_status"
     t.index ["twilio_call_id"], name: "index_calls_on_twilio_call_id", unique: true
     t.index ["user_id"], name: "index_calls_on_user_id"
