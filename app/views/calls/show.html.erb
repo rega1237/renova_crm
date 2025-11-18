@@ -48,6 +48,18 @@
       <dd class="font-montserrat text-base text-negro-onix"><%= @call.status || '-' %></dd>
     </div>
     <div>
+      <dt class="font-poppins text-sm font-medium text-gray-500">Grabación</dt>
+      <dd class="font-montserrat text-base text-negro-onix">
+        <% if @call.recording_sid.present? && @call.recording_status == 'completed' %>
+          <audio controls class="w-full">
+            <source src="<%= recording_call_path(@call) %>" type="audio/mpeg" />
+          </audio>
+        <% else %>
+          -
+        <% end %>
+      </dd>
+    </div>
+    <div>
       <dt class="font-poppins text-sm font-medium text-gray-500">Atendida</dt>
       <% atendida = @call.respond_to?(:effective_answered?) ? @call.effective_answered? : (@call.duration.to_i > 0) %>
       <dd class="font-montserrat text-base <%= atendida ? 'text-green-700' : 'text-red-700' %>"><%= atendida ? 'Sí' : 'No' %></dd>

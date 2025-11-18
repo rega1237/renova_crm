@@ -39,8 +39,10 @@ module Twilio
 
       # Construimos la URL del webhook, pasando también los IDs si existen.
       callback_url = build_status_callback_url(client_id: client_id, contact_list_id: contact_list_id)
+      recording_callback_url = build_recording_status_callback_url(parent_sid: params[:CallSid], client_id: client_id, contact_list_id: contact_list_id)
       Rails.logger.info("[Twilio Voice] status callback URL (outbound): #{callback_url}")
-      opts = status_callback_opts(callback_url)
+      Rails.logger.info("[Twilio Voice] recording callback URL (outbound): #{recording_callback_url}")
+      opts = dial_options(callback_url, recording_callback_url)
       Rails.logger.info("[Twilio Voice] Dial options (outbound): #{opts.inspect}")
 
       response.dial(caller_id: from_number, answer_on_bridge: true, **opts) do |dial|
@@ -69,8 +71,10 @@ module Twilio
 
       # Preparar callback URL incluyendo ids si se resolvieron
       callback_url = build_status_callback_url(client_id: client_id, contact_list_id: contact_list_id)
+      recording_callback_url = build_recording_status_callback_url(parent_sid: params[:CallSid], client_id: client_id, contact_list_id: contact_list_id)
       Rails.logger.info("[Twilio Voice] status callback URL (inbound): #{callback_url}")
-      opts = status_callback_opts(callback_url)
+      Rails.logger.info("[Twilio Voice] recording callback URL (inbound): #{recording_callback_url}")
+      opts = dial_options(callback_url, recording_callback_url)
       Rails.logger.info("[Twilio Voice] Dial options (inbound): #{opts.inspect}")
 
       response.dial(answer_on_bridge: true, **opts) do |dial|
@@ -104,14 +108,18 @@ module Twilio
     end
 
     # Opciones para el atributo statusCallback del TwiML <Dial>.
-    def status_callback_opts(callback_url)
-      return {} unless callback_url.present?
-
-      # TwiML correcto: usar action y method en <Dial> para recibir DialCallStatus/DialCallDuration
-      {
-        action: callback_url,
+    def dial_options(status_callback_url, recording_callback_url)
+      return {} unless status_callback_url.present?
+      opts = {
+        action: status_callback_url,
         method: "POST"
       }
+      if recording_callback_url.present?
+        opts[:record] = "record-from-answer"
+        opts[:recording_status_callback] = recording_callback_url
+        opts[:recording_status_callback_method] = "POST"
+      end
+      opts
     end
 
     # Construye la URL absoluta para el webhook.
@@ -126,6 +134,20 @@ module Twilio
       )
     rescue StandardError => e
       Rails.logger.warn("No se pudo construir status_callback_url: #{e.message}")
+      nil
+    end
+
+    def build_recording_status_callback_url(parent_sid:, client_id: nil, contact_list_id: nil)
+      helpers = Rails.application.routes.url_helpers
+      helpers.twilio_recording_status_callback_url(
+        host: request.host,
+        protocol: request.protocol,
+        parent_sid: parent_sid,
+        client_id: client_id,
+        contact_list_id: contact_list_id
+      )
+    rescue StandardError => e
+      Rails.logger.warn("No se pudo construir recording_status_callback_url: #{e.message}")
       nil
     end
 

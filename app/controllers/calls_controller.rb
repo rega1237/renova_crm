@@ -1,6 +1,6 @@
 class CallsController < ApplicationController
-  before_action :set_call, only: [ :show, :edit, :update ]
-  before_action :authorize_call_access, only: [ :show, :edit, :update ]
+  before_action :set_call, only: [ :show, :edit, :update, :recording ]
+  before_action :authorize_call_access, only: [ :show, :edit, :update, :recording ]
 
   PER_PAGE = 20
 
@@ -80,6 +80,31 @@ class CallsController < ApplicationController
     end
   end
 
+  def recording
+    unless @call.recording_sid.present?
+      head :not_found and return
+    end
+
+    account_sid = ENV["TWILIO_ACCOUNT_SID"].to_s
+    auth_token  = ENV["TWILIO_AUTH_TOKEN"].to_s
+    if account_sid.blank? || auth_token.blank?
+      head :service_unavailable and return
+    end
+
+    client = Twilio::REST::Client.new(account_sid, auth_token)
+    begin
+      rec = client.api.v2010.accounts(account_sid).recordings(@call.recording_sid).fetch
+      base_uri = rec.uri.to_s.gsub('.json', '')
+      media_url = "https://api.twilio.com#{base_uri}.mp3"
+      resp = client.http_client.request('GET', media_url)
+      data = resp.body
+      send_data data, type: 'audio/mpeg', disposition: 'inline'
+    rescue => e
+      Rails.logger.error("Error obteniendo grabación Twilio: #{e.message}")
+      head :bad_gateway
+    end
+  end
+
   private
 
   def set_call
@@ -96,6 +121,6 @@ class CallsController < ApplicationController
   end
 
   def call_params
-    params.require(:call).permit(:twilio_call_id, :call_date, :call_time, :user_id, :duration, :client_id, :contact_list_id)
+    params.require(:call).permit(:twilio_call_id, :call_date, :call_time, :user_id, :duration, :client_id, :contact_list_id, :recording_sid, :recording_status, :recording_duration)
   end
 end
