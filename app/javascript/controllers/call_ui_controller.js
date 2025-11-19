@@ -208,6 +208,10 @@ export default class extends Controller {
       if (this._incomingAttached) return
       device.on("incoming", (call) => {
         try {
+          if (window.CallState?.inCall) {
+            try { call.reject?.() } catch (_) {}
+            return
+          }
           window.activeIncomingCall = call
           const from = call?.parameters?.From || call?.parameters?.Caller || "Número desconocido"
           ;(async () => {

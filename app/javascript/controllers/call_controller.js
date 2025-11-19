@@ -343,6 +343,14 @@ export default class extends Controller {
         clientName: this.clientNameValue || null,
         phone: to
       }, window.CallState || {})
+      try {
+        fetch('/api/call_presence/start', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ call_sid: (call?.parameters?.CallSid || null) })
+        }).catch(() => {})
+      } catch (_) {}
       // Eventos de la llamada (Call)
       if (typeof call.on === "function") {
         call.on("accept", () => this.setStatus("Cliente respondió", "text-green-700"))
@@ -367,6 +375,13 @@ export default class extends Controller {
           this.restoreCallButton()
           window.CallState = Object.assign({}, window.CallState, { inCall: false })
           window.dispatchEvent(new CustomEvent("call:ui:hide"))
+          try {
+            fetch('/api/call_presence/stop', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+              credentials: 'same-origin'
+            }).catch(() => {})
+          } catch (_) {}
         })
         call.on("error", (e) => {
           console.error("Twilio.Call error", e?.info || e)
@@ -378,6 +393,13 @@ export default class extends Controller {
           window.CallState = Object.assign({}, window.CallState, { inCall: false })
           window.dispatchEvent(new CustomEvent("call:ui:stop-audio"))
           window.dispatchEvent(new CustomEvent("call:ui:hide"))
+          try {
+            fetch('/api/call_presence/stop', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+              credentials: 'same-origin'
+            }).catch(() => {})
+          } catch (_) {}
         })
       } else {
         // Si no hay API de eventos, nos limitamos a actualizar estado.

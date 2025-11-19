@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_18_120000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_18_131000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -219,6 +219,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "linked_user_id"
+    t.boolean "call_busy", default: false, null: false
+    t.datetime "call_busy_since"
+    t.string "current_call_sid"
+    t.index ["call_busy"], name: "index_users_on_call_busy"
+    t.index ["current_call_sid"], name: "index_users_on_current_call_sid"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["linked_user_id"], name: "index_users_on_linked_user_id"
   end

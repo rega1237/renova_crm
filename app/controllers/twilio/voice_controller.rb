@@ -51,6 +51,8 @@ module Twilio
 
       # Creamos el registro inicial de la llamada.
       create_initial_call_record(params[:CallSid], user, client_id, contact_list_id, "outbound-dial")
+      # Marcar usuario ocupado mientras dura la llamada
+      mark_user_busy!(user, params[:CallSid])
     end
 
     # Maneja llamadas entrantes (Teléfono -> Twilio -> Navegador)
@@ -58,6 +60,19 @@ module Twilio
       target_user = find_user_by_twilio_number(params[:To])
       unless target_user
         response.say(message: "Número no disponible.", language: "es-MX")
+        return
+      end
+
+      if target_user.respond_to?(:call_busy) && target_user.call_busy
+        from_number = params[:From].to_s.strip
+        unresolved_phone = normalize_phone_for_storage(from_number)
+        begin
+          create_initial_call_record(params[:CallSid], target_user, nil, nil, "inbound", caller_phone: unresolved_phone, status: "busy")
+          ::Call.find_by(twilio_call_id: params[:CallSid])&.update_columns(answered: false, duration: 0, status: "busy")
+        rescue StandardError => e
+          Rails.logger.error("Error registrando llamada ocupada: #{e.message}")
+        end
+        response.reject(reason: "busy")
         return
       end
 
@@ -88,7 +103,7 @@ module Twilio
     end
 
     # Crea el registro en la BD al iniciar la llamada.
-    def create_initial_call_record(sid, user, client_id, contact_list_id, direction, caller_phone: nil)
+    def create_initial_call_record(sid, user, client_id, contact_list_id, direction, caller_phone: nil, status: nil)
       return if sid.blank? || user.blank?
 
       ::Call.find_or_create_by!(twilio_call_id: sid) do |c|
@@ -102,6 +117,7 @@ module Twilio
         c.direction = direction
         c.answered = false # Estado inicial
         c.duration = 0     # Estado inicial
+        c.status = status if status.present?
       end
     rescue ActiveRecord::RecordInvalid => e
       Rails.logger.error("No se pudo crear el registro de llamada inicial: #{e.message}")
@@ -161,6 +177,13 @@ module Twilio
       return nil unless identity.present?
       email = identity.match(/\Aclient:(.+)\z/i)&.captures&.first
       ::User.find_by(email: email) if email
+    end
+
+    def mark_user_busy!(user, sid)
+      return unless user
+      user.update_columns(call_busy: true, call_busy_since: Time.current, current_call_sid: sid)
+    rescue StandardError => e
+      Rails.logger.error("No se pudo marcar usuario ocupado: #{e.message}")
     end
 
     # TwiML de respuesta para errores.
