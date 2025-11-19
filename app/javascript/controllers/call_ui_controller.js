@@ -35,8 +35,7 @@ export default class extends Controller {
     }
     this.onHide = () => {
       this.hide()
-      // Re-inicializar el Device para recibir futuras llamadas entrantes
-      // (por ejemplo, después de finalizar una llamada saliente que destruyó el Device)
+      try { window.activeIncomingCall = null } catch (_) {}
       setTimeout(() => this.initializeIncomingDeviceIfNeeded(), 250)
     }
 
@@ -115,6 +114,7 @@ export default class extends Controller {
       // Si hay una llamada entrante sin aceptar aún, rechazarla.
       if (incoming && typeof incoming.reject === "function" && !window.CallState?.inCall) {
         try { incoming.reject() } catch (_) {}
+        try { window.activeIncomingCall = null } catch (_) {}
       } else if (conn && typeof conn.disconnect === "function") {
         conn.disconnect()
       }
@@ -222,22 +222,26 @@ export default class extends Controller {
           // Eventos del ciclo de vida
           call.on?.("accept", () => {
             window.activeConnection = call
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: true })
             window.dispatchEvent(new CustomEvent("call:ui:accepted"))
             try { this.statusTarget.textContent = "Conectado" } catch (_) {}
           })
           call.on?.("cancel", () => {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
           })
           call.on?.("disconnect", () => {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
           })
           call.on?.("error", (e) => {
             console.error("Twilio.Call (entrante) error", e)
             this.statusTarget.textContent = `Error: ${e?.message || e}`
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
           })
         } catch (_) {}
