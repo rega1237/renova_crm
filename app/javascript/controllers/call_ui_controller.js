@@ -226,16 +226,41 @@ export default class extends Controller {
             window.CallState = Object.assign({}, window.CallState, { inCall: true })
             window.dispatchEvent(new CustomEvent("call:ui:accepted"))
             try { this.statusTarget.textContent = "Conectado" } catch (_) {}
+            // Marcar ocupado en backend
+            try {
+              fetch('/api/call_presence/start', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ call_sid: (call?.parameters?.CallSid || null) })
+              }).catch(() => {})
+            } catch (_) {}
           })
           call.on?.("cancel", () => {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
             try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
+            // Limpiar ocupado en backend
+            try {
+              fetch('/api/call_presence/stop', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              }).catch(() => {})
+            } catch (_) {}
           })
           call.on?.("disconnect", () => {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
             try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
+            // Limpiar ocupado en backend
+            try {
+              fetch('/api/call_presence/stop', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              }).catch(() => {})
+            } catch (_) {}
           })
           call.on?.("error", (e) => {
             console.error("Twilio.Call (entrante) error", e)
@@ -243,6 +268,14 @@ export default class extends Controller {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
             try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
+            // Limpiar ocupado en backend
+            try {
+              fetch('/api/call_presence/stop', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              }).catch(() => {})
+            } catch (_) {}
           })
         } catch (_) {}
       })

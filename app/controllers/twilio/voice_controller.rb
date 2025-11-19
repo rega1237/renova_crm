@@ -63,11 +63,27 @@ module Twilio
         return
       end
 
+      # Resolver llamante por número antes de decidir ocupado
+      identity = target_user.email.presence || "user-#{target_user.id}"
+      from_number = params[:From].to_s.strip
+      resolved_client = resolve_by_phone(::Client, from_number)
+      resolved_contact = resolved_client ? nil : resolve_by_phone(::ContactList, from_number)
+      client_id = resolved_client&.id
+      contact_list_id = resolved_contact&.id
+      unresolved_phone = normalize_phone_for_storage(from_number)
+
+      # Si el usuario está ocupado en cualquier llamada, rechazar inmediatamente con ocupado
       if target_user.respond_to?(:call_busy) && target_user.call_busy
-        from_number = params[:From].to_s.strip
-        unresolved_phone = normalize_phone_for_storage(from_number)
         begin
-          create_initial_call_record(params[:CallSid], target_user, nil, nil, "inbound", caller_phone: unresolved_phone, status: "busy")
+          create_initial_call_record(
+            params[:CallSid],
+            target_user,
+            client_id,
+            contact_list_id,
+            "inbound",
+            caller_phone: unresolved_phone,
+            status: "busy"
+          )
           ::Call.find_by(twilio_call_id: params[:CallSid])&.update_columns(answered: false, duration: 0, status: "busy")
         rescue StandardError => e
           Rails.logger.error("Error registrando llamada ocupada: #{e.message}")
@@ -75,14 +91,6 @@ module Twilio
         response.reject(reason: "busy")
         return
       end
-
-      identity = target_user.email.presence || "user-#{target_user.id}"
-      # Resolver el llamante (cliente o contacto) según el número que llama (params[:From])
-      from_number = params[:From].to_s.strip
-      resolved_client = resolve_by_phone(::Client, from_number)
-      resolved_contact = resolved_client ? nil : resolve_by_phone(::ContactList, from_number)
-      client_id = resolved_client&.id
-      contact_list_id = resolved_contact&.id
 
       # Preparar callback URL incluyendo ids si se resolvieron
       callback_url = build_status_callback_url(client_id: client_id, contact_list_id: contact_list_id)
@@ -98,8 +106,7 @@ module Twilio
 
       # Crear registro inicial de la llamada, asignando cliente/contacto si se resolvió.
       # Si no se resolvió, guardar el número en caller_phone para referencia futura.
-      unresolved_phone = (client_id || contact_list_id) ? nil : normalize_phone_for_storage(from_number)
-      create_initial_call_record(params[:CallSid], target_user, client_id, contact_list_id, "inbound", caller_phone: unresolved_phone)
+      create_initial_call_record(params[:CallSid], target_user, client_id, contact_list_id, "inbound", caller_phone: (client_id || contact_list_id) ? unresolved_phone : unresolved_phone)
     end
 
     # Crea el registro en la BD al iniciar la llamada.
