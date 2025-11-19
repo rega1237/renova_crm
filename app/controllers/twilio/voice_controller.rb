@@ -84,7 +84,7 @@ module Twilio
             caller_phone: unresolved_phone,
             status: "busy"
           )
-          ::Call.find_by(twilio_call_id: params[:CallSid])&.update_columns(answered: false, duration: 0, status: "busy")
+          ::Call.find_by(twilio_call_id: params[:CallSid])&.update_columns(answered: false, duration: 0, status: "busy", caller_phone: unresolved_phone)
         rescue StandardError => e
           Rails.logger.error("Error registrando llamada ocupada: #{e.message}")
         end
@@ -106,7 +106,8 @@ module Twilio
 
       # Crear registro inicial de la llamada, asignando cliente/contacto si se resolvió.
       # Si no se resolvió, guardar el número en caller_phone para referencia futura.
-      create_initial_call_record(params[:CallSid], target_user, client_id, contact_list_id, "inbound", caller_phone: (client_id || contact_list_id) ? unresolved_phone : unresolved_phone)
+      unresolved_for_storage = (client_id || contact_list_id) ? nil : unresolved_phone
+      create_initial_call_record(params[:CallSid], target_user, client_id, contact_list_id, "inbound", caller_phone: unresolved_for_storage)
     end
 
     # Crea el registro en la BD al iniciar la llamada.
