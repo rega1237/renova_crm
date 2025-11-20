@@ -57,6 +57,8 @@ export default class extends Controller {
     window.addEventListener("call:ui:accepted", this.onAccepted)
     window.addEventListener("call:ui:stop-audio", this.onStopAudio)
     window.addEventListener("call:ui:incoming", this.onIncoming)
+    this.onEnsureAudio = () => { try { this.ensureAudioContext() } catch (_) {} }
+    window.addEventListener("call:ui:ensure-audio", this.onEnsureAudio)
 
     // Inicializar el dispositivo para poder recibir llamadas entrantes
     this.initializeIncomingDeviceIfNeeded()
@@ -70,6 +72,7 @@ export default class extends Controller {
     window.removeEventListener("call:ui:accepted", this.onAccepted)
     window.removeEventListener("call:ui:stop-audio", this.onStopAudio)
     window.removeEventListener("call:ui:incoming", this.onIncoming)
+    window.removeEventListener("call:ui:ensure-audio", this.onEnsureAudio)
     this.stopRingback()
   }
 

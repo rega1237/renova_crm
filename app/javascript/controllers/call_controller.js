@@ -27,6 +27,7 @@ export default class extends Controller {
   async start(event) {
     event.preventDefault()
     const btn = this.buttonTarget || this.element
+    try { window.dispatchEvent(new CustomEvent("call:ui:ensure-audio")) } catch (_) {}
     this.setLoading(btn, true)
     this.setStatus("Preparando llamada…", "text-yellow-700")
 

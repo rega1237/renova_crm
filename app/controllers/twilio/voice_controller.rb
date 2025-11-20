@@ -45,7 +45,7 @@ module Twilio
       opts = dial_options(callback_url, recording_callback_url)
       Rails.logger.info("[Twilio Voice] Dial options (outbound): #{opts.inspect}")
 
-      response.dial(caller_id: from_number, answer_on_bridge: true, **opts) do |dial|
+      response.dial(caller_id: from_number, **opts) do |dial|
         dial.number(to_number)
       end
 
