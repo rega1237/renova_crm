@@ -89,4 +89,22 @@ export default class extends Controller {
     this.isClosing = false
     this.escapeHandler = null
   }
+
+  navigate(event) {
+    if (event) event.preventDefault()
+    const link = event.currentTarget
+    const url = link?.getAttribute('href')
+    if (!url) return
+    try {
+      const clientId = this.element?.dataset?.clientId
+      const frameId = clientId ? `client_${clientId}_content` : 'slideover'
+      window.Turbo.visit(url, { frame: frameId, action: 'advance' })
+    } catch (_) {
+      const clientId = this.element?.dataset?.clientId
+      const frameId = clientId ? `client_${clientId}_content` : 'slideover'
+      const frame = document.getElementById(frameId)
+      if (frame) frame.src = url
+      else window.location.href = url
+    }
+  }
 }
