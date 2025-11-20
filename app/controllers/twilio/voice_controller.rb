@@ -65,7 +65,7 @@ module Twilio
 
       # Resolver llamante por número antes de decidir ocupado
       identity = target_user.email.presence || "user-#{target_user.id}"
-      from_number = params[:From].to_s.strip
+      from_number = (params[:From].presence || params[:Caller].presence).to_s.strip
       resolved_client = resolve_by_phone(::Client, from_number)
       resolved_contact = resolved_client ? nil : resolve_by_phone(::ContactList, from_number)
       client_id = resolved_client&.id
