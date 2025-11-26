@@ -213,7 +213,7 @@ class ClientsController < ApplicationController
       head :unauthorized and return
     end
     @call = call
-    
+
     respond_to do |format|
       format.html { render :call_details, layout: false }
       format.json do

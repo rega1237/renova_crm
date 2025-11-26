@@ -44,7 +44,7 @@ Rails.application.routes.draw do
       post :unlock
       post :keepalive
       get :calls
-      get 'call/:call_id', to: 'clients#call_details', as: :call
+      get "call/:call_id", to: "clients#call_details", as: :call
     end
   end
 
