@@ -1,6 +1,6 @@
 class ClientsController < ApplicationController
   before_action :set_sellers, only: %i[ new edit create update ]
-  before_action :set_client, only: %i[ show edit update destroy ]
+  before_action :set_client, only: %i[ show edit update destroy calls call_details ]
 
   def index
     @clients = Client.includes(:state, :city, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
@@ -192,6 +192,34 @@ class ClientsController < ApplicationController
       redirect_to clients_path, notice: "Cliente actualizado exitosamente."
     else
       render :edit, status: :unprocessable_content
+    end
+  end
+
+  def calls
+    @calls = @client.calls.includes(:user, :contact_list).order(call_date: :desc, call_time: :desc)
+
+    respond_to do |format|
+      format.html { render :calls, layout: false }
+      format.json do
+        html_content = render_to_string(partial: "clients/calls_overlay", locals: { client: @client, calls: @calls }, formats: %i[html])
+        render json: { html: html_content }
+      end
+    end
+  end
+
+  def call_details
+    call = @client.calls.find(params[:call_id])
+    unless current_user&.admin? || call.user_id == current_user&.id
+      head :unauthorized and return
+    end
+    @call = call
+
+    respond_to do |format|
+      format.html { render :call_details, layout: false }
+      format.json do
+        html_content = render_to_string(partial: "clients/call_details_overlay", locals: { client: @client, call: @call }, formats: %i[html])
+        render json: { html: html_content }
+      end
     end
   end
 

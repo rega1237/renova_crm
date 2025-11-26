@@ -6,6 +6,13 @@
       client_status: client.status,
       assigned_seller_id: client.assigned_seller_id,
       updated_at: (client.status == 'lead' ? client.created_at : (client.updated_status_at || client.updated_at)).iso8601,
+      created_at: client.created_at.iso8601,
+      source: client.source,
+      state_id: client.state_id,
+      city_id: client.city_id,
+      zip_code: client.zip_code,
+      name: client.name,
+      phone: client.phone,
       action: "click->sales-flow#onClientLinkClick"
     },
     id: "client_#{client.id}",

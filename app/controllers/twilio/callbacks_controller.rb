@@ -45,6 +45,14 @@ module Twilio
       call_record.update!(updates)
 
       Rails.logger.info("Llamada #{call_record.id} actualizada: answered=#{answered}, duration=#{duration}, client_id=#{client_id}, contact_list_id=#{contact_list_id}")
+      begin
+        user = call_record.user
+        if user && user.current_call_sid.to_s == parent_call_sid.to_s
+          user.update_columns(call_busy: false, call_busy_since: nil, current_call_sid: nil)
+        end
+      rescue StandardError => e
+        Rails.logger.error("No se pudo limpiar estado ocupado del usuario: #{e.message}")
+      end
       # Twilio espera TwiML en la URL de `action` del <Dial> para continuar el flujo
       # después de finalizar la marcación. Si respondemos vacío, Twilio registra
       # el error 12100 (Document parse failure). Para evitarlo, devolvemos un

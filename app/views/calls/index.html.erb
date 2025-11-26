@@ -134,7 +134,14 @@
                                 class: "text-rojo-carmesi hover:underline") %>
                   </span>
                 <% else %>
-                  -
+                  <% if call.caller_phone.present? %>
+                    <span class="inline-flex items-center gap-2">
+                      <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 font-poppins">Teléfono</span>
+                      <span class="text-negro-onix font-montserrat"><%= call.caller_phone %></span>
+                    </span>
+                  <% else %>
+                    -
+                  <% end %>
                 <% end %>
               </td>
               <td class="px-4 py-3 font-montserrat text-sm text-gray-700"><%= call.duration || "-" %></td>
@@ -185,3 +192,4 @@
   <!-- Frame para renderizar el slideover del cliente vía Turbo -->
   <%= turbo_frame_tag "slideover" %>
 </div>
+<%= render 'shared/call_ui_frame' %>

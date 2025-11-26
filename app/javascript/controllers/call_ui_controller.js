@@ -35,8 +35,7 @@ export default class extends Controller {
     }
     this.onHide = () => {
       this.hide()
-      // Re-inicializar el Device para recibir futuras llamadas entrantes
-      // (por ejemplo, después de finalizar una llamada saliente que destruyó el Device)
+      try { window.activeIncomingCall = null } catch (_) {}
       setTimeout(() => this.initializeIncomingDeviceIfNeeded(), 250)
     }
 
@@ -58,6 +57,8 @@ export default class extends Controller {
     window.addEventListener("call:ui:accepted", this.onAccepted)
     window.addEventListener("call:ui:stop-audio", this.onStopAudio)
     window.addEventListener("call:ui:incoming", this.onIncoming)
+    this.onEnsureAudio = () => { try { this.ensureAudioContext() } catch (_) {} }
+    window.addEventListener("call:ui:ensure-audio", this.onEnsureAudio)
 
     // Inicializar el dispositivo para poder recibir llamadas entrantes
     this.initializeIncomingDeviceIfNeeded()
@@ -71,6 +72,7 @@ export default class extends Controller {
     window.removeEventListener("call:ui:accepted", this.onAccepted)
     window.removeEventListener("call:ui:stop-audio", this.onStopAudio)
     window.removeEventListener("call:ui:incoming", this.onIncoming)
+    window.removeEventListener("call:ui:ensure-audio", this.onEnsureAudio)
     this.stopRingback()
   }
 
@@ -115,6 +117,7 @@ export default class extends Controller {
       // Si hay una llamada entrante sin aceptar aún, rechazarla.
       if (incoming && typeof incoming.reject === "function" && !window.CallState?.inCall) {
         try { incoming.reject() } catch (_) {}
+        try { window.activeIncomingCall = null } catch (_) {}
       } else if (conn && typeof conn.disconnect === "function") {
         conn.disconnect()
       }
@@ -208,6 +211,10 @@ export default class extends Controller {
       if (this._incomingAttached) return
       device.on("incoming", (call) => {
         try {
+          if (window.CallState?.inCall) {
+            try { call.reject?.() } catch (_) {}
+            return
+          }
           window.activeIncomingCall = call
           const from = call?.parameters?.From || call?.parameters?.Caller || "Número desconocido"
           ;(async () => {
@@ -218,23 +225,60 @@ export default class extends Controller {
           // Eventos del ciclo de vida
           call.on?.("accept", () => {
             window.activeConnection = call
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: true })
             window.dispatchEvent(new CustomEvent("call:ui:accepted"))
             try { this.statusTarget.textContent = "Conectado" } catch (_) {}
+            // Marcar ocupado en backend
+            try {
+              fetch('/api/call_presence/start', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ call_sid: (call?.parameters?.CallSid || null) })
+              }).catch(() => {})
+            } catch (_) {}
           })
           call.on?.("cancel", () => {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
+            // Limpiar ocupado en backend
+            try {
+              fetch('/api/call_presence/stop', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              }).catch(() => {})
+            } catch (_) {}
           })
           call.on?.("disconnect", () => {
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
+            // Limpiar ocupado en backend
+            try {
+              fetch('/api/call_presence/stop', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              }).catch(() => {})
+            } catch (_) {}
           })
           call.on?.("error", (e) => {
             console.error("Twilio.Call (entrante) error", e)
             this.statusTarget.textContent = `Error: ${e?.message || e}`
             window.dispatchEvent(new CustomEvent("call:ui:hide"))
+            try { window.activeIncomingCall = null } catch (_) {}
             window.CallState = Object.assign({}, window.CallState, { inCall: false })
+            // Limpiar ocupado en backend
+            try {
+              fetch('/api/call_presence/stop', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': this.csrfToken(), 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              }).catch(() => {})
+            } catch (_) {}
           })
         } catch (_) {}
       })

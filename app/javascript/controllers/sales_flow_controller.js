@@ -716,7 +716,7 @@ export default class extends Controller {
   // Refrescar totales desde servidor aplicando filtros actuales
   async refreshTotals() {
     try {
-      const params = new URLSearchParams(window.location.search);
+      const params = this.getFilterParams();
       const res = await fetch(`/sales_flow/counts?${params.toString()}`);
       if (!res.ok) return;
       const totals = await res.json();
@@ -805,8 +805,12 @@ export default class extends Controller {
       tempDiv.innerHTML = client_html;
       const newCard = tempDiv.firstElementChild;
 
-      // Agregar timestamp actual para ordenamiento correcto
-      newCard.dataset.updatedAt = new Date().toISOString();
+      newCard.dataset.updatedAt = data && data.updated_at ? new Date(data.updated_at).toISOString() : new Date().toISOString();
+
+      if (!this.matchesCurrentFilters(newCard)) {
+        this.updateColumnCounts();
+        return;
+      }
 
       // Encontrar la posición correcta para insertar el elemento
       const insertPosition = this.findCorrectInsertPosition(
@@ -851,6 +855,12 @@ export default class extends Controller {
       const newCard = tempDiv.firstElementChild;
 
       if (newCard) {
+        newCard.dataset.updatedAt = newCard.dataset.createdAt || new Date().toISOString();
+        if (!this.matchesCurrentFilters(newCard)) {
+          this.updateColumnCounts();
+          this.showRemoteUpdateNotification(data);
+          return;
+        }
         leadColumnList.prepend(newCard);
 
         newCard.classList.add("remote-update");
@@ -862,6 +872,82 @@ export default class extends Controller {
         this.showRemoteUpdateNotification(data);
       }
     }
+  }
+
+  getFilterValues() {
+    const root = this.element;
+    const qEl = root.querySelector('input[name="query"]');
+    const sourceEl = root.querySelector('select[name="source"]');
+    const stateEl = root.querySelector('select[name="state_id"]');
+    const cityEl = root.querySelector('select[name="city_id"]');
+    const zipEl = root.querySelector('select[name="zip_code"]');
+    const fromEl = root.querySelector('input[name="date_from"]');
+    const toEl = root.querySelector('input[name="date_to"]');
+    const orderEl = root.querySelector('input[name="order_by_created"]');
+    return {
+      query: (qEl && qEl.value ? qEl.value.trim() : "") || "",
+      source: sourceEl && sourceEl.value ? sourceEl.value : "",
+      stateId: stateEl && stateEl.value ? stateEl.value : "",
+      cityId: cityEl && cityEl.value ? cityEl.value : "",
+      zipCode: zipEl && zipEl.value ? zipEl.value : "",
+      dateFrom: fromEl && fromEl.value ? fromEl.value : "",
+      dateTo: toEl && toEl.value ? toEl.value : "",
+      orderByCreated: Boolean(orderEl && orderEl.checked),
+    };
+  }
+
+  getFilterParams() {
+    const f = this.getFilterValues();
+    const params = new URLSearchParams();
+    if (f.query) params.set('query', f.query);
+    if (f.source) params.set('source', f.source);
+    if (f.stateId) params.set('state_id', f.stateId);
+    if (f.cityId) params.set('city_id', f.cityId);
+    if (f.zipCode) params.set('zip_code', f.zipCode);
+    if (f.dateFrom) params.set('date_from', f.dateFrom);
+    if (f.dateTo) params.set('date_to', f.dateTo);
+    if (f.orderByCreated) params.set('order_by_created', '1');
+    return params;
+  }
+
+  matchesCurrentFilters(card) {
+    const f = this.getFilterValues();
+    const ds = card.dataset || {};
+    if (f.source && ds.source !== f.source) return false;
+    if (f.stateId && String(ds.stateId || '') !== String(f.stateId)) return false;
+    if (f.cityId) {
+      if (f.cityId === 'none') {
+        if (ds.cityId && ds.cityId !== '') return false;
+      } else {
+        if (String(ds.cityId || '') !== String(f.cityId)) return false;
+      }
+    }
+    if (f.zipCode && String(ds.zipCode || '') !== String(f.zipCode)) return false;
+    if (f.query) {
+      const q = f.query.toLowerCase();
+      const name = (ds.name || '').toLowerCase();
+      const phone = ds.phone || '';
+      const digits = q.replace(/[^0-9]/g, '');
+      const phoneDigits = phone.replace(/[^0-9]/g, '');
+      const nameMatch = name.includes(q);
+      const phoneMatch = digits ? phoneDigits.includes(digits) : phone.toLowerCase().includes(q);
+      if (!nameMatch && !phoneMatch) return false;
+    }
+    if (f.dateFrom || f.dateTo) {
+      const useCreated = f.orderByCreated;
+      const dateStr = useCreated ? ds.createdAt : ds.updatedAt;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (f.dateFrom) {
+        const from = new Date(f.dateFrom + 'T00:00:00');
+        if (d < from) return false;
+      }
+      if (f.dateTo) {
+        const to = new Date(f.dateTo + 'T23:59:59');
+        if (d > to) return false;
+      }
+    }
+    return true;
   }
 
   // Metodo para manejar broadcast cuando se asigna un vendedor a un cliente
@@ -1010,7 +1096,7 @@ loadMoreForStatus(status, triggerEl) {
   if (!list) return;
 
   const currentCards = list.querySelectorAll(".client-card, a[data-client-id]").length;
-  const params = new URLSearchParams(window.location.search);
+  const params = this.getFilterParams();
   params.set("status", status);
   params.set("offset", String(currentCards));
 

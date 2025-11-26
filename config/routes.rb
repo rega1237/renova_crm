@@ -43,6 +43,8 @@ Rails.application.routes.draw do
       post :lock
       post :unlock
       post :keepalive
+      get :calls
+      get "call/:call_id", to: "clients#call_details", as: :call
     end
   end
 
@@ -94,6 +96,9 @@ Rails.application.routes.draw do
     namespace :twilio do
       post "voice/token", to: "voice_tokens#create"
     end
+    # Call presence (ocupación de llamadas)
+    post "call_presence/start", to: "call_presence#start"
+    post "call_presence/stop",  to: "call_presence#stop"
     namespace :facebook do
       get "webhooks", to: "webhooks#verify"
       post "webhooks", to: "webhooks#receive"
