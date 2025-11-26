@@ -13,11 +13,18 @@ class Settings::DashboardController < ApplicationController
       redirect_to settings_root_path, alert: "Debes seleccionar un archivo Excel (.xlsx o .xls)." and return
     end
 
+    # Validar extensión del archivo
+    original_filename = params[:file].original_filename.to_s.downcase
+    unless original_filename.end_with?(".xlsx", ".xls")
+      redirect_to settings_root_path, alert: "Formato de archivo no válido. Solo se permiten archivos Excel (.xlsx, .xls)." and return
+    end
+
     # Guardar archivo temporalmente para el job
     tmp_dir = Rails.root.join("tmp", "imports")
     FileUtils.mkdir_p(tmp_dir)
     pid = SecureRandom.uuid
-    ext = File.extname(params[:file].original_filename.to_s)
+    # Usar extensión whitelisted en lugar de la original
+    ext = original_filename.end_with?(".xlsx") ? ".xlsx" : ".xls"
     tmp_path = tmp_dir.join("clients_#{pid}#{ext}")
     File.open(tmp_path, "wb") { |f| f.write(params[:file].read) }
 

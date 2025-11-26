@@ -16,7 +16,9 @@ class Settings::LocationImportsController < ApplicationController
     tmp_dir = Rails.root.join("tmp", "imports")
     FileUtils.mkdir_p(tmp_dir)
     pid = SecureRandom.uuid
-    ext = File.extname(file.original_filename.to_s)
+    # Usar extensión whitelisted en lugar de la original
+    original_filename = file.original_filename.to_s.downcase
+    ext = original_filename.end_with?(".xlsx") ? ".xlsx" : ".xls"
     tmp_path = tmp_dir.join("location_#{pid}#{ext}")
     File.open(tmp_path, "wb") { |f| f.write(file.read) }
 
