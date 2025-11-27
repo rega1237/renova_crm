@@ -3,7 +3,8 @@
 # Maneja: vista administrativa de todos los SMS, filtros avanzados, KPIs y métricas
 # Rutas: /text_messages
 class TextMessagesController < ApplicationController
-  before_action :require_authentication
+  protect_from_forgery with: :null_session, only: [ :receive_webhook ]
+  before_action :require_authentication, except: [ :receive_webhook ]
   before_action :set_text_message, only: [ :show ]
 
   PER_PAGE = 20
@@ -56,8 +57,22 @@ class TextMessagesController < ApplicationController
 
   def receive_webhook
     # Webhook para recibir SMS de Twilio
-    # TODO: Implementar cuando configuremos Twilio
-    head :ok
+    from_phone = params[:From]
+    to_phone = params[:To]
+    message_body = params[:Body]
+    twilio_sms_id = params[:MessageSid]
+
+    if from_phone.present? && message_body.present?
+      text_message = SmsRouterService.route_inbound_sms(from_phone, to_phone, message_body, twilio_sms_id)
+
+      if text_message
+        render xml: { status: "success" }.to_xml(root: "Response")
+      else
+        render xml: { status: "error" }.to_xml(root: "Response"), status: :unprocessable_entity
+      end
+    else
+      render xml: { status: "error", message: "Missing required parameters" }.to_xml(root: "Response"), status: :bad_request
+    end
   end
 
   private
