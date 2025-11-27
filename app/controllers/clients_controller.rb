@@ -1,6 +1,6 @@
 class ClientsController < ApplicationController
   before_action :set_sellers, only: %i[ new edit create update ]
-  before_action :set_client, only: %i[ show edit update destroy calls call_details ]
+  before_action :set_client, only: %i[ show edit update destroy calls call_details sms_message_details ]
 
   def index
     @clients = Client.includes(:state, :city, :prospecting_seller, :assigned_seller, :updated_by).order(:name)
@@ -218,6 +218,22 @@ class ClientsController < ApplicationController
       format.html { render :call_details, layout: false }
       format.json do
         html_content = render_to_string(partial: "clients/call_details_overlay", locals: { client: @client, call: @call }, formats: %i[html])
+        render json: { html: html_content }
+      end
+    end
+  end
+
+  def sms_message_details
+    sms = @client.text_messages.find(params[:sms_id])
+    unless current_user&.admin? || sms.user_id == current_user&.id
+      head :unauthorized and return
+    end
+    @sms = sms
+
+    respond_to do |format|
+      format.html { render :sms_message_details, layout: false }
+      format.json do
+        html_content = render_to_string(partial: "clients/sms_details_overlay", locals: { client: @client, sms: @sms }, formats: %i[html])
         render json: { html: html_content }
       end
     end
@@ -519,6 +535,70 @@ class ClientsController < ApplicationController
     else
       render json: { status: "not_owner_or_not_locked" }, status: :unprocessable_entity
     end
+  end
+
+  # ==========================
+  # SMS METHODS
+  # ==========================
+  def sms_messages
+    @client = Client.find(params[:id])
+    @text_messages = @client.text_messages.order(sms_time: :desc)
+
+    respond_to do |format|
+      format.html { render :sms_messages, layout: false }
+      format.json do
+        html_content = render_to_string(
+          partial: "clients/sms_overlay",
+          locals: { client: @client, text_messages: @text_messages },
+          formats: %i[html]
+        )
+        render json: { html: html_content }
+      end
+    end
+  end
+
+  def send_sms
+    @client = Client.find(params[:id])
+    message = params[:message].to_s.strip
+
+    if message.blank?
+      return render json: { success: false, error: "El mensaje no puede estar vacío" }, status: :unprocessable_entity
+    end
+
+    # Crear registro local del SMS (pendiente de envío real cuando A2P 10DLC esté aprobado)
+    text_message = TextMessage.create!(
+      twilio_sms_id: "local_#{SecureRandom.uuid}",
+      sms_date: Date.current,
+      sms_time: Time.current,
+      user_id: Current.user&.id,
+      direction: "outbound",
+      client_id: @client.id,
+      from_phone: ENV["TWILIO_PHONE_NUMBER"],
+      to_phone: @client.phone,
+      message_body: message,
+      status: "pending"
+    )
+
+    # TODO: Implementar envío real a Twilio cuando A2P 10DLC esté aprobado
+    # Por ahora solo registramos localmente
+
+    respond_to do |format|
+      format.json do
+        render json: {
+          success: true,
+          sms: {
+            id: text_message.id,
+            message_body: text_message.message_body,
+            direction: text_message.direction,
+            sms_time: text_message.sms_time.strftime("%Y-%m-%d %H:%M:%S"),
+            sender_name: text_message.sender_name
+          }
+        }
+      end
+    end
+  rescue => e
+    Rails.logger.error "Error al enviar SMS: #{e.message}"
+    render json: { success: false, error: "Error al enviar mensaje: #{e.message}" }, status: :unprocessable_entity
   end
 
   private

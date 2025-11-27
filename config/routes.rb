@@ -45,6 +45,9 @@ Rails.application.routes.draw do
       post :keepalive
       get :calls
       get "call/:call_id", to: "clients#call_details", as: :call
+      get :sms_messages
+      get "sms_message/:sms_id", to: "clients#sms_message_details", as: :sms_message
+      post :send_sms
     end
   end
 
@@ -61,6 +64,13 @@ Rails.application.routes.draw do
   resources :calls, only: [ :index, :show, :new, :create, :edit, :update ] do
     member do
       get :recording
+    end
+  end
+
+  # --- SMS/Text Messages ---
+  resources :text_messages, only: [ :index, :show ] do
+    collection do
+      post :receive_webhook
     end
   end
 
@@ -87,6 +97,11 @@ Rails.application.routes.draw do
     resources :cities, only: [ :index ]
     resources :zipcodes, only: [ :index ]
     resources :calls, only: [ :create ]
+    resources :text_messages, only: [ :create ] do
+      collection do
+        post :receive_webhook
+      end
+    end
     # WebRTC: preparar llamada (selección de número de origen) sin iniciar llamada server-side
     post "voice/prepare", to: "voice_calls#prepare"
     # WebRTC: preparar llamada para ContactList
