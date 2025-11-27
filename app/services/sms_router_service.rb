@@ -68,12 +68,11 @@ class SmsRouterService
       to_phone: normalized_to,
       message_body: message_body,
       user: user,
-      direction: "inbound",
-      caller_phone: normalized_from
+      direction: "inbound"
     )
   end
 
-  def self.create_sms_from_twilio(twilio_sms_id:, from_phone:, to_phone:, message_body:, user:, direction:, client: nil, contact_list: nil, caller_phone: nil)
+  def self.create_sms_from_twilio(twilio_sms_id:, from_phone:, to_phone:, message_body:, user:, direction:, client: nil, contact_list: nil)
     current_time = Time.current
 
     TextMessage.create!(
@@ -84,7 +83,6 @@ class SmsRouterService
       direction: direction,
       client: client,
       contact_list: contact_list,
-      caller_phone: caller_phone || from_phone,
       message_body: message_body,
       status: "received",
       to_phone: to_phone,
@@ -109,7 +107,6 @@ class SmsRouterService
       direction: "outbound",
       client: client,
       contact_list: contact_list,
-      caller_phone: to_phone,
       message_body: message_body,
       status: "pending",
       to_phone: to_phone,

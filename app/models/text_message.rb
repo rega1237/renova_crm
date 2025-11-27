@@ -8,7 +8,7 @@ class TextMessage < ApplicationRecord
   validates :sms_time, presence: true
   validates :user, presence: true
   validates :direction, inclusion: { in: %w[inbound outbound] }
-  validates :caller_phone, presence: true
+
   validates :message_body, presence: true
 
   scope :by_direction, ->(dir) { where(direction: dir) if dir.present? }
@@ -36,7 +36,7 @@ class TextMessage < ApplicationRecord
     elsif contact_list_id.present?
       contact_list&.name || "Contacto desconocido"
     else
-      caller_phone
+      from_phone
     end
   end
 
@@ -46,7 +46,7 @@ class TextMessage < ApplicationRecord
     elsif contact_list_id.present?
       "contact_#{contact_list_id}"
     else
-      "phone_#{caller_phone.gsub(/\D/, '')}"
+      "phone_#{from_phone.gsub(/\D/, '')}"
     end
   end
 

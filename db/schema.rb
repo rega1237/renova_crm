@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_26_184812) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_27_190043) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -203,14 +203,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_26_184812) do
     t.string "direction", null: false
     t.bigint "client_id"
     t.bigint "contact_list_id"
-    t.string "caller_phone", null: false
     t.text "message_body", null: false
     t.string "status"
     t.string "to_phone"
     t.string "from_phone"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["caller_phone"], name: "index_text_messages_on_caller_phone"
     t.index ["client_id"], name: "index_text_messages_on_client_id"
     t.index ["contact_list_id"], name: "index_text_messages_on_contact_list_id"
     t.index ["direction"], name: "index_text_messages_on_direction"
