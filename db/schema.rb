@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_18_131000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_26_184812) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -195,6 +195,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_131000) do
     t.index ["name"], name: "index_states_on_name"
   end
 
+  create_table "text_messages", force: :cascade do |t|
+    t.string "twilio_sms_id", null: false
+    t.date "sms_date", null: false
+    t.time "sms_time", null: false
+    t.bigint "user_id", null: false
+    t.string "direction", null: false
+    t.bigint "client_id"
+    t.bigint "contact_list_id"
+    t.string "caller_phone", null: false
+    t.text "message_body", null: false
+    t.string "status"
+    t.string "to_phone"
+    t.string "from_phone"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["caller_phone"], name: "index_text_messages_on_caller_phone"
+    t.index ["client_id"], name: "index_text_messages_on_client_id"
+    t.index ["contact_list_id"], name: "index_text_messages_on_contact_list_id"
+    t.index ["direction"], name: "index_text_messages_on_direction"
+    t.index ["sms_date"], name: "index_text_messages_on_sms_date"
+    t.index ["twilio_sms_id"], name: "index_text_messages_on_twilio_sms_id", unique: true
+    t.index ["user_id"], name: "index_text_messages_on_user_id"
+  end
+
   create_table "unauthorized_access_attempts", force: :cascade do |t|
     t.bigint "user_id"
     t.string "role_name"
@@ -266,6 +290,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_131000) do
   add_foreign_key "notes", "users", column: "created_by_id"
   add_foreign_key "numbers", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "text_messages", "clients"
+  add_foreign_key "text_messages", "contact_lists"
+  add_foreign_key "text_messages", "users"
   add_foreign_key "unauthorized_access_attempts", "users"
   add_foreign_key "users", "users", column: "linked_user_id"
   add_foreign_key "zipcodes", "cities"

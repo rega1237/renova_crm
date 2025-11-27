@@ -1,0 +1,27 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  twilio_sms_id: SM1234567890
+  sms_date: 2025-11-26
+  sms_time: 2025-11-26 14:48:12
+  user: one
+  direction: inbound
+  client: one
+  caller_phone: +15551234567
+  message_body: "Test message body one"
+  status: delivered
+  to_phone: +15559876543
+  from_phone: +15551234567
+
+two:
+  twilio_sms_id: SM0987654321
+  sms_date: 2025-11-26
+  sms_time: 2025-11-26 14:49:12
+  user: two
+  direction: outbound
+  client: two
+  caller_phone: +15559876543
+  message_body: "Test message body two"
+  status: sent
+  to_phone: +15551234567
+  from_phone: +15559876543
