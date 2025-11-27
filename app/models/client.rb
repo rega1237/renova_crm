@@ -7,6 +7,7 @@ class Client < ApplicationRecord
   has_many :notes, dependent: :destroy
   has_many :appointments, dependent: :destroy
   has_many :calls, dependent: :delete_all
+  has_many :text_messages, dependent: :delete_all
 
   scope :with_recent_notes, -> { includes(:notes).order("notes.created_at DESC") }
 
