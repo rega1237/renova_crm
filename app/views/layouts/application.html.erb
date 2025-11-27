@@ -153,6 +153,21 @@
             <% end %>
           </div>
 
+          <!-- Mensajes SMS -->
+          <div class="group relative">
+            <%= link_to text_messages_path, class: "flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:bg-humo hover:shadow-md relative" do %>
+              <!-- SMS/Message Icon -->
+              <svg class="w-6 h-6 text-negro-onix group-hover:text-rojo-carmesi transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"></path>
+              </svg>
+              <!-- Tooltip -->
+              <div class="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-negro-onix text-white px-3 py-2 rounded-lg text-sm font-poppins whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                Mensajes SMS
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-negro-onix"></div>
+              </div>
+            <% end %>
+          </div>
+
           <!-- Configuración -->
           <% if current_user&.admin? %>
           <div class="group relative">

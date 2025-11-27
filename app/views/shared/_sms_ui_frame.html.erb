@@ -1,0 +1,55 @@
+<%= turbo_frame_tag "sms_ui" do %>
+  <!-- Fixed SMS UI container (hidden by default, shown via Stimulus) -->
+  <div 
+    id="sms-ui-container"
+    data-controller="sms-ui"
+    data-sms-ui-target="container"
+    class="fixed top-4 right-4 z-50 hidden"
+  >
+    <!-- Card -->
+    <div class="flex items-center gap-3 bg-negro-onix text-white rounded-2xl shadow-xl px-4 py-3 transition transform duration-200 ease-out">
+      <!-- Avatar placeholder -->
+      <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+        <svg class="w-6 h-6 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"></path>
+        </svg>
+      </div>
+
+      <!-- Info -->
+      <div class="mr-2">
+        <div class="font-poppins font-semibold text-base" data-sms-ui-target="name">Mensaje</div>
+        <div class="font-montserrat text-xs text-gray-300" data-sms-ui-target="phone"></div>
+        <div class="font-montserrat text-[11px] text-gray-400" data-sms-ui-target="status"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center gap-2 ml-auto">
+        <!-- Botón de abrir conversación -->
+        <button type="button"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md"
+                title="Abrir conversación"
+                aria-label="Abrir conversación SMS"
+                data-sms-ui-target="openButton"
+                data-action="click->sms-ui#openConversation">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <!-- Ícono de mensaje/chat -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </button>
+
+        <!-- Botón de cerrar notificación -->
+        <button type="button"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 shadow-md"
+                title="Cerrar"
+                aria-label="Cerrar notificación"
+                data-sms-ui-target="closeButton"
+                data-action="click->sms-ui#close">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <!-- X de cerrar -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>
