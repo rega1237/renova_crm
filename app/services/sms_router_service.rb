@@ -23,8 +23,9 @@ class SmsRouterService
 
     return nil if normalized_from.blank? || message_body.blank?
 
-    # Find user by phone number (assuming users have phone numbers)
-    user = User.find_by(phone: normalized_to)
+    # Find user by phone number (via Number model)
+    number_record = Number.find_by(phone_number: normalized_to)
+    user = number_record&.user
 
     if user.nil?
       # Try to find user by any other method if needed
@@ -110,7 +111,7 @@ class SmsRouterService
       message_body: message_body,
       status: "pending",
       to_phone: to_phone,
-      from_phone: user.phone || "+1234567890" # Replace with your Twilio number
+      from_phone: user.numbers.active.first&.phone_number || "+1234567890" # Replace with your Twilio number
     )
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.error "Error creating outbound SMS: #{e.message}"
